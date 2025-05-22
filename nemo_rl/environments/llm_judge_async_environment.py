@@ -264,6 +264,7 @@ class LLMJudgeAsyncEnvironment(EnvironmentInterface):
                 )
             else:
                 # No placement group – let Ray handle multi-GPU allocation.
+                # TODO @yashaswikarnati: improve with custom scheduling strategy
                 scheduling_kwargs = {}
             worker = AsyncVLLMWorker.options(
                 **worker_options,
