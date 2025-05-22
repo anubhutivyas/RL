@@ -32,6 +32,7 @@ from nemo_rl.models.generation.interfaces import (
     GenerationOutputSpec,
     verify_right_padding,
 )
+from nemo_rl.models.huggingface.common import ModelFlag
 
 
 class VllmSpecificArgs(TypedDict):
@@ -40,7 +41,6 @@ class VllmSpecificArgs(TypedDict):
     max_model_len: int
     # Additional arguments for vLLM inserted by nemo rl based on the context of when vllm is used
     skip_tokenizer_init: bool
-    load_format: str
 
 
 class VllmConfig(GenerationConfig):
@@ -60,7 +60,9 @@ class VllmGenerationWorker:
 
     @staticmethod
     def configure_worker(
-        num_gpus: int | float, bundle_indices: Optional[tuple] = None
+        num_gpus: int | float,
+        bundle_indices: Optional[tuple] = None,
+        seed_offset: int = 0,
     ) -> tuple[dict, dict, dict]:
         """Provides complete worker configuration for vLLM tensor parallelism.
 
@@ -96,7 +98,7 @@ class VllmGenerationWorker:
             node_idx = 1, bundle_indices = [4, 5, 6, 7] -> seed = 1*1024 + 1
             """
             bundle_id = local_bundle_indices[0] // len(local_bundle_indices)
-            seed = node_idx * 1024 + bundle_id
+            seed = node_idx * 1024 + bundle_id + seed_offset
             init_kwargs["seed"] = seed
 
         is_part_of_tp_workers = (
@@ -180,10 +182,14 @@ class VllmGenerationWorker:
             # For non-TP mode, explicitly set executor to None to avoid Ray issues
             vllm_kwargs["distributed_executor_backend"] = None
 
+        load_format = self.cfg["vllm_cfg"]["load_format"]
+        if ModelFlag.VLLM_LOAD_FORMAT_AUTO.matches(self.model_name):
+            load_format = "auto"
+
         self.llm = vllm.LLM(
             model=self.model_name,
             # Training pipeline will set this to "dummy" and eval will load real weights using 'auto'
-            load_format=self.cfg["vllm_cfg"]["load_format"],
+            load_format=load_format,
             skip_tokenizer_init=self.cfg["vllm_cfg"]["skip_tokenizer_init"],
             tensor_parallel_size=self.cfg["vllm_cfg"]["tensor_parallel_size"],
             gpu_memory_utilization=self.cfg["vllm_cfg"]["gpu_memory_utilization"],
@@ -439,10 +445,9 @@ class VllmGenerationWorker:
         """
         try:
             # Use collective_rpc to delegate to the UpdatableVllmInternalWorker implementation
-            self.llm.collective_rpc(
+            return self.llm.collective_rpc(
                 "update_weights_from_ipc_handles", args=(ipc_handles,)
-            )
-            return True
+            )[0]
         except Exception as e:
             print(f"Error updating weights: {e}")
             return False
