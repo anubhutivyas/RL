@@ -351,10 +351,12 @@ class LLMJudgeAsyncEnvironment(EnvironmentInterface):
         # Assuming ray.get(futures) preserves the order, which it does.
         scores = [score for _, score in results_tuples]
 
-        observations = [
-            {"role": "environment", "content": f"Environment: Score = {score:.2f}"}
-            for score in scores
-        ]
+        observations = []
+        for score, single_meta in zip(scores, metadata):
+            ref_answer = single_meta.get("reference_answer", "N/A")
+            observations.append(
+                {"role": "environment", "content": f"Environment: Score = {score:.2f}\nGround Truth: {ref_answer}"}
+            )
         
         rewards_tensor = torch.tensor(scores, dtype=torch.float32).cpu()
         terminateds_tensor = torch.ones_like(rewards_tensor).cpu()
