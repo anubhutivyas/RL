@@ -42,6 +42,7 @@ class LLMJudgeAsyncConfig(TypedDict):
     temperature: Optional[float]
     max_tokens: Optional[int]
     stop: Optional[List[str]] # Note: vLLM's AsyncEngine uses 'stop'
+    max_concurrency: Optional[int] # Maximum concurrent step calls for the environment actor
     # Any other vllm.SamplingParams can be added here
 
 class LLMJudgeEnvironmentMetadata(TypedDict): # Reusing from previous
@@ -195,7 +196,7 @@ Answer yes or no, then give your reasoning.
         return request_id, score
 
 
-@ray.remote(max_concurrency=16) # Allow concurrent processing of step calls
+@ray.remote
 class LLMJudgeAsyncEnvironment(EnvironmentInterface):
     DEFAULT_PY_EXECUTABLE = PY_EXECUTABLES.SYSTEM # The environment actor itself uses system python
 
