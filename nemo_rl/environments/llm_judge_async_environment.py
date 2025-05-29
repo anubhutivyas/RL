@@ -14,7 +14,6 @@
 import logging
 import os
 import uuid
-import re # Import re module for regex
 from typing import Dict, List, Optional, Tuple, TypedDict
 
 import ray
@@ -31,7 +30,6 @@ from nemo_rl.environments.metrics import (
     calculate_pass_rate_per_prompt,
 )
 
-# Configuration and Metadata types (can be reused or adapted from existing llm_judge_environment)
 class LLMJudgeAsyncConfig(TypedDict):
     num_workers: int
     model_name: str
@@ -86,16 +84,11 @@ Answer yes or no, then give your reasoning.
     ):
         # Imports moved here to be within the Ray actor's context,
         # ensuring they are resolved correctly in the worker environment.
-        import os
         from vllm.engine.arg_utils import AsyncEngineArgs
         from vllm.engine.async_llm_engine import AsyncLLMEngine
         from vllm.sampling_params import SamplingParams
         from huggingface_hub.constants import HUGGINGFACE_HUB_CACHE
         
-        self.AsyncLLMEngine = AsyncLLMEngine
-        self.SamplingParams = SamplingParams
-        self.default_judge_prompt_template = self.DEFAULT_JUDGE_PROMPT_TEMPLATE # Store the default
-
         # Attempt to use HF_HOME from env, otherwise default to huggingface_hub's default cache
         # This ensures the worker tries to use the same cache path as the driver.
         hf_home_cache_path = os.environ.get("HF_HOME", HUGGINGFACE_HUB_CACHE)
@@ -120,7 +113,7 @@ Answer yes or no, then give your reasoning.
             ignore_patterns=["*.safetensors.index.json", "*.pt", "*.bin.index.json", "*.gitattributes"], # Ignore common problematic files
             **engine_kwargs
         )
-        self.engine = self.AsyncLLMEngine.from_engine_args(engine_args)
+        self.engine = AsyncLLMEngine.from_engine_args(engine_args)
         logging.info(f"AsyncVLLMWorker initialized with model: {model_name}")
         
     async def judge(
@@ -153,7 +146,7 @@ Answer yes or no, then give your reasoning.
         response_to_judge = "None" if response_to_judge is None else response_to_judge
         # Prioritize metadata's judge_prompt_template, then default
         # Note that if you want to use a custom judge_prompt_template, you may need to change the verdict extraction logic accordingly
-        current_judge_prompt = metadata.get("judge_prompt_template") or self.default_judge_prompt_template
+        current_judge_prompt = metadata.get("judge_prompt_template") or self.DEFAULT_JUDGE_PROMPT_TEMPLATE
         
         prompt = current_judge_prompt.format(
             question=question,
@@ -166,7 +159,7 @@ Answer yes or no, then give your reasoning.
         logging.info(f"response_to_judge: {response_to_judge}")
         logging.info(f"reference: {reference}")
         logging.info(f"criteria: {criteria}")
-        sampling_params = self.SamplingParams(**sampling_params_dict)
+        sampling_params = SamplingParams(**sampling_params_dict)
         
         results_generator = self.engine.generate(prompt, sampling_params, request_id)
         
