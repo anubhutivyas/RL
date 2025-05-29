@@ -90,6 +90,7 @@ Answer yes or no, then give your reasoning.
         from vllm.sampling_params import SamplingParams
         from huggingface_hub.constants import HUGGINGFACE_HUB_CACHE
         
+        self.SamplingParams = SamplingParams
         # Attempt to use HF_HOME from env, otherwise default to huggingface_hub's default cache
         # This ensures the worker tries to use the same cache path as the driver.
         hf_home_cache_path = os.environ.get("HF_HOME", HUGGINGFACE_HUB_CACHE)
@@ -156,11 +157,8 @@ Answer yes or no, then give your reasoning.
             criteria=criteria,
         )
         logging.info(f"Prompt: {prompt}")
-        logging.info(f"question: {question}")
-        logging.info(f"response_to_judge: {response_to_judge}")
-        logging.info(f"reference: {reference}")
-        logging.info(f"criteria: {criteria}")
-        sampling_params = SamplingParams(**sampling_params_dict)
+
+        sampling_params = self.SamplingParams(**sampling_params_dict)
         
         results_generator = self.engine.generate(prompt, sampling_params, request_id)
         
