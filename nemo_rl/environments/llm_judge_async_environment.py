@@ -48,6 +48,7 @@ class LLMJudgeEnvironmentMetadata(TypedDict): # Reusing from previous
     evaluation_criteria: Optional[str]
     judge_prompt_template: Optional[str] # Added for per-sample judge prompts
     extract_box: Optional[bool]
+    question: Optional[str] # Added to store the question in metadata
 
 @ray.remote
 class AsyncVLLMWorker:
@@ -299,19 +300,12 @@ class LLMJudgeAsyncEnvironment(EnvironmentInterface):
         """
         assistant_responses = []
         questions = []
-        for conversation in message_log_batch:
+        for conversation, single_metadata in zip(message_log_batch, metadata):
             assert len(conversation) == 2, "LLMJudgeAsyncEnvironment only supports single turn conversations for now"
-            # conversation[0]["content_in_oai_format"] has the format of:
-            # [
-            #     {"role": "system", "content": "You are a helpful assistant."} (optional),
-            #     {"role": "user", "content": "What is the capital of the moon?"},
-            # ]
-            assert isinstance(conversation[0]["content_in_oai_format"], list)
-            question = None
-            for l in conversation[0]["content_in_oai_format"]:
-                if l["role"] == "user":
-                    question = l["content"]
-            assert question is not None, "Question not found in conversation"
+            
+            # Read question from metadata instead of parsing conversation
+            question = single_metadata.get("question")
+            assert question is not None, "Question not found in metadata"
             questions.append(question)
             assistant_responses.append(conversation[-1]["content"])
 
