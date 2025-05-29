@@ -15,7 +15,7 @@ grpo:
 loss_fn:
   reference_policy_kl_penalty: 0.01
   ratio_clip_min: 0.2
-  ratio_clip_max: 0.8
+  ratio_clip_max: 0.28
   ratio_clip_c: null
   # (default off) loss formulation improvements (docs/guides/grpo.md#loss)
   use_on_policy_kl_approximation: false
@@ -159,5 +159,5 @@ logger:
     flush_interval: 10  # How often to flush GPU usage metrics to the loggers (in seconds)
 
 cluster:
-  gpus_per_node: 1
+  gpus_per_node: 8
   num_nodes: 1
