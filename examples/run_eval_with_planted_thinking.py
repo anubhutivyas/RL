@@ -44,7 +44,7 @@ from nemo_rl.data.interfaces import DatumSpec
 # import LLMMessageLogType
 from nemo_rl.data.llm_message_utils import LLMMessageLogType
 
-def llama_nemotron_math_data_processor(
+def my_math_data_processor(
     datum_dict: Dict[str, Any],
     task_data_spec: TaskDataSpec,
     tokenizer,
@@ -58,13 +58,24 @@ def llama_nemotron_math_data_processor(
 
     message_log: LLMMessageLogType = []
 
-    sys_message = {"role": "system", "content": task_data_spec.system_prompt}
-    problem = task_data_spec.prompt.format(problem)
-    user_message = {"role": "user", "content": problem}
-    # user prompt
-    assert task_data_spec.prompt is not None
+    if task_data_spec.system_prompt is not None:
+        sys_message = {"role": "system", "content": task_data_spec.system_prompt}
+    else:
+        sys_message = None
+
+    if task_data_spec.prompt is not None:
+        problem = task_data_spec.prompt.format(problem)
+        user_message = {"role": "user", "content": problem}
+    else:
+        user_message = None
     
-    message_list = [sys_message,user_message]
+    #assert task_data_spec.prompt is not None
+    
+    if sys_message is not None:
+        message_list = [sys_message,user_message]
+    else:
+        message_list = [user_message]
+
     message = tokenizer.apply_chat_template(
         message_list,
         tokenize=False,
@@ -147,7 +158,7 @@ def setup_data(tokenizer: AutoTokenizer, data_config, env_configs, skipped_probl
     math_task_spec = TaskDataSpec(
         task_name="math",
         prompt_file=data_config["prompt_file"],
-        system_prompt_file=data_config["system_prompt_file"],
+        system_prompt_file=data_config["system_prompt_file"]
     )
 
     # load dataset
@@ -185,9 +196,10 @@ def setup_data(tokenizer: AutoTokenizer, data_config, env_configs, skipped_probl
         raise ValueError(f"Invalid task type: {task_type}")
 
         
-    data_processor = llama_nemotron_math_data_processor
+    data_processor = my_math_data_processor
     if data_config.get("planted_thinking_prompt", "none") != "none":
-        data_processor = llama_nemotron_math_data_processor_with_planted_thinking(data_config["planted_thinking_prompt"], tokenizer)
+        assert False, "Not implemented"
+        #data_processor = llama_nemotron_math_data_processor_with_planted_thinking(data_config["planted_thinking_prompt"], tokenizer)
         
     dataset = AllTaskProcessedDataset(
         dataset=remapped_dataset,
@@ -281,9 +293,9 @@ def main():
         master_config,
     ) = setup(config, tokenizer, dataset)
 
-    print (f"config['data']['planted_thinking_prompt']: {config['data']['planted_thinking_prompt']}")
-    if config["data"].get("planted_thinking_prompt", "none") != "none":
-        print (f"Using planted thinking prompt {config['data']['planted_thinking_prompt']}")
+    #print (f"config['data']['planted_thinking_prompt']: {config['data']['planted_thinking_prompt']}")
+    #if config["data"].get("planted_thinking_prompt", "none") != "none":
+    #    print (f"Using planted thinking prompt {config['data']['planted_thinking_prompt']}")
 
     online_stats_len = OnlineStats()
     
@@ -310,6 +322,7 @@ def main():
                     "ground_truth": ground_truth,
                     "response_length": len(assistant_tokens),
                     "original_problem": original_problem,
+                    'idx': idx
                 }
                 if config["debug"]["output_generation"]:
                     record_to_write["generation"] = content

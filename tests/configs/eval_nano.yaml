@@ -5,7 +5,7 @@ generation:
   temperature: 0.6
   top_p: 0.95 # was 1 but doesn't compare with ido's
   top_k: -1 # disable
-  num_prompts_per_step: 64 # -1 means pass all prompts at once
+  num_prompts_per_step: 65 # -1 means pass all prompts at once
   model_name: "nvidia/Llama-3.1-Nemotron-Nano-8B-v1"
   stop_token_ids: null
   stop_strings: null

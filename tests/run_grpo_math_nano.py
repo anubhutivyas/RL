@@ -275,19 +275,29 @@ def setup_data(tokenizer: AutoTokenizer, data_config: DataConfig, env_configs):
         shrink_factor_for_incorrect_answer = env_configs['math']["L1_loss"]["shrink_factor_for_incorrect_answer"]    
         lower_bound_factor = env_configs['math']["L1_loss"]["lower_bound_factor"]
         upper_bound_factor = env_configs['math']["L1_loss"]["upper_bound_factor"]
-        penalty_factor = env_configs['math']["L1_loss"]["penalty_factor"]
+        penalty_factor_correct = env_configs['math']["L1_loss"]["penalty_factor_correct"]
+        penalty_factor_incorrect = env_configs['math']["L1_loss"]["penalty_factor_incorrect"]
         L1_metadata = {}
         with open(baseline_answer_length_path, "r") as f:
             for line in f:
                 record = json.loads(line)
-                if record["correctness"]["content"] == "Environment: correct":
-                    baseline_answer_length = record['response_length']
-                else:
-                    assert record["correctness"]["content"] == "Environment: incorrect"
-                    baseline_answer_length = record['response_length'] / shrink_factor_for_incorrect_answer
+                av_len_correct = record['av_len_correct']
+                av_len_incorrect = record['av_len_incorrect']
+                if av_len_correct < 0:
+                    av_len_correct = av_len_incorrect / shrink_factor_for_incorrect_answer
+                if av_len_incorrect < 0:
+                    av_len_incorrect = av_len_correct * shrink_factor_for_incorrect_answer
+                #if record["correctness"]["content"] == "Environment: correct":
+                #    baseline_answer_length = av_len_correct
+                #else:
+                #    assert record["correctness"]["content"] == "Environment: incorrect"
+                #    baseline_answer_length = record['response_length'] / shrink_factor_for_incorrect_answer
                 L1_metadata[record['original_problem']] = {
-                    "baseline_answer_length": baseline_answer_length,
-                    "penalty_factor": penalty_factor,
+                    #"baseline_answer_length": baseline_answer_length,
+                    "av_len_correct": av_len_correct,
+                    "av_len_incorrect": av_len_incorrect,
+                    "penalty_factor_correct": penalty_factor_correct,
+                    "penalty_factor_incorrect": penalty_factor_incorrect,
                     "lower_bound_factor": lower_bound_factor,
                     "upper_bound_factor": upper_bound_factor,
                 }

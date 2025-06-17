@@ -30,7 +30,8 @@ data:
   solution_key: "answer"
   planted_thinking_prompt : none #"<think>" #none #"<think>Thinking . . . . . . . . . . . . . . . . ."
   task_type: "math" # "math" or "mc"
-  
+  shuffle: true
+  shuffle_seed: 42
 env:
   math:
     num_workers: 8
