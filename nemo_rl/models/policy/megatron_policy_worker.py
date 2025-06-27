@@ -1367,46 +1367,52 @@ class MegatronPolicyWorker:
         from torch.multiprocessing.reductions import reduce_tensor
 
         # Create IPC handles for each parameter
+        # Pack tensors in gathered_hf_params into consolidated tensors by dtype
+        # First calculate total size needed for each dtype
+        type_to_total_size = defaultdict(lambda: 0)
+        tensor_metadata = dict()
         
-        # pack tensors in gathered_hf_params to a big tensor
-        type_to_packed_big_tensor_size = defaultdict(lambda : 0)
-        key_to_type_and_offset_and_size_in_big_tensor = []
         for key, tensor in gathered_hf_params.items():
-            key_to_type_and_offset_and_size_in_big_tensor.append(
-                (
-                    key,
-                    tensor.shape,
-                    tensor.dtype, 
-                    type_to_packed_big_tensor_size[tensor.dtype], 
-                    tensor.numel()
-                )
+            tensor_metadata[key] = (
+                tensor.shape,                       # shape of the tensor
+                tensor.dtype,                       # dtype of the tensor
+                type_to_total_size[tensor.dtype],   # offset of the tensor 
+                                                    # in packed buffer
+                tensor.numel()                      # size of the tensor
             )
-            type_to_packed_big_tensor_size[tensor.dtype] += tensor.numel()
-            
-        type_to_packed_big_tensor_size = {
-            k: torch.empty(v, device=tensor.device, dtype=k, requires_grad=False)
-            for k, v in type_to_packed_big_tensor_size.items()
+            type_to_total_size[tensor.dtype] += tensor.numel()
+
+        # Allocate consolidated tensors for each dtype
+        packed_tensors = {
+            dtype: torch.empty(
+                total_size,
+                device=next(iter(gathered_hf_params.values())).device,
+                dtype=dtype,
+                requires_grad=False
+            )
+            for dtype, total_size in type_to_total_size.items()
         }
-        for i, (key, tensor) in enumerate(gathered_hf_params.items()):
-            k, shape, dtype, offset, size = key_to_type_and_offset_and_size_in_big_tensor[i]
-            assert k == key
-            type_to_packed_big_tensor_size[dtype][offset:offset+size] = tensor.detach().view(-1)
 
-        all_handles = []
-        for dtype, tensor in type_to_packed_big_tensor_size.items():
-            handle = reduce_tensor(tensor.detach())
-            all_handles.append((dtype, handle))
+        # Copy tensors into consolidated buffers
+        for key, tensor in gathered_hf_params.items():
+            metadata = tensor_metadata[key]
+            _, dtype, offset, size = metadata
+            packed_tensors[dtype][offset:offset + size].copy_(
+                tensor.detach().view(-1)
+            )
 
-        # Store references to avoid premature garbage collection
+        # Create IPC handles for consolidated tensors
+        all_handles = [
+            (dtype, reduce_tensor(tensor.detach()))
+            for dtype, tensor in packed_tensors.items()
+        ]
 
-        self._held_gather_buffer = type_to_packed_big_tensor_size
-        # shapes = {}
-        # for key, tensor in gathered_hf_params.items():
-        #     shapes[key] = tensor.shape
-        
-        serielized = (all_handles, key_to_type_and_offset_and_size_in_big_tensor)
+        # Store reference to prevent garbage collection
+        self._held_gather_buffer = packed_tensors
 
-        return {device_uuid: serielized}
+        serialized = (all_handles, tensor_metadata)
+
+        return {device_uuid: serialized}
 
     def prepare_for_lp_inference(self):
         self.model = self.move_model(self.model, "cuda", move_grads=False)
