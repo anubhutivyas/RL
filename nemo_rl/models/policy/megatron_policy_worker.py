@@ -19,7 +19,7 @@ import warnings
 from collections import defaultdict
 from contextlib import AbstractContextManager, contextmanager, nullcontext
 from functools import partial
-from typing import Any, Iterator, Optional, TypeVar
+from typing import Any, Iterator, Optional, List, Tuple, TypeVar
 
 import ray
 import torch
@@ -107,6 +107,7 @@ from nemo_rl.models.megatron.converters.common import (
 )
 from nemo_rl.models.megatron.refit_utils import (
     gather_params,
+    get_global_key_from_local_key,
     get_tp_dim,
 )
 from nemo_rl.models.policy import PolicyConfig
@@ -205,13 +206,6 @@ def setup_megatron_model(
         optimizer = None
         scheduler = None
 
-    _update_model_config_funcs(
-        model,
-        cfg.model_config,
-        cfg.ddp_config,
-        optimizer,
-        align_grad_reduce=cfg.dist_config.align_grad_reduce,
-    )
     print("Model, optimizer, and learning rate scheduler built")
     torch.distributed.barrier()
 
@@ -641,6 +635,14 @@ class MegatronPolicyWorker:
 
             self.model = self.move_model(self.model, "cuda")
 
+        _update_model_config_funcs(
+            [self.model],
+            self.megatron_cfg.model_config,
+            self.megatron_cfg.ddp_config,
+            self.optimizer,
+            align_grad_reduce=self.megatron_cfg.dist_config.align_grad_reduce,
+        )
+
         from nemo.tron.tokenizers.tokenizer import build_tokenizer
 
         tokenizer_config = TokenizerConfig(
@@ -660,6 +662,12 @@ class MegatronPolicyWorker:
         self.dp_size = worker_sharding_annotations.get_axis_size("data_parallel")
         self._held_gather_buffer = None
         self.megatron_to_hf_converter = MegatronToHFConverter(hf_model_name, self.model)
+
+        # Create a map that maps any local parameter name to a list of global parameter names.
+        # This map is repeatedly used by parameter gatherring phase during refit of every step.
+        self.local_key_to_global_keys = self.get_local_key_to_global_keys(
+            state_dict_info=self.prepare_weights_for_ipc()[0]
+        )
 
     def configure_worker(self, num_gpus: int, bundle_indices: Optional[tuple] = None):
         USE_EXPANDABLE_SEGMENTS = False  # Disabling this right now as it seems to cause vLLM refit issues with Ampere
@@ -965,7 +973,9 @@ class MegatronPolicyWorker:
                 token_logprobs = torch.cat(
                     [torch.zeros_like(token_logprobs[:, :1]), token_logprobs], dim=1
                 )
-                return torch.tensor(0.0), {"logprobs": token_logprobs}
+                return torch.tensor(0.0, device=token_logprobs.device), {
+                    "logprobs": token_logprobs
+                }
 
             return output_tensor, collection_fn
 
@@ -1216,6 +1226,67 @@ class MegatronPolicyWorker:
         # Get device UUID using NVML
         return get_device_uuid(device_idx)
 
+    @torch.no_grad()
+    def get_local_key_to_global_keys(self, state_dict_info: List[Tuple[Any, int]]):
+        """Get the local key to global keys mapping."""
+        # Get parallel info
+        tp_group = parallel_state.get_tensor_model_parallel_group()
+        tp_world_size = torch.distributed.get_world_size(tp_group)
+
+        pp_group = parallel_state.get_pipeline_model_parallel_group()
+        pp_world_size = torch.distributed.get_world_size(pp_group)
+        pp_global_ranks = torch.distributed.get_process_group_ranks(group=pp_group)
+        pp_local_rank_id = parallel_state.get_pipeline_model_parallel_rank()
+
+        ep_group = parallel_state.get_expert_model_parallel_group()
+        ep_world_size = torch.distributed.get_world_size(ep_group)
+
+        # start calculating the global key
+        ep_pattern = re.compile(r"mlp\.experts.*\.weight\d*$")
+        state_dict = self.model.state_dict()
+        final_key_to_global_keys = {}
+
+        import time
+
+        time.time = lambda: 0.0  # Monkey patch time.time to return constant value
+        print = lambda *args, **kwargs: None
+        st = time.time()
+
+        for param_info, size in state_dict_info:
+            local_key, owner_pp_local_rank_id, _, _ = param_info
+
+            # Step 1: create global key from local key
+            # if: for if a parameter is sharded along PP or EP;
+            # else: not sharded (like embedding)
+            pp_gathered_objs = [None]
+            if local_key in state_dict and owner_pp_local_rank_id == pp_local_rank_id:
+                pp_gathered_objs[0] = get_global_key_from_local_key(local_key, self.model.config)
+            
+            # Step 2: gather global keys from ranks in PP group
+            src_global_rank = pp_global_ranks[owner_pp_local_rank_id]
+            torch.distributed.broadcast_object_list(pp_gathered_objs, src=src_global_rank, group=pp_group)
+
+            # Step 3: gather global keys from ranks in EP group
+            if ep_pattern.search(local_key):
+                ep_gathered_objs = [None] * ep_world_size
+                torch.distributed.all_gather_object(
+                    ep_gathered_objs, pp_gathered_objs, group=ep_group
+                )
+                flat_gathered_objs = [x for y in ep_gathered_objs for x in y]
+            else:
+                flat_gathered_objs = pp_gathered_objs
+            
+            final_key_to_global_keys[(local_key, owner_pp_local_rank_id)] = flat_gathered_objs
+
+        et = time.time()
+        if (
+            parallel_state.get_tensor_model_parallel_rank() == 0
+            and parallel_state.get_pipeline_model_parallel_rank() == 0
+            and parallel_state.get_expert_model_parallel_rank() == 0
+        ):
+            print("[Rank 0] ", f"Time taken to get local key to global keys: {et - st}")
+        return final_key_to_global_keys
+
     def prepare_weights_for_ipc(self) -> tuple[list[tuple[str, int]], float]:
         """Prepare Megatron model weights for IPC transfer to vLLM.
 
@@ -1234,9 +1305,14 @@ class MegatronPolicyWorker:
         tp_world_size = torch.distributed.get_world_size(tp_group)
         tp_group_rank_ids = get_process_group_ranks(tp_group)
 
+        etp_group = parallel_state.get_expert_tensor_parallel_group()
+        etp_world_size = torch.distributed.get_world_size(etp_group)
+        etp_group_rank_ids = get_all_rank_ids_in_group(etp_group)
+
         pp_group = parallel_state.get_pipeline_model_parallel_group()
         pp_world_size = torch.distributed.get_world_size(pp_group)
         pp_group_rank_ids = get_process_group_ranks(pp_group)
+        pp_local_rank_id = parallel_state.get_pipeline_model_parallel_rank()
 
         ep_group = parallel_state.get_expert_model_parallel_group()
         ep_world_size = torch.distributed.get_world_size(ep_group)
@@ -1256,11 +1332,16 @@ class MegatronPolicyWorker:
             if "_extra_state" in name:
                 continue
 
+            use_etp = True if ep_pattern.search(name) else False
+            if use_etp:
+                tensor_mp_rank_ids = etp_group_rank_ids
+            else:
+                tensor_mp_rank_ids = tp_group_rank_ids
+
             shape = list(param.shape)
             tp_dim = get_tp_dim(self.model, name, named_modules_dict)
             if tp_dim is not None:
-                # TODO: take care of expert_tensor_parallel_size which may be different from tensor_model_parallel_size
-                tp_rank_ids = tuple(sorted(tp_group_rank_ids))
+                tp_rank_ids = tuple(sorted(tensor_mp_rank_ids))
                 shape[tp_dim] *= len(tp_rank_ids)
             else:
                 tp_rank_ids = (torch.distributed.get_rank(),)
@@ -1283,8 +1364,7 @@ class MegatronPolicyWorker:
             size_in_bytes = (
                 param.element_size()
                 * param.numel()
-                * len(tp_rank_ids)
-                * len(pp_rank_ids)
+                * len(tensor_mp_rank_ids)
                 * len(ep_rank_ids)
                 * scale
             )
@@ -1292,6 +1372,7 @@ class MegatronPolicyWorker:
                 (
                     (
                         name,
+                        pp_local_rank_id,
                         tuple(shape),
                         param.dtype,
                     ),
@@ -1340,8 +1421,9 @@ class MegatronPolicyWorker:
         device_idx = torch.cuda.current_device()
         ## Get device free memory using NVML
         total_available_bytes = get_free_memory_bytes(device_idx)
-        ## Use 80% of the free memory for safety
-        total_available_bytes *= 0.8
+        # TODO: setting to low value (10%) since
+        # more buckets seems to have better perf
+        total_available_bytes *= 0.1
 
         return param_info, total_available_bytes
 
@@ -1354,10 +1436,16 @@ class MegatronPolicyWorker:
         Returns:
             Dict mapping device UUID to list of (mapped_key, handle) tuples
         """
+        if self._held_gather_buffer is not None:
+            del self._held_gather_buffer
+            self._held_gather_buffer = None
+
         gathered_megatron_params = gather_params(
             self.model,
             keys,
+            key_to_global_keys=self.local_key_to_global_keys,
         )
+
         gathered_hf_params = self.megatron_to_hf_converter.convert(
             gathered_megatron_params, self.model.config
         )
