@@ -27,6 +27,7 @@ from megatron.core.tensor_parallel.layers import (
     RowParallelLinear,
     VocabParallelEmbedding,
 )
+from megatron.core.ssm.mamba_mixer import ExtendedRMSNorm
 
 from nemo_rl.models.megatron.converters.common import get_global_key_from_local_key
 
@@ -34,8 +35,13 @@ from nemo_rl.models.megatron.converters.common import get_global_key_from_local_
 def get_tp_dim(model, param_name, named_modules_dict):
     # pass in named_modules_dict so we can get it ahead of time instead
     # of once for each param
+
+    # Catches weight/bias
     pattern = re.compile(r"\.(?:weight|bias)\d*$")
-    if not pattern.search(param_name):
+    # Catches nn.Parameters part of the mixer layer
+    mixer_param_pattern = re.compile(r"\.mixer.(?:D|dt_bias|A_log)$")
+
+    if not pattern.search(param_name) and not mixer_param_pattern.search(param_name):
         return None
 
     prefix = ""
@@ -70,6 +76,9 @@ def get_tp_dim(model, param_name, named_modules_dict):
         module, (RowParallelLinear, TERowParallelGroupedLinear, TERowParallelLinear)
     ):
         return 1
+    elif isinstance(module, (torch.nn.Conv1d, ExtendedRMSNorm)) or mixer_param_pattern.search(param_name):
+        # Used in mamba_mixer.py
+        return 0
     else:
         return None
 

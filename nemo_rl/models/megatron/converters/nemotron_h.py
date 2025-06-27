@@ -12,19 +12,158 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import torch
 from nemo.lightning import io
 from nemo.lightning.io.state import TransformFns
+from megatron.core import parallel_state
 
+
+
+def concat_tp_dim_0(ctx: io.TransformCTX, param: torch.Tensor):
+    """Concat tensor"""
+    tp_group = parallel_state.get_tensor_model_parallel_group()
+    tp_size = torch.distributed.get_world_size(tp_group) 
+    return torch.cat(param.chunk(tp_size), dim=0)
+
+
+@io.state_transform(
+    source_key="decoder.layers.*.mixer.conv1d.weight",
+    target_key="backbone.layers.*.mixer.conv1d.weight",
+)
+def correct_xBC_tp_order(ctx: io.TransformCTX, param: torch.Tensor):
+    """Correct tensor parallel order for xBC parameters (conv1d weight/bias).
+    
+    This function reorders the tensor parallel chunks to match the expected format
+    where x, B, and C components are interleaved across tensor parallel ranks.
+    """
+    tp_group = parallel_state.get_tensor_model_parallel_group()
+    tp_size = torch.distributed.get_world_size(tp_group)
+
+    # Get configuration from context
+    megatron_config = ctx.source.config
+    hidden_size = megatron_config.hidden_size
+    max_input_len = 1024 # couldn't use megatron_config.seq_length=8192  # Using seq_length as max_input_len
+    
+    # Calculate local sizes for each component
+    x_local_size = 2 * hidden_size // tp_size
+    B_local_size = max_input_len // tp_size
+    C_local_size = max_input_len // tp_size
+
+    # Split parameter into tensor parallel chunks
+    param_chunks = param.chunk(tp_size)
+
+    # Reorder chunks to interleave x, B, C components
+    correct_chunks = []
+    # Add x components from all ranks
+    correct_chunks.extend(param_chunks[tp][:x_local_size] for tp in range(tp_size))
+    # Add B components from all ranks
+    correct_chunks.extend(param_chunks[tp][x_local_size:x_local_size+B_local_size] for tp in range(tp_size))
+    # Add C components from all ranks
+    correct_chunks.extend(param_chunks[tp][x_local_size+B_local_size:x_local_size+B_local_size+C_local_size] for tp in range(tp_size))
+    
+    # Concatenate all chunks
+    correct_param = torch.cat(correct_chunks, dim=0)
+    return correct_param
+
+@io.state_transform(
+    source_key="decoder.layers.*.mixer.in_proj.weight",
+    target_key="backbone.layers.*.mixer.in_proj.weight",
+)
+def correct_zxBCdt_tp_order(ctx: io.TransformCTX, param: torch.Tensor):
+    """Correct tensor parallel order for zxBCdt parameters (in_proj weight).
+    
+    This function reorders the tensor parallel chunks to match the expected format
+    where z, x, B, C, and dt components are interleaved across tensor parallel ranks.
+    """
+    tp_group = parallel_state.get_tensor_model_parallel_group()
+    tp_size = torch.distributed.get_world_size(tp_group)
+
+    # Get configuration from context
+    megatron_config = ctx.source.config
+    hidden_size = megatron_config.hidden_size
+    max_input_len = 1024 # couldn't use megatron_config.seq_length=8192  # Using seq_length as max_input_len
+    
+    # Calculate local sizes for each component
+    z_local_size = 2 * hidden_size // tp_size
+    x_local_size = 2 * hidden_size // tp_size
+    B_local_size = max_input_len // tp_size
+    C_local_size = max_input_len // tp_size
+    dt_local_size = max_input_len // tp_size
+
+    # Split parameter into tensor parallel chunks
+    param_chunks = param.chunk(tp_size)
+
+    # Reorder chunks to interleave z, x, B, C, dt components
+    correct_chunks = []
+    # Add z components from all ranks
+    correct_chunks.extend(param_chunks[tp][:z_local_size] for tp in range(tp_size))
+    # Add x components from all ranks
+    correct_chunks.extend(param_chunks[tp][z_local_size:z_local_size+x_local_size] for tp in range(tp_size))
+    # Add B components from all ranks
+    correct_chunks.extend(param_chunks[tp][z_local_size+x_local_size:z_local_size+x_local_size+B_local_size] for tp in range(tp_size))
+    # Add C components from all ranks
+    correct_chunks.extend(param_chunks[tp][z_local_size+x_local_size+B_local_size:z_local_size+x_local_size+B_local_size+C_local_size] for tp in range(tp_size))
+    # Add dt components from all ranks
+    correct_chunks.extend(param_chunks[tp][z_local_size+x_local_size+B_local_size+C_local_size:z_local_size+x_local_size+B_local_size+C_local_size+dt_local_size] for tp in range(tp_size))
+    
+    # Concatenate all chunks
+    correct_param = torch.cat(correct_chunks, dim=0)
+    return correct_param
+
+@io.state_transform(
+    source_key="decoder.layers.*.mixer.conv1d.bias",
+    target_key="backbone.layers.*.mixer.conv1d.bias",
+)
+def correct_xBC_tp_order_bias(ctx: io.TransformCTX, param: torch.Tensor):
+    """Correct tensor parallel order for xBC parameters (conv1d bias).
+    
+    This function reorders the tensor parallel chunks to match the expected format
+    where x, B, and C components are interleaved across tensor parallel ranks.
+    """
+    tp_group = parallel_state.get_tensor_model_parallel_group()
+    tp_size = torch.distributed.get_world_size(tp_group)
+
+    # Get configuration from context
+    megatron_config = ctx.source.config
+    hidden_size = megatron_config.hidden_size
+    max_input_len = 1024 # couldn't use megatron_config.seq_length=8192  # Using seq_length as max_input_len
+    
+    # Calculate local sizes for each component
+    x_local_size = 2 * hidden_size // tp_size
+    B_local_size = max_input_len // tp_size
+    C_local_size = max_input_len // tp_size
+
+    # Split parameter into tensor parallel chunks
+    param_chunks = param.chunk(tp_size)
+
+    # Reorder chunks to interleave x, B, C components
+    correct_chunks = []
+    # Add x components from all ranks
+    correct_chunks.extend(param_chunks[tp][:x_local_size] for tp in range(tp_size))
+    # Add B components from all ranks
+    correct_chunks.extend(param_chunks[tp][x_local_size:x_local_size+B_local_size] for tp in range(tp_size))
+    # Add C components from all ranks
+    correct_chunks.extend(param_chunks[tp][x_local_size+B_local_size:x_local_size+B_local_size+C_local_size] for tp in range(tp_size))
+    
+    # Concatenate all chunks
+    correct_param = torch.cat(correct_chunks, dim=0)
+    return correct_param
 
 def get_export_mapping(source):
     mapping = {
+        # TODO: name='backbone.layers.28.mixer.A_log' refit=torch.Size([16]) gt=torch.Size([128])
         'decoder.layers.*.mixer.A_log': 'backbone.layers.*.mixer.A_log',
+        # TODO: TP on first dim  setattr(self.D, 'tensor_model_parallel', True)
         'decoder.layers.*.mixer.D': 'backbone.layers.*.mixer.D',
-        'decoder.layers.*.mixer.conv1d.weight': 'backbone.layers.*.mixer.conv1d.weight',
-        'decoder.layers.*.mixer.conv1d.bias': 'backbone.layers.*.mixer.conv1d.bias',
-        'decoder.layers.*.mixer.in_proj.weight': 'backbone.layers.*.mixer.in_proj.weight',
+        # TODO: name='backbone.layers.46.mixer.conv1d.weight' refit=torch.Size([1280, 1, 4]) gt=torch.Size([10240, 1, 4])
+        #'decoder.layers.*.mixer.conv1d.weight': 'backbone.layers.*.mixer.conv1d.weight',
+        # TODO: name='backbone.layers.4.mixer.conv1d.bias' refit=torch.Size([1280]) gt=torch.Size([10240])
+        #'decoder.layers.*.mixer.conv1d.bias': 'backbone.layers.*.mixer.conv1d.bias',
+        #'decoder.layers.*.mixer.in_proj.weight': 'backbone.layers.*.mixer.in_proj.weight',
+        # TODO: TP on first dim  setattr(self.D, 'tensor_model_parallel', True)
         'decoder.layers.*.mixer.dt_bias': 'backbone.layers.*.mixer.dt_bias',
         'decoder.layers.*.mixer.out_proj.weight': 'backbone.layers.*.mixer.out_proj.weight',
+        # TODO name='backbone.layers.48.mixer.norm.weight' refit=torch.Size([1024]) gt=torch.Size([8192])
         'decoder.layers.*.mixer.norm.weight': 'backbone.layers.*.mixer.norm.weight',
         'decoder.layers.*.mlp.linear_fc1.weight': 'backbone.layers.*.mixer.up_proj.weight',
         'decoder.layers.*.mlp.linear_fc2.weight': 'backbone.layers.*.mixer.down_proj.weight',
@@ -64,6 +203,10 @@ def get_export_transforms(hf_config):
             target_key="backbone.embeddings.weight",
             fn=TransformFns.prune_padding,
         ),
+        # Tensor parallel correction transforms for Nemotron-H
+        correct_xBC_tp_order,
+        correct_xBC_tp_order_bias,
+        correct_zxBCdt_tp_order,
     ]
 
     if not hf_config.tie_word_embeddings:

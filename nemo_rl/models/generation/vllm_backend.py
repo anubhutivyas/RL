@@ -77,7 +77,7 @@ class VllmInternalWorkerExtension:
             return True
         except Exception as e:
             print(
-                f"Error in VllmInternalWorkerExtension.update_weights_from_ipc_handles: {e}"
+                f"Error in VllmInternalWorkerExtension.update_weights_from_ipc_handles while processing {[name for name, _ in ipc_handles[self.report_device_id()]]}: {e}"
             )
             return False
 

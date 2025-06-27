@@ -17,7 +17,7 @@ policy:
   train_micro_batch_size: 1
   generation_batch_size: 32 # Only used when generating using HF backend
   logprob_batch_size: 4
-  max_total_sequence_length: 4096
+  max_total_sequence_length: 8192
   precision: "bfloat16"
   fsdp_offload_enabled: false
   activation_checkpointing_enabled: false
@@ -34,7 +34,7 @@ policy:
     enabled: true
     empty_unused_memory_level: 0
     converter_type: "NemotronHForCausalLM"
-    tensor_model_parallel_size: 1
+    tensor_model_parallel_size: 8
     pipeline_model_parallel_size: 1
     context_parallel_size: 1
     pipeline_dtype: ${policy.precision}
@@ -69,8 +69,25 @@ policy:
     stop_strings: null
     vllm_cfg:
       tensor_parallel_size: 1
-      gpu_memory_utilization: 0.95
+      gpu_memory_utilization: 0.8
       max_model_len: ${policy.max_total_sequence_length}
+      # NM-H does not support prefix caching on vllm
+      enable_prefix_caching: false
+
+logger:
+  log_dir: "logs"  # Base directory for all logs
+  num_val_samples_to_print: 0 # Number of validation samples to pretty print on terminal
+  wandb_enabled: true
+  tensorboard_enabled: false
+  monitor_gpus: false  # If true, will monitor GPU usage and log to wandb and/or tensorboard
+  wandb:
+    project: "grpo-dev"
+    name: "tk_megatron_nm58B"
+  tensorboard: {}
+  gpu_monitoring:
+    collection_interval: 10  # How often to collect GPU usage metrics (in seconds)
+    flush_interval: 10  # How often to flush GPU usage metrics to the loggers (in seconds)
+
 
 cluster:
   gpus_per_node: 8
