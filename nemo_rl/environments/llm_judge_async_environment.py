@@ -41,6 +41,7 @@ class LLMJudgeAsyncConfig(TypedDict):
     max_tokens: Optional[int]
     stop: Optional[List[str]] # Note: vLLM's AsyncEngine uses 'stop'
     max_concurrency: Optional[int] # Maximum concurrent step calls for the environment actor
+    reasoning_split_word: Optional[str] # Configurable split word for response processing (default: "</think>")
     # Any other vllm.SamplingParams can be added here
 
 class LLMJudgeEnvironmentMetadata(TypedDict): # Reusing from previous
@@ -81,6 +82,7 @@ Answer yes or no, then give your reasoning.
         gpu_memory_utilization: float = 0.85,
         max_model_len: Optional[int] = None,
         disable_log_stats: bool = True, # Reduce verbose VLLM logging
+        reasoning_split_word: Optional[str] = None, # Configurable split word for response processing
         **engine_kwargs, # Allow passing other EngineArgs
     ):
         # Imports moved here to be within the Ray actor's context,
@@ -116,6 +118,7 @@ Answer yes or no, then give your reasoning.
             **engine_kwargs
         )
         self.engine = AsyncLLMEngine.from_engine_args(engine_args)
+        self.reasoning_split_word = reasoning_split_word  # Store as-is, could be None
         logging.info(f"AsyncVLLMWorker initialized with model: {model_name}")
         
     async def judge(
@@ -143,7 +146,9 @@ Answer yes or no, then give your reasoning.
         criteria = metadata.get("evaluation_criteria", "")
         extract_box = metadata.get("extract_box", False)
 
-        response_to_judge = response_to_judge.split("</think>")[-1].strip()
+        # Only split if reasoning_split_word is provided
+        if self.reasoning_split_word:
+            response_to_judge = response_to_judge.split(self.reasoning_split_word)[-1].strip()
         response_to_judge = extract_answer_from_box(response_to_judge) if extract_box else response_to_judge
         response_to_judge = "None" if response_to_judge is None else response_to_judge
         # Prioritize metadata's judge_prompt_template, then default
@@ -267,6 +272,7 @@ class LLMJudgeAsyncEnvironment(EnvironmentInterface):
                 tensor_parallel_size=tensor_parallel_size,
                 gpu_memory_utilization=cfg.get("gpu_memory_utilization", 0.85),
                 max_model_len=cfg.get("max_model_len"),
+                reasoning_split_word=cfg.get("reasoning_split_word"),
                 # Pass any other engine args from cfg if needed
             )
             self.workers.append(worker)
