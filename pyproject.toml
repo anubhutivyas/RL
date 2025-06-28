@@ -22,6 +22,7 @@ license = {text = "Apache 2.0"}
 dependencies = [
     "setuptools",
     "torch==2.7.0",
+    "flash-attn==2.7.3",
     "colored==2.2.3",
     "ray[default]==2.46.0",
     "transformers>=4.51.0",
@@ -76,6 +77,8 @@ build = [
     "hatchling",
     # Build requirement for mcore
     "pybind11",
+    # Build requirement for flash-attn
+    "psutil",
 ]
 docs = [
     "sphinx",
@@ -116,7 +119,7 @@ members = [
 
 [tool.uv]
 # Currently, TE must be built with no build-isolation b/c it requires torch
-no-build-isolation-package = ["transformer-engine-torch", "transformer-engine", "mamba-ssm", "causal-conv1d"]
+no-build-isolation-package = ["transformer-engine-torch", "transformer-engine", "flash-attn", "megatron-core", "mamba-ssm", "causal-conv1d"]
 # Always apply the build group since dependencies like TE/mcore/nemo-run require build dependencies
 # and this lets us assume they are implicitly installed with a simply `uv sync`. Ideally, we'd
 # avoid including these in the default dependency set, but for now it's required.
