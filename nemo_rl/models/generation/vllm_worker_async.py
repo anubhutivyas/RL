@@ -67,211 +67,139 @@ class VllmAsyncGenerationWorker(BaseVllmGenerationWorker):
         Yields:
             Tuple of (original_index, BatchedDataDict conforming to GenerationOutputSpec for the single sequence)
         """
-        # Handle empty input case
-        if len(data["input_ids"]) == 0:
-            return
-
-        verify_right_padding(data, pad_value=self.cfg["pad_token_id"])
-
-        input_ids_batch = data["input_ids"]
-        input_lengths_batch = data["input_lengths"]
-        batch_size = input_ids_batch.shape[0]
-
         # Ensure generate_async only receives single samples (batch_size = 1)
+        batch_size = data["input_ids"].shape[0]
         assert batch_size == 1, (
             f"generate_async is restricted to handle only single samples, "
             f"but received batch_size={batch_size}. Please handle batching outside this method."
         )
 
-        batch_specific_stop_strings_list = data.get(
-            "stop_strings", [[] for _ in range(batch_size)]
-        )
+        # Verify inputs have correct padding
+        verify_right_padding(data, pad_value=self.cfg["pad_token_id"])
 
-        # Create tasks for each sample in the batch
-        async def process_single_sample(sample_idx):
-            """Process a single sample and return the result."""
-            current_input_actual_length = input_lengths_batch[sample_idx].item()
-            prompt_token_ids_list = (
-                input_ids_batch[sample_idx, :current_input_actual_length].tolist()
-                if current_input_actual_length > 0
-                else []
-            )
-            prompt = {"prompt_token_ids": prompt_token_ids_list}
+        # Directly get single item from batch (batch_size = 1)
+        input_lengths = data["input_lengths"][0].item()
+        input_ids = data["input_ids"][0][:input_lengths]  # remove padding if exists
+        # stop strings
+        specific_stop_strings = data.get("stop_strings", [[]])[0]
+        stop_strings = self._merge_stop_strings(specific_stop_strings)
+        # max new tokens
+        remaining_ctx = self.cfg["vllm_cfg"]["max_model_len"] - input_lengths
+        allowed_new_tokens = max(0, min(self.cfg["max_new_tokens"], remaining_ctx))
 
-            per_sample_stop_strings = None
-            if batch_specific_stop_strings_list and sample_idx < len(
-                batch_specific_stop_strings_list
-            ):
-                per_sample_stop_strings = batch_specific_stop_strings_list[sample_idx]
+        # Handle case where no tokens can be generated due to length constraints
+        if allowed_new_tokens == 0:
+            # Create output tensors with just the input (no generated tokens)
+            output_ids = input_ids.unsqueeze(0)
 
-            final_stop_strings_for_sample = self._merge_stop_strings(
-                [per_sample_stop_strings] if per_sample_stop_strings else None
-            )
-
-            remaining_ctx = (
-                self.cfg["vllm_cfg"]["max_model_len"] - current_input_actual_length
-            )
-            allowed_new_tokens = max(0, min(self.cfg["max_new_tokens"], remaining_ctx))
-
-            # Handle case where no tokens can be generated due to length constraints
-            if allowed_new_tokens == 0:
-                # Access the input data directly from the function parameters
-                input_ids_single_row = input_ids_batch[sample_idx]
-
-                # Create output tensors with just the input (no generated tokens)
-                output_ids_single_item_batched = input_ids_single_row[
-                    :current_input_actual_length
-                ].unsqueeze(0)
-
-                logprobs_single_item = torch.zeros(
-                    (1, current_input_actual_length),
-                    dtype=torch.float32,
-                    device=input_ids_single_row.device,
-                )
-
-                generation_lengths_tensor = torch.tensor(
-                    [0], dtype=torch.long, device=input_ids_single_row.device
-                )
-
-                unpadded_sequence_lengths_tensor = torch.tensor(
-                    [current_input_actual_length],
-                    dtype=torch.long,
-                    device=input_ids_single_row.device,
-                )
-
-                result_batch = BatchedDataDict[GenerationOutputSpec](
-                    {
-                        "output_ids": output_ids_single_item_batched,
-                        "logprobs": logprobs_single_item,
-                        "generation_lengths": generation_lengths_tensor,
-                        "unpadded_sequence_lengths": unpadded_sequence_lengths_tensor,
-                    }
-                )
-
-                return (sample_idx, result_batch)
-
-            sampling_params_for_request = self._build_sampling_params(
-                greedy=greedy,
-                stop_strings=final_stop_strings_for_sample,
-                max_new_tokens=allowed_new_tokens,
-            )
-
-            request_id = str(uuid.uuid4())
-
-            # Generate using vLLM async engine
-            vllm_request_generator = self.llm.generate(
-                prompt=prompt,
-                sampling_params=sampling_params_for_request,
-                request_id=request_id,
-            )
-
-            # Get the final result from the generator
-            final_request_output = None
-            async for req_output in vllm_request_generator:
-                final_request_output = req_output
-
-            if final_request_output is None:
-                raise RuntimeError(f"No output received for request {request_id}")
-
-            # Process the output
-            generation_details = final_request_output.outputs[0]
-            generated_token_ids = list(generation_details.token_ids)
-            num_generated_tokens = len(generated_token_ids)
-
-            original_input_ids_single_row = input_ids_batch[sample_idx]
-            final_output_tensor_len = current_input_actual_length + num_generated_tokens
-
-            # Create output_ids tensor for this single item
-            output_ids_single_item = torch.full(
-                (final_output_tensor_len,),
-                self.cfg["pad_token_id"],
-                dtype=original_input_ids_single_row.dtype,
-                device=original_input_ids_single_row.device,
-            )
-            # Copy original input (up to its actual length)
-            output_ids_single_item[:current_input_actual_length] = (
-                original_input_ids_single_row[:current_input_actual_length]
-            )
-            # Add generated tokens after the actual input
-            output_ids_single_item[
-                current_input_actual_length : current_input_actual_length
-                + num_generated_tokens
-            ] = torch.tensor(
-                generated_token_ids,
-                dtype=original_input_ids_single_row.dtype,
-                device=original_input_ids_single_row.device,
-            )
-
-            # Reshape to (1, seq_len) for BatchedDataDict
-            output_ids_single_item_batched = output_ids_single_item.unsqueeze(0)
-
-            # Create logprobs tensor for this single item
-            logprobs_single_item = torch.zeros(
-                (1, final_output_tensor_len),
+            logprobs = torch.zeros(
+                (1, input_lengths),
                 dtype=torch.float32,
-                device=original_input_ids_single_row.device,
+                device=input_ids.device,
             )
-            if hasattr(generation_details, "logprobs") and generation_details.logprobs:
-                for idx, logprob_dict_per_token in enumerate(
-                    generation_details.logprobs
-                ):
-                    if logprob_dict_per_token and idx < len(generated_token_ids):
-                        token_id_at_idx = generated_token_ids[idx]
-                        if token_id_at_idx in logprob_dict_per_token:
-                            logprob_value = logprob_dict_per_token[
-                                token_id_at_idx
-                            ].logprob
-                            position_in_output_tensor = (
-                                current_input_actual_length + idx
-                            )
-                            if position_in_output_tensor < final_output_tensor_len:
-                                logprobs_single_item[0, position_in_output_tensor] = (
-                                    logprob_value
-                                )
 
-            # Generation lengths
             generation_lengths_tensor = torch.tensor(
-                [num_generated_tokens],
-                dtype=torch.long,
-                device=original_input_ids_single_row.device,
+                [0], dtype=torch.long, device=input_ids.device
             )
 
-            # Unpadded sequence lengths (actual_input + actual_generated)
-            unpadded_total_length = current_input_actual_length + num_generated_tokens
             unpadded_sequence_lengths_tensor = torch.tensor(
-                [unpadded_total_length],
+                [input_lengths],
                 dtype=torch.long,
-                device=original_input_ids_single_row.device,
+                device=input_ids.device,
             )
 
             result_batch = BatchedDataDict[GenerationOutputSpec](
                 {
-                    "output_ids": output_ids_single_item_batched,
-                    "logprobs": logprobs_single_item,
+                    "output_ids": output_ids,
+                    "logprobs": logprobs,
                     "generation_lengths": generation_lengths_tensor,
                     "unpadded_sequence_lengths": unpadded_sequence_lengths_tensor,
                 }
             )
 
-            return (sample_idx, result_batch)
+            return result_batch
 
-        # Create tasks for all samples and yield results as they complete
-        sample_tasks = [
-            asyncio.create_task(process_single_sample(i)) for i in range(batch_size)
-        ]
+        # Convert inputs to vLLM format
+        prompt_token_ids_list = input_ids.tolist()
+        prompt = {"prompt_token_ids": prompt_token_ids_list}
 
-        # Yield results as they become available
-        for completed_task in asyncio.as_completed(sample_tasks):
-            try:
-                result = await completed_task
-                yield result
-            except Exception as e:
-                # Cancel remaining tasks
-                for task in sample_tasks:
-                    if not task.done():
-                        task.cancel()
-                await asyncio.gather(*sample_tasks, return_exceptions=True)
-                raise e
+        sampling_params_for_request = self._build_sampling_params(
+            greedy=greedy,
+            stop_strings=stop_strings,
+            max_new_tokens=allowed_new_tokens,
+        )
+
+        # Generate using vLLM async engine
+        request_id = str(uuid.uuid4())
+        vllm_request_generator = self.llm.generate(
+            prompt=prompt,
+            sampling_params=sampling_params_for_request,
+            request_id=request_id,
+        )
+
+        # Get the final result from the generator
+        final_request_output = None
+        async for req_output in vllm_request_generator:
+            final_request_output = req_output
+
+        if final_request_output is None:
+            raise RuntimeError(f"No output received for request {request_id}")
+
+        # Process the output
+        generation_details = final_request_output.outputs[0]
+        generated_token_ids = list(generation_details.token_ids)
+        num_generated_tokens = len(generated_token_ids)
+        final_output_tensor_len = input_lengths + num_generated_tokens
+
+        # Concat output_ids and reshape to (1, seq_len) for BatchedDataDict
+        generate_token_ids_tensor = torch.tensor(
+            generated_token_ids,
+            dtype=input_ids.dtype,
+            device=input_ids.device,
+        )
+        output_ids = torch.cat([input_ids, generate_token_ids_tensor], dim=0)
+        output_ids = output_ids.unsqueeze(0)
+
+        # Create logprobs tensor for this single item
+        logprobs = torch.zeros(
+            (1, final_output_tensor_len),
+            dtype=torch.float32,
+            device=input_ids.device,
+        )
+        if hasattr(generation_details, "logprobs") and generation_details.logprobs:
+            for idx, logprob_dict_per_token in enumerate(generation_details.logprobs):
+                if logprob_dict_per_token and idx < len(generated_token_ids):
+                    token_id_at_idx = generated_token_ids[idx]
+                    if token_id_at_idx in logprob_dict_per_token:
+                        logprob_value = logprob_dict_per_token[token_id_at_idx].logprob
+                        position_in_output_tensor = input_lengths + idx
+                        if position_in_output_tensor < final_output_tensor_len:
+                            logprobs[0, position_in_output_tensor] = logprob_value
+
+        # Generation lengths
+        generation_lengths_tensor = torch.tensor(
+            [num_generated_tokens],
+            dtype=torch.long,
+            device=input_ids.device,
+        )
+
+        # Unpadded sequence lengths (actual_input + actual_generated)
+        unpadded_sequence_lengths_tensor = torch.tensor(
+            [final_output_tensor_len],
+            dtype=torch.long,
+            device=input_ids.device,
+        )
+
+        result_batch = BatchedDataDict[GenerationOutputSpec](
+            {
+                "output_ids": output_ids,
+                "logprobs": logprobs,
+                "generation_lengths": generation_lengths_tensor,
+                "unpadded_sequence_lengths": unpadded_sequence_lengths_tensor,
+            }
+        )
+
+        return result_batch
 
     async def generate_text(
         self, data: BatchedDataDict[GenerationDatumSpec], greedy: bool = False

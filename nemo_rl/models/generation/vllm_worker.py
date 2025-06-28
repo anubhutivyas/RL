@@ -299,9 +299,6 @@ class BaseVllmGenerationWorker:
 
         self._create_engine(llm_kwargs)
 
-    def llm(self):
-        return self.llm
-
     def is_alive(self):
         """Check if the worker is alive."""
         return True
@@ -412,7 +409,7 @@ class VllmGenerationWorker(BaseVllmGenerationWorker):
             stop_strings=stop_strings,
         )
 
-        # verify inputs have correct padding
+        # Verify inputs have correct padding
         verify_right_padding(data, pad_value=self.cfg["pad_token_id"])
 
         # Convert inputs to vLLM format

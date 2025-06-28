@@ -12,8 +12,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import asyncio
-import os
 from collections import defaultdict
 from typing import (
     Any,
@@ -310,11 +308,9 @@ class VllmGeneration(GenerationInterface):
         self, data: BatchedDataDict[GenerationDatumSpec], greedy: bool = False
     ) -> BatchedDataDict[GenerationOutputSpec]:
         """Generate a batch of data using vLLM."""
-        if self.cfg["vllm_cfg"]["async_engine"]:
-            raise RuntimeError(
-                "generate can only be used when async_engine is not enabled in VllmConfig."
-            )
-
+        assert not self.cfg["vllm_cfg"]["async_engine"], (
+            "generate can only be used when async_engine is not enabled in VllmConfig."
+        )
         assert isinstance(data, BatchedDataDict), (
             f"data must be a BatchedDataDict, got type: {type(data)}"
         )
@@ -363,11 +359,9 @@ class VllmGeneration(GenerationInterface):
         self, data: BatchedDataDict[GenerationDatumSpec], greedy: bool = False
     ) -> BatchedDataDict[GenerationOutputSpec]:
         """Generate text responses using vLLM."""
-        if self.cfg["vllm_cfg"]["async_engine"]:
-            raise RuntimeError(
-                "generate can only be used when async_engine is not enabled in VllmConfig."
-            )
-
+        assert not self.cfg["vllm_cfg"]["async_engine"], (
+            "generate can only be used when async_engine is not enabled in VllmConfig."
+        )
         assert isinstance(data, BatchedDataDict), (
             f"data must be a BatchedDataDict, got type: {type(data)}"
         )
@@ -412,16 +406,21 @@ class VllmGeneration(GenerationInterface):
         This method provides per-sample streaming across all workers, yielding each
         sample result as soon as it's ready, regardless of which worker processed it.
         """
-        if not self.cfg["vllm_cfg"]["async_engine"]:
-            raise RuntimeError(
-                "generate_async can only be used when async_engine is enabled in VllmConfig."
-            )
-
+        assert self.cfg["vllm_cfg"]["async_engine"], (
+            "generate_async can only be used when async_engine is enabled in VllmConfig."
+        )
         assert isinstance(data, BatchedDataDict), (
             f"data must be a BatchedDataDict, got type: {type(data)}"
         )
         assert "input_ids" in data and "input_lengths" in data, (
             "input_ids and input_lengths are required in data for vLLM generation"
+        )
+
+        # Ensure generate_async only receives single samples (batch_size = 1)
+        batch_size = data["input_ids"].shape[0]
+        assert batch_size == 1, (
+            f"generate_async is restricted to handle only single samples, "
+            f"but received batch_size={batch_size}. Please handle batching outside this method."
         )
 
         # Handle empty input case
@@ -445,79 +444,8 @@ class VllmGeneration(GenerationInterface):
         self.current_generate_dp_shard_idx += 1
         self.current_generate_dp_shard_idx %= self.worker_group.dp_size
 
-        # Create a queue to collect sample results from the worker as they complete
-        result_queue = asyncio.Queue()
-        finished = False
-
-        async def consume_worker_generator(worker_idx, worker_gen):
-            """Consume a single worker generator and put sample results in the queue."""
-            nonlocal finished
-            worker_name = f"Worker-{worker_idx}"
-            try:
-                async for sample_result_ref in worker_gen:
-                    sample_result = await sample_result_ref
-                    await result_queue.put(("sample", sample_result))
-            except Exception as e:
-                # Log the error before putting it in the queue for better debugging
-                import traceback
-
-                print(f"Exception in worker {worker_name}")
-                traceback.print_exc()
-                await result_queue.put(("error", e))
-            finally:
-                finished = True
-                await result_queue.put(("worker_done", None))
-
-        # Start the task to consume the worker generator
-        worker_task = asyncio.create_task(
-            consume_worker_generator(leader_worker_idx, worker_gen_proxy)
-        )
-
-        # Yield sample results as they become available from the worker
-        timeout_seconds = float(
-            os.environ.get("NRL_VLLM_ASYNC_TIMEOUT_SECONDS", "600")
-        )  # Default 10 minutes
-
-        while not finished:
-            try:
-                msg_type, item = await asyncio.wait_for(
-                    result_queue.get(), timeout=timeout_seconds
-                )
-            except asyncio.TimeoutError:
-                print(
-                    f"Timeout waiting for results after {timeout_seconds}s. Worker has not finished."
-                )
-                print(
-                    f"For longer sequences, increase the timeout by setting: export NRL_VLLM_ASYNC_TIMEOUT_SECONDS={int(timeout_seconds * 2)}"
-                )
-                # Cancel the task
-                if not worker_task.done():
-                    worker_task.cancel()
-                await asyncio.gather(worker_task, return_exceptions=True)
-                raise RuntimeError(
-                    f"Timeout waiting for worker results after {timeout_seconds}s. "
-                    f"For longer sequences, increase timeout by setting: export NRL_VLLM_ASYNC_TIMEOUT_SECONDS={int(timeout_seconds * 2)}"
-                )
-
-            if msg_type == "sample":
-                # Yield individual sample result immediately
-                yield item
-            elif msg_type == "error":
-                # Cancel the task and propagate error
-                if not worker_task.done():
-                    worker_task.cancel()
-                await asyncio.gather(worker_task, return_exceptions=True)
-                raise item
-            elif msg_type == "worker_done":
-                # Worker finished, just continue the loop
-                pass
-            else:
-                raise RuntimeError(f"Unexpected message type: {msg_type}")
-
-        # Verify the task is actually done
-        assert worker_task.done(), (
-            f"Worker task {leader_worker_idx} should be done but isn't"
-        )
+        result = await worker_gen_proxy
+        return result
 
     def prepare_for_generation(self, *args: Any, **kwargs: Any) -> bool:
         """Wake workers up for colocated inference."""
