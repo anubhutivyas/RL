@@ -31,15 +31,6 @@ from nemo_rl.models.generation.interfaces import (
 from nemo_rl.models.generation.vllm import VllmConfig
 from nemo_rl.models.huggingface.common import ModelFlag
 
-try:
-    import vllm  # noqa: F401
-except ImportError:
-    raise ImportError(
-        "vLLM is not installed. Please check that the py_executable in the runtime_env of VllmGenerationWorker "
-        "covers the vllm dependency. You may have to update nemo_rl/distributed/ray_actor_environment_registry.py. "
-        "If you are working interactively, you can install by running  `uv sync --extra vllm` anywhere in the repo."
-    )
-
 
 # Use a base class to share some functions to avoid code duplication.
 class BaseVllmGenerationWorker:
@@ -241,7 +232,16 @@ class BaseVllmGenerationWorker:
             # vllm not installed or has a different structure, skipping patch.
             pass
 
-        self.SamplingParams = vllm.SamplingParams
+        try:
+            import vllm
+
+            self.SamplingParams = vllm.SamplingParams
+        except ImportError:
+            raise ImportError(
+                "vLLM is not installed. Please check that the py_executable in the runtime_env of VllmGenerationWorker "
+                "covers the vllm dependency. You may have to update nemo_rl/distributed/ray_actor_environment_registry.py. "
+                "If you are working interactively, you can install by running  `uv sync --extra vllm` anywhere in the repo."
+            )
 
         vllm_kwargs: dict[str, Any] = copy.deepcopy(self.cfg.get("vllm_kwargs", {}))
 
@@ -360,6 +360,8 @@ class BaseVllmGenerationWorker:
 )
 class VllmGenerationWorker(BaseVllmGenerationWorker):
     def _create_engine(self, llm_kwargs: dict[str, Any]) -> None:
+        import vllm
+
         self.llm = vllm.LLM(**llm_kwargs)
 
     def init_collective(self, data: int, ip: str, port: int, world_size: int) -> None:
