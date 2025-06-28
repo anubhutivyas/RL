@@ -62,6 +62,7 @@ ENV UV_LINK_MODE=copy
 # Create and activate virtual environment
 RUN <<"EOF" bash -exu
 uv venv ${UV_PROJECT_ENVIRONMENT}
+VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT uv pip install setuptools torch==2.7.0 psutils ninja
 # uv sync has a more reliable resolver than simple uv pip install which can fail
 
 # Sync each training + inference backend one at a time (since they may conflict)
