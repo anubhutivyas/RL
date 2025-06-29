@@ -22,7 +22,6 @@ from nemo_rl.data.packing.algorithms import (
     get_packer,
 )
 from nemo_rl.data.packing.metrics import PackingMetrics
-from nemo_rl.data.packing.packed_dataset import PackedDataset
 
 __all__ = [
     "PackingAlgorithm",
@@ -32,6 +31,5 @@ __all__ = [
     "FirstFitShufflePacker",
     "ModifiedFirstFitDecreasingPacker",
     "get_packer",
-    "PackedDataset",
     "PackingMetrics",
 ]
