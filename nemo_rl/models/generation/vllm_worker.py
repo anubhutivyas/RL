@@ -303,7 +303,7 @@ class BaseVllmGenerationWorker:
         """Check if the worker is alive."""
         return True
 
-    def _merge_stop_strings(self, batch_stop_strings):
+    def _merge_stop_strings(self, batch_stop_strings: list[list[str]]):
         stop_set: set[str] = set()
 
         if self.cfg.get("stop_strings"):

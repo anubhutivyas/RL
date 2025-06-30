@@ -82,7 +82,7 @@ class VllmAsyncGenerationWorker(BaseVllmGenerationWorker):
         input_ids = data["input_ids"][0][:input_lengths]  # remove padding if exists
         # stop strings
         specific_stop_strings = data.get("stop_strings", [[]])[0]
-        stop_strings = self._merge_stop_strings(specific_stop_strings)
+        stop_strings = self._merge_stop_strings([specific_stop_strings])
         # max new tokens
         remaining_ctx = self.cfg["vllm_cfg"]["max_model_len"] - input_lengths
         allowed_new_tokens = max(0, min(self.cfg["max_new_tokens"], remaining_ctx))
