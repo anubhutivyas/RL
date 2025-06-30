@@ -23,10 +23,7 @@ from nemo_rl.algorithms.grpo import refit_policy_generation
 from nemo_rl.algorithms.loss_functions import NLLLoss
 from nemo_rl.algorithms.utils import get_tokenizer
 from nemo_rl.distributed.batched_data_dict import BatchedDataDict
-from nemo_rl.distributed.virtual_cluster import (
-    RayVirtualCluster,
-    _get_node_ip_and_free_port,
-)
+from nemo_rl.distributed.virtual_cluster import RayVirtualCluster
 from nemo_rl.models.generation import configure_generation_config
 from nemo_rl.models.generation.vllm import VllmConfig, VllmGeneration
 from nemo_rl.models.policy import PolicyConfig
@@ -1206,9 +1203,8 @@ async def test_vllm_refit_non_collocated_update_weights(
     vllm_generation = VllmGeneration(generation_cluster_separate, vllm_config)
 
     # initialize collective communication for update weights
-    ip, port = ray.get(_get_node_ip_and_free_port.remote())
-    futures_train = lm_policy.init_collective(ip, port, world_size=2)
-    futures_inference = vllm_generation.init_collective(ip, port, world_size=2)
+    futures_train = lm_policy.init_collective(2)
+    futures_inference = vllm_generation.init_collective(2)
     ray.get(futures_train + futures_inference)
 
     print("refitting vllm policy...")

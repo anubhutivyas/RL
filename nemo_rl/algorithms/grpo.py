@@ -349,13 +349,11 @@ def setup(
 
     # if it is not colocated inference, initialize collective communication for update weights
     if not colocated_inference:
-        ip, port = train_cluster.get_master_address_and_port()
-        print(f"Using ip: {ip}, port: {port} for collective communication")
         # inference cluster + head node of the train cluster
         world_size = inference_nodes * inference_gpus_per_node + 1
         # init collective
-        futures_train = policy.init_collective(ip, port, world_size)
-        futures_inference = policy_generation.init_collective(ip, port, world_size)  # type: ignore
+        futures_train = policy.init_collective(world_size)
+        futures_inference = policy_generation.init_collective(world_size)  # type: ignore
         # wait for all futures to complete
         ray.get(futures_train + futures_inference)
 
