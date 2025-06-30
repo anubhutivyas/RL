@@ -617,6 +617,16 @@ def get_grad_norm(
         if p.grad is not None
     ]
 
+    is_finite = [grad.isfinite().all() for grad in grads_for_norm]
+
+    if not all(is_finite):
+        print(
+            "rank",
+            torch.distributed.get_rank(),
+            "grads are not finite",
+            is_finite,
+        )
+
     # Norm parameters.
     norm_type = float(norm_type)
     total_norm = 0.0
@@ -640,6 +650,8 @@ def get_grad_norm(
         for grad in grads_for_norm:
             grad_norm = torch.norm(grad, norm_type)
             total_norm += grad_norm**norm_type
+
+        print("### rank", torch.distributed.get_rank(), "total_norm", total_norm)
 
         total_norm = total_norm.cuda()
         # Sum across all data-parallel GPUs if using FSDP and then all model-parallel GPUs.
