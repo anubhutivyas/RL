@@ -361,9 +361,10 @@ def calculate_majority_at_k_advantages(message_logs, prompts, rewards, valid_mas
         
     Returns:
         torch.Tensor: Advantages for each response (b,)
+        dict: Dictionary of metrics including 'pass_at_k' and 'majority_at_k'
     """
     import re
-    from collections import Counter
+    from collections import Counter, defaultdict
     
     unique_prompts = torch.unique(prompts, dim=0)
     reward_device = rewards.get_device()
@@ -371,6 +372,7 @@ def calculate_majority_at_k_advantages(message_logs, prompts, rewards, valid_mas
         reward_device = torch.device("cpu")
     
     advantages = torch.zeros_like(rewards, dtype=torch.float32)
+    metrics = defaultdict(list)
     
     for i in range(len(unique_prompts)):
         is_matching_prompt = (prompts == unique_prompts[i]).all(1)
@@ -383,7 +385,7 @@ def calculate_majority_at_k_advantages(message_logs, prompts, rewards, valid_mas
             
         # Extract answers and rewards for this prompt
         answers = []
-        prompt_rewards = []
+        prompt_rewards_list = []
         valid_indices = []
         
         for idx in prompt_idx:
@@ -405,20 +407,25 @@ def calculate_majority_at_k_advantages(message_logs, prompts, rewards, valid_mas
                     break
             
             answers.append(extracted_answer)
-            prompt_rewards.append(rewards[idx].item())
+            prompt_rewards_list.append(rewards[idx].item())
             valid_indices.append(idx)
         
         if len(answers) == 0:
             continue
             
-        # Calculate majority@K with all responses
-        full_majority_score = _calculate_single_majority_at_k(answers, prompt_rewards)
+        # Calculate pass@k and majority@k for the prompt
+        prompt_rewards_tensor = torch.tensor(prompt_rewards_list, device=reward_device)
+        pass_at_k_for_prompt = (prompt_rewards_tensor > 0).any().float()
+        metrics["pass_at_k"].append(pass_at_k_for_prompt)
+
+        full_majority_score = _calculate_single_majority_at_k(answers, prompt_rewards_list)
+        metrics["math_majority_at_k"].append(full_majority_score)
         
         # Calculate advantage for each response
-        for j, (answer, reward, idx) in enumerate(zip(answers, prompt_rewards, valid_indices)):
+        for j, (answer, reward, idx) in enumerate(zip(answers, prompt_rewards_list, valid_indices)):
             # Create subset without current response
             subset_answers = answers[:j] + answers[j+1:]
-            subset_rewards = prompt_rewards[:j] + prompt_rewards[j+1:]
+            subset_rewards = prompt_rewards_list[:j] + prompt_rewards_list[j+1:]
             
             if len(subset_answers) == 0:
                 # If removing this response leaves no responses, advantage is the full score
@@ -434,9 +441,18 @@ def calculate_majority_at_k_advantages(message_logs, prompts, rewards, valid_mas
         for i in range(len(unique_prompts)):
             is_matching_prompt = (prompts == unique_prompts[i]).all(1)
             prompt_idx = torch.arange(len(prompts), device=reward_device)[is_matching_prompt]
-            if valid_mask[prompt_idx].sum() <= 1:
+            prompt_valid_mask = valid_mask[prompt_idx].bool()
+
+            if prompt_valid_mask.sum() <= 1:
                 continue
             
-            advantages[prompt_idx] = advantages[prompt_idx] - advantages[prompt_idx].mean()
+            valid_advantages = advantages[prompt_idx][prompt_valid_mask]
+            mean_advantage = valid_advantages.mean()
+            advantages[prompt_idx][prompt_valid_mask] -= mean_advantage
+
+    final_metrics = {
+        k: torch.as_tensor(v, device=reward_device).mean().item() if v else 0.0
+        for k, v in metrics.items()
+    }
         
-    return advantages
+    return advantages, final_metrics

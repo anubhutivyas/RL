@@ -172,13 +172,14 @@ def majority_at_k_train(
                 rewards = repeated_batch["total_reward"]
 
                 print("▶ Computing majority@K advantages...")
-                advantages = calculate_majority_at_k_advantages(
+                advantages, majority_metrics = calculate_majority_at_k_advantages(
                     repeated_batch["message_log"],
                     input_ids,
                     rewards,
                     torch.ones_like(rewards),
                     variance_reduction=master_config["grpo"]["use_majority_at_k_variance_reduction"],
-                ).unsqueeze(-1)
+                )
+                advantages = advantages.unsqueeze(-1)
 
                 # Calculate statistics for logging
                 advantages_min, advantages_mean, advantages_max = (
@@ -200,11 +201,9 @@ def majority_at_k_train(
                         "reward_min": reward_min,
                         "reward_mean": reward_mean,
                         "reward_max": reward_max,
-                        "math_majority_at_k": calculate_math_majority_at_k(
-                            repeated_batch["message_log"], input_ids, rewards, torch.ones_like(rewards)
-                        ),
                     }
                 )
+                rollout_metrics.update(majority_metrics)
 
             with timer.time("data_processing"):
                 # Add loss mask and advantages to each message in LLMMessageLogType
@@ -350,6 +349,7 @@ def majority_at_k_train(
         print(f"  • Avg Reward: {np.mean(rewards.numpy()):.4f}")
         print(f"  • Avg Advantage: {np.mean(advantages.numpy()):.4f}")
         print(f"  • Majority@K Score: {rollout_metrics['math_majority_at_k']:.4f}")
+        print(f"  • Pass@K Score: {rollout_metrics['pass_at_k']:.4f}")
         print(
             f"  • Mean Generation Length: {rollout_metrics['mean_gen_tokens_per_sample']:.4f}"
         )
