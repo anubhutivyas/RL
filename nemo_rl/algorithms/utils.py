@@ -416,7 +416,7 @@ def calculate_majority_at_k_advantages(message_logs, prompts, rewards, valid_mas
         # Calculate pass@k and majority@k for the prompt
         prompt_rewards_tensor = torch.tensor(prompt_rewards_list, device=reward_device)
         pass_at_k_for_prompt = (prompt_rewards_tensor > 0).any().float()
-        metrics["pass_at_k"].append(pass_at_k_for_prompt)
+        metrics["average_pass_at_k_per_prompt"].append(pass_at_k_for_prompt)
 
         full_majority_score = _calculate_single_majority_at_k(answers, prompt_rewards_list)
         metrics["math_majority_at_k"].append(full_majority_score)

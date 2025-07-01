@@ -780,8 +780,6 @@ def validate(
         accuracy = sum(total_rewards) / len(total_rewards)
         avg_length = sum(total_lengths) / len(total_lengths)
         
-        # Calculate majority@k using the message logs and rewards
-        majority_at_k = 0.0
         
         # Stack input IDs into a tensor (pad if necessary)
         max_len = max(len(ids) for ids in all_input_ids)
@@ -798,11 +796,14 @@ def validate(
         rewards_tensor = torch.tensor(total_rewards)
         valid_mask = torch.ones_like(rewards_tensor)
         
+        _, _, metrics = calculate_baseline_and_std_per_prompt(input_tensor, rewards_tensor, valid_mask, leave_one_out_baseline=False)
+        pass_at_k = metrics.get("average_pass_at_k_per_prompt", 0.0)
         majority_at_k = calculate_math_majority_at_k(all_val_message_logs, input_tensor, rewards_tensor, valid_mask)
         
         val_metrics = {
             "accuracy": accuracy,
             "avg_length": avg_length,
+            "pass_at_k": pass_at_k,
             "majority_at_k": majority_at_k,
             "table": table,
         }
@@ -829,6 +830,7 @@ def validate(
     # Print summary of validation results
     print("\n📊 Validation Results:")
     print(f"    • Accuracy: {accuracy:.4f}")
+    print(f"    • Pass@K: {pass_at_k:.4f}")
     print(f"    • Majority@K: {majority_at_k:.4f}")
     print(f"    • Average response length: {avg_length:.1f} tokens")
     print(f"    • Samples processed: {len(total_rewards)}")
