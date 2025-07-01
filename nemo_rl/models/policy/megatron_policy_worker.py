@@ -1609,19 +1609,20 @@ class MegatronPolicyWorker:
         # move all param and grad buffers to the device
         if isinstance(model, DistributedDataParallel):
             # DDP case
-            for buffer_idx in range(len(model.buffers)):
-                if device == "cpu":
-                    model.buffers[buffer_idx].offload_to_cpu(
-                        move_params=move_params, move_grads=move_grads
-                    )
-                elif device == "cuda":
-                    model.buffers[buffer_idx].reload_from_cpu(
-                        move_params=move_params, move_grads=move_grads
-                    )
-                else:
-                    raise ValueError(
-                        f"Invalid device: {device}. Only strings 'cpu' and 'cuda' are supported."
-                    )
+            for buffers in [model.buffers, model.expert_parallel_buffers]:
+                for buffer_idx in range(len(buffers)):
+                    if device == "cpu":
+                        buffers[buffer_idx].offload_to_cpu(
+                            move_params=move_params, move_grads=move_grads
+                        )
+                    elif device == "cuda":
+                        buffers[buffer_idx].reload_from_cpu(
+                            move_params=move_params, move_grads=move_grads
+                        )
+                    else:
+                        raise ValueError(
+                            f"Invalid device: {device}. Only strings 'cpu' and 'cuda' are supported."
+                        )
         elif isinstance(model, custom_FSDP):
             if device == "cpu":
                 model.param_and_grad_buffer.offload_to_cpu(move_params, move_grads)
