@@ -78,7 +78,7 @@ endif
 
 # Cross-platform uv run command
 ifeq ($(OS),Windows_NT)
-    UV_RUN = uv run --active
+    UV_RUN = .venv-docs\Scripts\python.exe
 else
     UV_RUN = VIRTUAL_ENV=../.venv-docs uv run
 endif
@@ -90,11 +90,19 @@ endif
 
 docs-html:
 	@echo "Building HTML documentation..."
+ifeq ($(OS),Windows_NT)
+	cd docs; $(UV_RUN) -m sphinx -b html $(if $(DOCS_ENV),-t $(DOCS_ENV)) . _build/html
+else
 	cd docs && $(UV_RUN) python -m sphinx -b html $(if $(DOCS_ENV),-t $(DOCS_ENV)) . _build/html
+endif
 
 docs-publish:
 	@echo "Building HTML documentation for publication (fail on warnings)..."
+ifeq ($(OS),Windows_NT)
+	cd docs; $(UV_RUN) -m sphinx --fail-on-warning --builder html $(if $(DOCS_ENV),-t $(DOCS_ENV)) . _build/html
+else
 	cd docs && $(UV_RUN) python -m sphinx --fail-on-warning --builder html $(if $(DOCS_ENV),-t $(DOCS_ENV)) . _build/html
+endif
 
 docs-clean:
 	@echo "Cleaning built documentation..."
@@ -102,7 +110,11 @@ docs-clean:
 
 docs-live:
 	@echo "Starting live-reload server (sphinx-autobuild)..."
+ifeq ($(OS),Windows_NT)
+	$(VENV_PYTHON) -m sphinx_autobuild docs _build/html
+else
 	cd docs && $(UV_RUN) python -m sphinx_autobuild $(if $(DOCS_ENV),-t $(DOCS_ENV)) . _build/html
+endif
 
 docs-env:
 	@echo "Setting up docs virtual environment with uv..."
@@ -159,7 +171,13 @@ else
 endif
 	@echo "✅ uv found, creating virtual environment..."
 	uv venv .venv-docs
+ifeq ($(OS),Windows_NT)
+	@echo "🪟 Windows detected - installing docs dependencies without Triton..."
+	uv pip install -r requirements-docs.txt --python .venv-docs --no-deps
+	uv pip install sphinx sphinx-autobuild sphinx-autodoc2 sphinx-copybutton myst-parser nvidia-sphinx-theme sphinx-design pinecone openai python-dotenv sphinxcontrib-mermaid swagger-plugin-for-sphinx --python .venv-docs
+else
 	uv pip install -r requirements-docs.txt --python .venv-docs
+endif
 	$(ECHO_BLANK)
 	@echo "✅ Documentation environment setup complete!"
 	$(ECHO_BLANK)
