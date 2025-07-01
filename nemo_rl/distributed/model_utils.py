@@ -189,24 +189,24 @@ def from_parallel_logits_to_logprobs_packed_sequences(
     # Remove batch dimension to work with [T, vocab_size] and [T]
     vocab_parallel_logits = vocab_parallel_logits.squeeze(0)
     target = target.squeeze(0)
-    
+
     batch_size = cu_seqlens.shape[0] - 1
-    
+
     # Roll each sequence individually
     rolled_targets = torch.zeros_like(target)
     for i in range(batch_size):
         start_idx = cu_seqlens[i].item()
         end_idx = cu_seqlens[i + 1].item()
-        
+
         # Get the sequence targets and roll by -1
         seq_targets = target[start_idx:end_idx]
         rolled_seq_targets = seq_targets.roll(shifts=-1, dims=0)
         rolled_targets[start_idx:end_idx] = rolled_seq_targets
-    
+
     # Add batch dimension back for DistributedLogprob
     rolled_targets = rolled_targets.unsqueeze(0)
     vocab_parallel_logits = vocab_parallel_logits.unsqueeze(0)
-    
+
     # Apply distributed log probability computation
     probs: torch.Tensor = DistributedLogprob.apply(  # type: ignore
         vocab_parallel_logits,
@@ -216,33 +216,35 @@ def from_parallel_logits_to_logprobs_packed_sequences(
         group,
         inference_only,
     ).contiguous()
-    
+
     # Remove batch dimension for filtering
     probs = probs.squeeze(0)
-    
+
     # Ensure probs is 1D after squeezing
     if probs.dim() != 1:
         raise ValueError(
             f"Expected probs to be 1D after squeezing, but got shape {probs.shape}. "
             f"Original shape before squeeze: {probs.unsqueeze(0).shape}"
         )
-    
-    out_logprobs = torch.zeros((batch_size, unpacked_seqlen-1), dtype=probs.dtype, device=probs.device)
+
+    out_logprobs = torch.zeros(
+        (batch_size, unpacked_seqlen - 1), dtype=probs.dtype, device=probs.device
+    )
     # Filter out the last token of each sequence
     for i in range(batch_size):
         start_idx = cu_seqlens[i].item()
         end_idx = cu_seqlens[i + 1].item()
-        
+
         # Exclude the last position (which has the rolled target from position 0)
         if end_idx - start_idx > 0:
-            seq_probs = probs[start_idx:end_idx-1]
+            seq_probs = probs[start_idx : end_idx - 1]
             # Ensure seq_probs is 1D
             if seq_probs.dim() > 1:
                 seq_probs = seq_probs.squeeze()
-            
+
             # Ensure we don't exceed the unpacked sequence length
             seq_len = min(seq_probs.shape[0], unpacked_seqlen - 1)
             if seq_len > 0:
                 out_logprobs[i, :seq_len] = seq_probs[:seq_len]
-    
+
     return out_logprobs
