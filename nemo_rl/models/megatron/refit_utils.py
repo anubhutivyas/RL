@@ -32,16 +32,18 @@ from nemo_rl.models.megatron.converters.common import get_global_key_from_local_
 
 REFIT_TIME_DEBUG = False
 
+
 def _rank_0_print(*args, **kwargs):
     pass
     """ Utility function to print only on rank 0. """
     if (
-        REFIT_TIME_DEBUG and
-        parallel_state.get_tensor_model_parallel_rank() == 0 and
-        parallel_state.get_pipeline_model_parallel_rank() == 0 and
-        parallel_state.get_expert_model_parallel_rank() == 0
+        REFIT_TIME_DEBUG
+        and parallel_state.get_tensor_model_parallel_rank() == 0
+        and parallel_state.get_pipeline_model_parallel_rank() == 0
+        and parallel_state.get_expert_model_parallel_rank() == 0
     ):
         print("[Rank 0] ", *args, **kwargs)
+
 
 def get_tp_dim(model, param_name, named_modules_dict):
     # pass in named_modules_dict so we can get it ahead of time instead
@@ -87,13 +89,13 @@ def get_tp_dim(model, param_name, named_modules_dict):
 
 
 @torch.no_grad()
-def gather_params(
-    model,
-    keys,
-    key_to_global_keys: Dict[str, List[str]]
-):
+def gather_params(model, keys, key_to_global_keys: Dict[str, List[str]]):
     st = time.perf_counter()
+    from collections import defaultdict
 
+    timers = defaultdict(list)
+
+    st_beginning = time.perf_counter()
     tp_group = parallel_state.get_tensor_model_parallel_group()
     tp_world_size = torch.distributed.get_world_size(tp_group)
     etp_group = parallel_state.get_expert_tensor_parallel_group()
@@ -110,64 +112,122 @@ def gather_params(
     gathered_params = {}
     ep_pattern = re.compile(r"mlp\.experts.*\.weight\d*$")
 
+    # Pre-allocate one large buffer for all EP gathers to avoid repeated allocation costs.
+    # We calculate the total size needed across all EP parameters and their offsets.
+    ep_gather_buffers = {}
+    ep_param_meta = {}
+    if ep_world_size > 1:
+        from collections import defaultdict
+
+        # Calculate offsets and total size needed for each dtype
+        total_numel_by_dtype = defaultdict(int)
+
+        for local_key, owner_pp_local_rank_id, shape, dtype in keys:
+            if ep_pattern.search(local_key):
+                # The shape of the gathered tensor for this param
+                output_shape = (ep_world_size, 1, *shape)  # stack adds a dim of 1
+                numel = torch.Size(output_shape).numel()
+
+                param_info_tuple = (local_key, owner_pp_local_rank_id)
+                ep_param_meta[param_info_tuple] = {
+                    "offset": total_numel_by_dtype[dtype],
+                    "numel": numel,
+                    "shape": output_shape,
+                    "dtype": dtype,
+                }
+                total_numel_by_dtype[dtype] += numel
+
+        # Allocate one large buffer per dtype
+        for dtype, total_numel in total_numel_by_dtype.items():
+            if total_numel > 0:
+                ep_gather_buffers[dtype] = torch.empty(
+                    total_numel, dtype=dtype, device=torch.cuda.current_device()
+                )
+
+    timers["beginning"].append(time.perf_counter() - st_beginning)
+
     for local_key, owner_pp_local_rank_id, shape, dtype in sorted(keys):
         if local_key in state_dict and owner_pp_local_rank_id == pp_local_rank_id:
             param = state_dict[local_key]
+            if ep_pattern.search(local_key):
+                world_size = etp_world_size
+                group = etp_group
+            else:
+                world_size = tp_world_size
+                group = tp_group
 
             tp_dim = get_tp_dim(model, local_key, named_modules_dict)
-
             # If the parameter is TP-sharded, gather its slices on GPU.
-            if tp_dim is not None:
-                if ep_pattern.search(local_key):
-                    world_size = etp_world_size
-                    group = etp_group
-                else:
-                    world_size = tp_world_size
-                    group = tp_group
-
-                gathered_slices = [
-                    torch.empty_like(param) for _ in range(world_size)
-                ]
+            if world_size > 1 and tp_dim is not None:
+                gathered_slices = [torch.empty_like(param) for _ in range(world_size)]
+                st_all_gather = time.perf_counter()
                 torch.distributed.all_gather(gathered_slices, param, group=group)
+                timers["all_gather"].append(time.perf_counter() - st_all_gather)
                 # TODO: why cast to torch.bfloat16 instead of param.dtype?
                 full_param = torch.cat(gathered_slices, dim=tp_dim)
             else:
                 # TODO: why do we need to clone?
                 full_param = param
         else:
-            full_param = torch.empty(*shape, dtype=dtype, device=torch.cuda.current_device())
+            st_empty1 = time.perf_counter()
+            full_param = torch.empty(
+                *shape, dtype=dtype, device=torch.cuda.current_device()
+            )
+            timers["empty1"].append(time.perf_counter() - st_empty1)
 
         # Broadcast across PP group.
         src_global_rank = pp_global_ranks[owner_pp_local_rank_id]
 
         # Broadcast from the rank that has the parameter
+        st_broadcast = time.perf_counter()
         torch.distributed.broadcast(full_param, src=src_global_rank, group=pp_group)
+        timers["pp_broadcast"].append(time.perf_counter() - st_broadcast)
         pp_gathered_params = [full_param]
 
         # gather across EP group
         if ep_pattern.search(local_key):
             stacked_pp_gathered_params = torch.stack(pp_gathered_params)
 
-            ep_gathered_params = [
-                torch.empty(
-                    stacked_pp_gathered_params.shape,
-                    dtype=dtype,
-                    device=torch.cuda.current_device(),
-                )
-                for _ in range(ep_world_size)
-            ]
-            torch.distributed.all_gather(
-                ep_gathered_params, stacked_pp_gathered_params, group=ep_group
+            st_empty = time.perf_counter()
+
+            # Look up pre-calculated offset and shape info
+            param_info_tuple = (local_key, owner_pp_local_rank_id)
+            meta = ep_param_meta[param_info_tuple]
+            offset, numel, output_shape = meta["offset"], meta["numel"], meta["shape"]
+
+            # Use a view into the dedicated slice of the pre-allocated buffer.
+            buffer = ep_gather_buffers[dtype]
+            ep_gathered_params_tensor = buffer.narrow(0, offset, numel).view(
+                output_shape
             )
-            flat_gathered_params = [x for y in ep_gathered_params for x in torch.unbind(y)]
+
+            timers["ep_empty"].append(time.perf_counter() - st_empty)
+            st_all_gather = time.perf_counter()
+            torch.distributed.all_gather_into_tensor(
+                ep_gathered_params_tensor, stacked_pp_gathered_params, group=ep_group
+            )
+            timers["ep_all_gather"].append(time.perf_counter() - st_all_gather)
+            ep_gathered_params = torch.unbind(ep_gathered_params_tensor)
+            flat_gathered_params = [
+                x for y in ep_gathered_params for x in torch.unbind(y)
+            ]
 
         else:
             flat_gathered_params = pp_gathered_params
 
-        flat_gathered_global_keys = key_to_global_keys[(local_key, owner_pp_local_rank_id)]
+        flat_gathered_global_keys = key_to_global_keys[
+            (local_key, owner_pp_local_rank_id)
+        ]
         for k, p in zip(flat_gathered_global_keys, flat_gathered_params):
             if k is not None:
                 gathered_params[k] = p
 
-    print(f"Time taken to gather params: {time.perf_counter() - st}")
+    print(
+        f"Rank {torch.distributed.get_rank()}: Time taken to gather params: {time.perf_counter() - st}"
+    )
+    total_time = 0
+    for k, v in timers.items():
+        total_time += sum(v)
+        print(f"Rank {torch.distributed.get_rank()}: {k}: {sum(v)}, count: {len(v)}")
+    print(f"Rank {torch.distributed.get_rank()}: Total time: {total_time}")
     return gathered_params
