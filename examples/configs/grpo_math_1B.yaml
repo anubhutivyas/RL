@@ -67,7 +67,7 @@ policy:
     enabled: False
     train_mb_tokens: ${mul:${policy.max_total_sequence_length}, ${policy.train_micro_batch_size}}
     logprob_mb_tokens: ${mul:${policy.max_total_sequence_length}, ${policy.logprob_batch_size}}
-    algorithm: "concatenative"
+    algorithm: "modified_first_fit_decreasing"
     sequence_length_round: 64
 
   # makes the training sequence length divisible by the tensor parallel size
