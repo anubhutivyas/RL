@@ -26,6 +26,7 @@ loss_fn:
   token_level_loss: true
   use_generation_logprobs_in_ppo_baseline: false
   use_kl_fix: false
+  use_stable_loss: false
 
 checkpointing:
   enabled: true

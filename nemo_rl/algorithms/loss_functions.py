@@ -116,6 +116,7 @@ class ClippedPGLossFn(LossFunction):
         self.loss_type = (
             LossType.TOKEN_LEVEL if cfg["token_level_loss"] else LossType.SEQUENCE_LEVEL
         )
+        self.use_stable_loss = cfg.get("use_stable_loss", False)
 
     def __call__(
         self,
@@ -209,11 +210,14 @@ class ClippedPGLossFn(LossFunction):
             ratios = curr_logprobs
             ratios_clamped = curr_logprobs
 
-        loss1 = -advantages * ratios
-        loss2 = -advantages * ratios_clamped
+        if self.use_stable_loss:
+            loss = -(advantages * ratios_clamped.detach() * curr_logprobs)
+        else:
+            loss1 = -advantages * ratios
+            loss2 = -advantages * ratios_clamped
 
-        # Determine which value to use for clipping (max for pessimistic estimate)
-        clip_loss = torch.max(loss1, loss2)
+            # Determine which value to use for clipping (max for pessimistic estimate)
+            clip_loss = torch.max(loss1, loss2)
 
         # Dual-clipping see https://arxiv.org/pdf/1912.09729
         if self.ratio_clip_c is not None:
