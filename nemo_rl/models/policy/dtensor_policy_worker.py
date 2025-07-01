@@ -174,7 +174,7 @@ class DTensorPolicyWorker:
             # Always load the model in float32 to keep master weights in float32.
             # Keeping the master weights in lower precision has shown to cause issues with convergence.
             # https://github.com/NVIDIA/NeMo-RL/issues/279 will fix the issue of CPU OOM for larger models.
-            torch_dtype=self.dtype,
+            torch_dtype=torch.float32,
             trust_remote_code=True,
             **sliding_window_overwrite(
                 model_name
