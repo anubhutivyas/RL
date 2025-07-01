@@ -428,15 +428,6 @@ class MegatronPolicyWorker:
             pretrained_path, "iter_0000000/run_config.yaml"
         )
 
-        assert not (
-            self.cfg["megatron_cfg"]["distributed_data_parallel_config"][
-                "overlap_param_gather"
-            ]
-            and self.cfg["megatron_cfg"]["optimizer"]["use_distributed_optimizer"]
-        ), (
-            "Using overlap param gather together with distributed optimizer has known convergence issues. Please disable overlap param gather."
-        )
-
         self.tokenizer = tokenizer
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
@@ -473,9 +464,14 @@ class MegatronPolicyWorker:
         model_cfg.sequence_parallel = self.cfg["megatron_cfg"]["sequence_parallel"]
         model_cfg.bf16 = self.dtype == torch.bfloat16
         model_cfg.fp16 = self.dtype == torch.float16
-        model_cfg.params_dtype = dtype_map[
-            self.cfg["megatron_cfg"]["optimizer"]["params_dtype"]
-        ]  # FP32 for amp
+        if model_cfg.fp16:
+            assert not model_cfg.bf16, "fp16 and bf16 cannot be used together"
+            model_cfg.params_dtype = torch.float16
+        elif model_cfg.bf16:
+            assert not model_cfg.fp16, "fp16 and bf16 cannot be used together"
+            model_cfg.params_dtype = torch.bfloat16
+        else:
+            model_cfg.params_dtype = torch.float32
         model_cfg.pipeline_dtype = dtype_map[self.cfg["megatron_cfg"]["pipeline_dtype"]]
         model_cfg.parallel_output = True
         model_cfg.moe_router_dtype = "fp64"
@@ -490,6 +486,13 @@ class MegatronPolicyWorker:
             model_cfg.activations_checkpoint_granularity = "full"
             model_cfg.activations_checkpoint_method = "uniform"
             model_cfg.activations_checkpoint_num_layers = 1
+        if not model_cfg.gated_linear_unit:
+            assert model_cfg.activation_func is not None, (
+                "activation_func must be set if not using gated_linear_unit. This likely "
+                "indicates an issue in configuration conversion (e.g. activation func was "
+                "a lambda and couldn't be serialized). This is based on this check "
+                "https://github.com/NVIDIA/Megatron-LM/blob/1ab876ddc4c1893c76f26d775226a8d1dcdfb3d2/megatron/core/transformer/mlp.py#L174."
+            )
 
         checkpoint_config = CheckpointConfig(
             save_interval=100,
@@ -668,6 +671,12 @@ class MegatronPolicyWorker:
         self.local_key_to_global_keys = self.get_local_key_to_global_keys(
             state_dict_info=self.prepare_weights_for_ipc()[0]
         )
+        self.should_disable_forward_pre_hook = (
+            self.cfg["megatron_cfg"]["optimizer"]["use_distributed_optimizer"]
+            and self.cfg["megatron_cfg"]["distributed_data_parallel_config"][
+                "overlap_param_gather"
+            ]
+        )
 
     def configure_worker(self, num_gpus: int, bundle_indices: Optional[tuple] = None):
         USE_EXPANDABLE_SEGMENTS = False  # Disabling this right now as it seems to cause vLLM refit issues with Ampere
@@ -685,6 +694,14 @@ class MegatronPolicyWorker:
     def get_gpu_info(self):
         """Return information about the GPU being used by this worker."""
         return get_gpu_info(self.model)
+
+    def enable_forward_pre_hook(self):
+        assert isinstance(self.model, DistributedDataParallel)
+        self.model.enable_forward_pre_hook()
+
+    def disable_forward_pre_hook(self, param_sync=True):
+        assert isinstance(self.model, DistributedDataParallel)
+        self.model.disable_forward_pre_hook(param_sync=param_sync)
 
     def train(
         self,
@@ -1027,6 +1044,10 @@ class MegatronPolicyWorker:
         On entry: Moves model to CPU, moves reference_model to CUDA. Swaps the references
         On exit: Restores original references and re-flips cuda/cpu
         """
+        ## disable overlap param gather when swapping weights
+        if self.should_disable_forward_pre_hook:
+            self.disable_forward_pre_hook()
+
         with torch.no_grad():
             try:
                 # Save original references
@@ -1060,6 +1081,10 @@ class MegatronPolicyWorker:
 
                 gc.collect()
                 torch.cuda.empty_cache()
+
+                ## re-enable overlap param gather after weight swap
+                if self.should_disable_forward_pre_hook:
+                    self.enable_forward_pre_hook()
 
     # Temporary fix, 'data' is a kwarg due to some sort of ray bug
     def get_reference_policy_logprobs(
