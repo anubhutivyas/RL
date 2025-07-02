@@ -477,9 +477,16 @@ class MegatronPolicyWorker:
         # Setting moe_router_dtype to higher precision (e.g. fp64) can improve numerical stability,
         # especially when using many experts.
         model_cfg.moe_router_dtype = self.cfg["megatron_cfg"]["moe_router_dtype"]
+
+        # The below two configs (and "freeze_moe_router") are used to stabilize moe training
+        # by preventing updates to the moe router. We found that this is helpful in reducing
+        # logprob error during training.
+
+        # Set this to "none" to disable load balancing loss.
         model_cfg.moe_router_load_balancing_type = self.cfg["megatron_cfg"][
             "moe_router_load_balancing_type"
         ]
+        # Set this to 0.0 to disable updates to the moe router expert bias
         model_cfg.moe_router_bias_update_rate = self.cfg["megatron_cfg"][
             "moe_router_bias_update_rate"
         ]
