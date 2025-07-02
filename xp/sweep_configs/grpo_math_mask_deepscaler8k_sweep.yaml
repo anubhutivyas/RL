@@ -11,8 +11,8 @@ script_path: "examples/run_grpo_math.py"
 config_path: "examples/configs/grpo-deepscaler-1.5b-8K.yaml" 
 
 # Logger configuration
-logger.wandb.project: ["grpo-randmask"]
+logger.wandb.project: ["grpo-mask"]
 
 # Random Mask Prob
-grpo.enlarge_train_data: [true, false]
-grpo.random_mask_prob: [0.2, 0.5, 1.0]
+grpo.mask_type: ["random", "start", "end"]
+grpo.mask_density: [0.1, 0.2, 0.5]

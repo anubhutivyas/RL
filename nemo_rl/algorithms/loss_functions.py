@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import enum
 from typing import Any, Optional, TypedDict, TypeVar
 
 import torch
@@ -27,6 +28,12 @@ from nemo_rl.models.dtensor.parallelize import (
 )
 
 Tensor = TypeVar("Tensor", bound=torch.Tensor)
+
+
+class MaskType(enum.Enum):
+    RANDOM = "random"
+    START = "start"
+    END = "end"
 
 
 class ClippedPGLossConfig(TypedDict):
@@ -52,11 +59,12 @@ class ClippedPGLossDataDict(TypedDict):
     __extra__: Any
 
 
-class RandomMaskClippedPGLossConfig(ClippedPGLossConfig):
-    random_mask_prob: float
+class MaskClippedPGLossConfig(ClippedPGLossConfig):
+    mask_type: MaskType
+    mask_density: float
 
 
-class RandomMaskClippedPGLossDataDict(ClippedPGLossDataDict):
+class MaskClippedPGLossDataDict(ClippedPGLossDataDict):
     pass
 
 
@@ -305,13 +313,39 @@ class ClippedPGLossFn(LossFunction):
             },
         )
 
-class RandomMaskClippedPGLossFn(ClippedPGLossFn):
-    def __init__(self, cfg: RandomMaskClippedPGLossConfig):
+class MaskClippedPGLossFn(ClippedPGLossFn):
+    def __init__(self, cfg: MaskClippedPGLossConfig):
         super().__init__(cfg)
-        self.random_mask_prob = cfg["random_mask_prob"]
+        self.mask_type = cfg["mask_type"]
+        self.mask_density = cfg["mask_density"]
 
     def random_mask(self, data: BatchedDataDict[ClippedPGLossDataDict]):
+        """
+        Mask out a fraction of the tokens in the sequence, randomly.
+        """
         mask = torch.rand_like(data["token_mask"].float()) < self.random_mask_prob
+        data["token_mask"] = data["token_mask"] * mask
+        return data
+    
+    def start_mask(self, data: BatchedDataDict[ClippedPGLossDataDict]):
+        """
+        Mask out the first density% of the tokens in the sequence.
+        """
+        num_non_zero = torch.sum(data["token_mask"], dim=-1)
+        mask = torch.zeros_like(data["token_mask"].float())
+        mask[:, :int(num_non_zero * self.mask_density)] = 1
+        mask = mask.bool()
+        data["token_mask"] = data["token_mask"] * mask
+        return data
+    
+    def end_mask(self, data: BatchedDataDict[ClippedPGLossDataDict]):
+        """
+        Mask out the last density% of the tokens in the sequence.
+        """
+        num_non_zero = torch.sum(data["token_mask"], dim=-1)
+        mask = torch.zeros_like(data["token_mask"].float())
+        mask[:, -int(num_non_zero * self.mask_density):] = 1
+        mask = mask.bool()
         data["token_mask"] = data["token_mask"] * mask
         return data
 
@@ -322,7 +356,14 @@ class RandomMaskClippedPGLossFn(ClippedPGLossFn):
         global_valid_seqs: torch.Tensor,
         global_valid_toks: torch.Tensor,
     ) -> tuple[torch.Tensor, dict]:
-        data = self.random_mask(data)
+        if self.mask_type == MaskType.RANDOM:
+            data = self.random_mask(data)
+        elif self.mask_type == MaskType.START:
+            data = self.start_mask(data)
+        elif self.mask_type == MaskType.END:
+            data = self.end_mask(data)
+        else:
+            raise ValueError(f"Invalid mask type: {self.mask_type}")
         return super().__call__(
             next_token_logits, data, global_valid_seqs, global_valid_toks
         )
