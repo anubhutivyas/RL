@@ -18,6 +18,7 @@ import json
 import logging
 import os
 import re
+import subprocess
 import threading
 import time
 from abc import ABC, abstractmethod
@@ -138,9 +139,119 @@ class WandbLogger(LoggerInterface):
 
     def __init__(self, cfg: WandbConfig, log_dir: Optional[str] = None):
         self.run = wandb.init(**cfg, dir=log_dir)
+        self._log_code()
+        self._log_diffs()
         print(
             f"Initialized WandbLogger for project {cfg.get('project')}, run {cfg.get('name')} at {log_dir}"
         )
+
+    def _log_diffs(self):
+        """Log git diffs to wandb.
+
+        This function captures and logs two types of diffs:
+        1. Uncommitted changes (working tree diff against HEAD)
+        2. All changes (including uncommitted) against the main branch
+
+        Each diff is saved as a text file in a wandb artifact.
+        """
+        try:
+            branch_result = subprocess.run(
+                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+            current_branch = branch_result.stdout.strip()
+
+            diff_artifact = wandb.Artifact(
+                name=f"git-diffs-{self.run.project}-{self.run.id}", type="git-diffs"
+            )
+
+            # 1. Log uncommitted changes (working tree diff)
+            uncommitted_result = subprocess.run(
+                ["git", "diff", "HEAD"], capture_output=True, text=True, check=True
+            )
+            uncommitted_diff = uncommitted_result.stdout
+
+            if uncommitted_diff:
+                diff_path = os.path.join(
+                    wandb.run.dir if wandb.run else ".", "uncommitted_changes_diff.txt"
+                )
+                with open(diff_path, "w") as f:
+                    f.write(uncommitted_diff)
+
+                # Add file to artifact
+                diff_artifact.add_file(diff_path, name="uncommitted_changes_diff.txt")
+                print("Logged uncommitted changes diff to wandb")
+            else:
+                print("No uncommitted changes found")
+
+            # 2. Log diff against main branch (if current branch is not main)
+            if current_branch != "main":
+                # Log diff between main and working tree (includes uncommitted changes)
+                working_diff_result = subprocess.run(
+                    ["git", "diff", "main"], capture_output=True, text=True, check=True
+                )
+                working_diff = working_diff_result.stdout
+
+                if working_diff:
+                    # Save diff to a temporary file
+                    diff_path = os.path.join(
+                        wandb.run.dir if wandb.run else ".", "main_diff.txt"
+                    )
+                    with open(diff_path, "w") as f:
+                        f.write(working_diff)
+
+                    # Add file to artifact
+                    diff_artifact.add_file(diff_path, name="main_diff.txt")
+                    print("Logged diff against main branch")
+                else:
+                    print("No differences found between main and working tree")
+
+            self.run.log_artifact(diff_artifact)
+
+        except subprocess.CalledProcessError as e:
+            print(f"Error during git operations: {e}")
+        except Exception as e:
+            print(f"Unexpected error during git diff logging: {e}")
+
+    def _log_code(self):
+        """Log code that is tracked by git to wandb.
+
+        This function gets a list of all files tracked by git in the project root
+        and manually uploads them to the current wandb run as an artifact.
+        """
+        try:
+            result = subprocess.run(
+                ["git", "ls-files"], capture_output=True, text=True, check=True
+            )
+
+            tracked_files = result.stdout.strip().split("\n")
+
+            if not tracked_files:
+                print(
+                    "Warning: No git repository found. Wandb logs will not track code changes for reproducibility."
+                )
+                return
+
+            code_artifact = wandb.Artifact(
+                name=f"source-code-{self.run.project}", type="code"
+            )
+
+            for file_path in tracked_files:
+                if os.path.isfile(file_path):
+                    try:
+                        code_artifact.add_file(file_path, name=file_path)
+                    except Exception as e:
+                        print(f"Error adding file {file_path}: {e}")
+
+            self.run.log_artifact(code_artifact)
+            print(f"Logged {len(tracked_files)} git-tracked files to wandb")
+
+        except subprocess.CalledProcessError as e:
+            print(f"Error getting git-tracked files: {e}")
+        except Exception as e:
+            print(f"Unexpected error during git code logging: {e}")
 
     def define_metric(
         self,
@@ -303,8 +414,8 @@ class RayGpuMonitorLogger:
                 )
                 time.sleep(self.collection_interval)  # Continue despite errors
 
-    def _parse_gpu_metric(self, sample: Sample, node_idx: int) -> dict[str, Any]:
-        """Parse a GPU metric sample into a standardized format.
+    def _parse_metric(self, sample: Sample, node_idx: int) -> dict[str, Any]:
+        """Parse a metric sample into a standardized format.
 
         Args:
             sample: Prometheus metric sample
@@ -313,28 +424,28 @@ class RayGpuMonitorLogger:
         Returns:
             Dictionary with metric name and value
         """
-        # Expected labels for GPU metrics
-        expected_labels = ["GpuIndex"]
-        for label in expected_labels:
-            if label not in sample.labels:
-                # This is probably a CPU node
-                return {}
-
         metric_name = sample.name
-        # Rename known metrics to match wandb naming convention
+        labels = sample.labels
+        value = sample.value
+
         if metric_name == "ray_node_gpus_utilization":
-            metric_name = "gpu"
+            index = labels["GpuIndex"]
+            metric_name = f"node.{node_idx}.gpu.{index}.util"
         elif metric_name == "ray_node_gram_used":
-            metric_name = "memory"
+            index = labels["GpuIndex"]
+            metric_name = f"node.{node_idx}.gpu.{index}.mem_gb"
+            # NOTE: It appears their docs say bytes, but it appears to be MB
+            value /= 1024
+        elif metric_name == "ray_node_mem_used":
+            metric_name = f"node.{node_idx}.mem_gb"
+            value /= 1024 * 1024 * 1024
+        elif metric_name == "ray_node_mem_total":
+            metric_name = f"node.{node_idx}.mem_total_gb"
+            value /= 1024 * 1024 * 1024
         else:
             # Skip unexpected metrics
             return {}
 
-        labels = sample.labels
-        index = labels["GpuIndex"]
-        value = sample.value
-
-        metric_name = f"node.{node_idx}.gpu.{index}.{metric_name}"
         return {metric_name: value}
 
     def _parse_gpu_sku(self, sample: Sample, node_idx: int) -> dict[str, str]:
@@ -401,7 +512,7 @@ class RayGpuMonitorLogger:
         assert metrics ^ sku, (
             f"Must collect either metrics or sku, not both: {metrics=}, {sku=}"
         )
-        parser_fn = self._parse_gpu_metric if metrics else self._parse_gpu_sku
+        parser_fn = self._parse_metric if metrics else self._parse_gpu_sku
 
         if not ray.is_initialized():
             print("Ray is not initialized. Cannot collect GPU metrics.")
@@ -426,10 +537,10 @@ class RayGpuMonitorLogger:
             # Process each node's metrics
             collected_metrics = {}
             for node_idx, metric_address in enumerate(unique_metric_addresses):
-                gpu_metrics = self._fetch_and_parse_metrics(
+                metrics = self._fetch_and_parse_metrics(
                     node_idx, metric_address, parser_fn
                 )
-                collected_metrics.update(gpu_metrics)
+                collected_metrics.update(metrics)
 
             return collected_metrics
 
@@ -462,13 +573,6 @@ class RayGpuMonitorLogger:
 
             # Parse the Prometheus format
             for family in text_string_to_metric_families(metrics_text):
-                # Skip non-GPU metrics
-                if family.name not in (
-                    "ray_node_gram_used",
-                    "ray_node_gpus_utilization",
-                ):
-                    continue
-
                 for sample in family.samples:
                     metrics = parser_fn(sample, node_idx)
                     gpu_metrics.update(metrics)
