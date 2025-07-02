@@ -109,10 +109,8 @@ def gather_params(model, keys, key_to_global_keys: Dict[str, List[str]]):
 
                 gathered_slices = [torch.empty_like(param) for _ in range(world_size)]
                 torch.distributed.all_gather(gathered_slices, param, group=group)
-                # TODO: why cast to torch.bfloat16 instead of param.dtype?
                 full_param = torch.cat(gathered_slices, dim=tp_dim)
             else:
-                # TODO: why do we need to clone?
                 full_param = param
         else:
             full_param = torch.empty(
