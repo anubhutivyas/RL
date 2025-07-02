@@ -361,6 +361,7 @@ def setup(
     print("\n" + "=" * 60)
     print(" " * 18 + "SETUP COMPLETE")
     print("=" * 60 + "\n")
+    ray.timeline(filename="/tmp/ray_timeline.json")
 
     return (
         policy,
