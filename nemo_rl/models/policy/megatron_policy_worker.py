@@ -464,6 +464,10 @@ class MegatronPolicyWorker:
             "expert_model_parallel_size"
         ]
 
+        # Setting moe_router_dtype to higher precision (e.g. fp64) can improve numerical stability,
+        # especially when using many experts.
+        model_cfg.moe_router_dtype = self.cfg["megatron_cfg"]["moe_router_dtype"]
+
         # The below two configs (and "freeze_moe_router") are used to stabilize moe training
         # by preventing updates to the moe router. We found that this is helpful in reducing
         # logprob error during training.
@@ -476,7 +480,6 @@ class MegatronPolicyWorker:
         model_cfg.moe_router_bias_update_rate = self.cfg["megatron_cfg"][
             "moe_router_bias_update_rate"
         ]
-        model_cfg.moe_router_dtype = "fp64"
 
         model_cfg.sequence_parallel = self.cfg["megatron_cfg"]["sequence_parallel"]
         model_cfg.bf16 = self.dtype == torch.bfloat16
@@ -491,8 +494,6 @@ class MegatronPolicyWorker:
             model_cfg.params_dtype = torch.float32
         model_cfg.pipeline_dtype = dtype_map[self.cfg["megatron_cfg"]["pipeline_dtype"]]
         model_cfg.parallel_output = True
-
-        model_cfg.disable_bf16_reduced_precision_matmul = True
 
         if self.cfg["megatron_cfg"]["activation_checkpointing"]:
             model_cfg.activations_checkpoint_granularity = "full"
