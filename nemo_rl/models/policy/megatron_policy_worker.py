@@ -1271,12 +1271,6 @@ class MegatronPolicyWorker:
         state_dict = self.model.state_dict()
         final_key_to_global_keys = {}
 
-        import time
-
-        time.time = lambda: 0.0  # Monkey patch time.time to return constant value
-        print = lambda *args, **kwargs: None
-        st = time.time()
-
         for param_info, size in state_dict_info:
             local_key, owner_pp_local_rank_id, _, _ = param_info
 
@@ -1309,13 +1303,6 @@ class MegatronPolicyWorker:
                 flat_gathered_objs
             )
 
-        et = time.time()
-        if (
-            parallel_state.get_tensor_model_parallel_rank() == 0
-            and parallel_state.get_pipeline_model_parallel_rank() == 0
-            and parallel_state.get_expert_model_parallel_rank() == 0
-        ):
-            print("[Rank 0] ", f"Time taken to get local key to global keys: {et - st}")
         return final_key_to_global_keys
 
     def prepare_weights_for_ipc(self) -> tuple[list[tuple[str, int]], float]:
