@@ -32,16 +32,18 @@ from nemo_rl.models.megatron.converters.common import get_global_key_from_local_
 
 REFIT_TIME_DEBUG = False
 
+
 def _rank_0_print(*args, **kwargs):
     pass
     """ Utility function to print only on rank 0. """
     if (
-        REFIT_TIME_DEBUG and
-        parallel_state.get_tensor_model_parallel_rank() == 0 and
-        parallel_state.get_pipeline_model_parallel_rank() == 0 and
-        parallel_state.get_expert_model_parallel_rank() == 0
+        REFIT_TIME_DEBUG
+        and parallel_state.get_tensor_model_parallel_rank() == 0
+        and parallel_state.get_pipeline_model_parallel_rank() == 0
+        and parallel_state.get_expert_model_parallel_rank() == 0
     ):
         print("[Rank 0] ", *args, **kwargs)
+
 
 def get_tp_dim(model, param_name, named_modules_dict):
     # pass in named_modules_dict so we can get it ahead of time instead
@@ -87,11 +89,7 @@ def get_tp_dim(model, param_name, named_modules_dict):
 
 
 @torch.no_grad()
-def gather_params(
-    model,
-    keys,
-    key_to_global_keys: Dict[str, List[str]]
-):
+def gather_params(model, keys, key_to_global_keys: Dict[str, List[str]]):
     st = time.perf_counter()
 
     tp_group = parallel_state.get_tensor_model_parallel_group()
@@ -125,9 +123,7 @@ def gather_params(
                     world_size = tp_world_size
                     group = tp_group
 
-                gathered_slices = [
-                    torch.empty_like(param) for _ in range(world_size)
-                ]
+                gathered_slices = [torch.empty_like(param) for _ in range(world_size)]
                 torch.distributed.all_gather(gathered_slices, param, group=group)
                 # TODO: why cast to torch.bfloat16 instead of param.dtype?
                 full_param = torch.cat(gathered_slices, dim=tp_dim)
@@ -135,7 +131,9 @@ def gather_params(
                 # TODO: why do we need to clone?
                 full_param = param
         else:
-            full_param = torch.empty(*shape, dtype=dtype, device=torch.cuda.current_device())
+            full_param = torch.empty(
+                *shape, dtype=dtype, device=torch.cuda.current_device()
+            )
 
         # Broadcast across PP group.
         src_global_rank = pp_global_ranks[owner_pp_local_rank_id]
@@ -159,12 +157,16 @@ def gather_params(
             torch.distributed.all_gather(
                 ep_gathered_params, stacked_pp_gathered_params, group=ep_group
             )
-            flat_gathered_params = [x for y in ep_gathered_params for x in torch.unbind(y)]
+            flat_gathered_params = [
+                x for y in ep_gathered_params for x in torch.unbind(y)
+            ]
 
         else:
             flat_gathered_params = pp_gathered_params
 
-        flat_gathered_global_keys = key_to_global_keys[(local_key, owner_pp_local_rank_id)]
+        flat_gathered_global_keys = key_to_global_keys[
+            (local_key, owner_pp_local_rank_id)
+        ]
         for k, p in zip(flat_gathered_global_keys, flat_gathered_params):
             if k is not None:
                 gathered_params[k] = p

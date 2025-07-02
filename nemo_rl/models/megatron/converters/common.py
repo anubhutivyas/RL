@@ -243,7 +243,10 @@ def update_transforms_for_nemorl(export_transforms):
     # In place update
     for transform in export_transforms:
         if transform.transform.__name__ == "split_fc1":
-            if "experts" in transform.source_key and "shared_experts" not in transform.source_key:
+            if (
+                "experts" in transform.source_key
+                and "shared_experts" not in transform.source_key
+            ):
                 transform.transform = split_fc1_etp
             else:
                 transform.transform = split_fc1_tp

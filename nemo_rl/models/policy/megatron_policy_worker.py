@@ -1285,11 +1285,15 @@ class MegatronPolicyWorker:
             # else: not sharded (like embedding)
             pp_gathered_objs = [None]
             if local_key in state_dict and owner_pp_local_rank_id == pp_local_rank_id:
-                pp_gathered_objs[0] = get_global_key_from_local_key(local_key, self.model.config)
-            
+                pp_gathered_objs[0] = get_global_key_from_local_key(
+                    local_key, self.model.config
+                )
+
             # Step 2: gather global keys from ranks in PP group
             src_global_rank = pp_global_ranks[owner_pp_local_rank_id]
-            torch.distributed.broadcast_object_list(pp_gathered_objs, src=src_global_rank, group=pp_group)
+            torch.distributed.broadcast_object_list(
+                pp_gathered_objs, src=src_global_rank, group=pp_group
+            )
 
             # Step 3: gather global keys from ranks in EP group
             if ep_pattern.search(local_key):
@@ -1300,8 +1304,10 @@ class MegatronPolicyWorker:
                 flat_gathered_objs = [x for y in ep_gathered_objs for x in y]
             else:
                 flat_gathered_objs = pp_gathered_objs
-            
-            final_key_to_global_keys[(local_key, owner_pp_local_rank_id)] = flat_gathered_objs
+
+            final_key_to_global_keys[(local_key, owner_pp_local_rank_id)] = (
+                flat_gathered_objs
+            )
 
         et = time.time()
         if (
