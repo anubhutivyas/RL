@@ -57,9 +57,7 @@ def create_local_venv(
     #
     # You can override this location by setting the NEMO_RL_VENV_DIR environment variable
 
-    NEMO_RL_VENV_DIR = os.path.normpath(
-        os.environ.get("NEMO_RL_VENV_DIR", DEFAULT_VENV_DIR)
-    )
+    NEMO_RL_VENV_DIR = '/lustre/fsw/coreai_dlalgo_llm/jiemingz/rl_sl/RL/venvs'
     logger.info(f"NEMO_RL_VENV_DIR is set to {NEMO_RL_VENV_DIR}.")
 
     # Create the venv directory if it doesn't exist
@@ -110,9 +108,7 @@ def _env_builder(
     py_executable: str, venv_name: str, node_idx: int, force_rebuild: bool = False
 ):
     # Check if another node is already building
-    NEMO_RL_VENV_DIR = os.path.normpath(
-        os.environ.get("NEMO_RL_VENV_DIR", DEFAULT_VENV_DIR)
-    )
+    NEMO_RL_VENV_DIR = '/lustre/fsw/coreai_dlalgo_llm/jiemingz/rl_sl/RL/venvs'
     venv_path = Path(NEMO_RL_VENV_DIR) / venv_name
     python_path = venv_path / "bin" / "python"
     started_file = venv_path / "STARTED_ENV_BUILDER"

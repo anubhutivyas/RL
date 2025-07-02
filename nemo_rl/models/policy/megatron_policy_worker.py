@@ -372,6 +372,7 @@ class MegatronPolicyWorker:
         if os.path.exists(hf_model_name):
             hf_model_subdir = f"model_{hf_model_subdir.replace('/', '_')}"
 
+        megatron_checkpoint_home = "/lustre/fsw/coreai_dlalgo_llm/jiemingz/rl_sl/mcore_ckpt_cache"
         if megatron_checkpoint_home is not None:
             pretrained_path = f"{megatron_checkpoint_home}/{hf_model_subdir}"
         else:
@@ -648,7 +649,7 @@ class MegatronPolicyWorker:
         )
 
     def configure_worker(self, num_gpus: int, bundle_indices: Optional[tuple] = None):
-        USE_EXPANDABLE_SEGMENTS = False  # Disabling this right now as it seems to cause vLLM refit issues with Ampere
+        USE_EXPANDABLE_SEGMENTS = True  # Disabling this right now as it seems to cause vLLM refit issues with Ampere
         if USE_EXPANDABLE_SEGMENTS:
             return None, {"PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"}, None
         else:
@@ -1400,8 +1401,9 @@ class MegatronPolicyWorker:
         device_idx = torch.cuda.current_device()
         ## Get device free memory using NVML
         total_available_bytes = get_free_memory_bytes(device_idx)
-        ## Use 80% of the free memory for safety
-        total_available_bytes *= 0.8
+        # TODO: setting to low value (10%) since
+        # more buckets seems to have better perf
+        total_available_bytes *= 0.1
 
         return param_info, total_available_bytes
 
