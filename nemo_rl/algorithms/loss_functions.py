@@ -211,7 +211,9 @@ class ClippedPGLossFn(LossFunction):
             ratios_clamped = curr_logprobs
 
         if self.use_stable_loss:
-            loss = -(advantages * ratios_clamped.detach() * curr_logprobs)
+            loss_stable = -(advantages * ratios_clamped.detach() * curr_logprobs)
+            clip_loss = loss_stable
+
         else:
             loss1 = -advantages * ratios
             loss2 = -advantages * ratios_clamped
