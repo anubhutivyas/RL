@@ -102,8 +102,8 @@ from nemo_rl.models.megatron.common import (
 )
 from nemo_rl.models.megatron.community_import import import_model_from_hf_name
 from nemo_rl.models.megatron.converters.common import (
-    get_all_rank_ids_in_group,
     MegatronToHFConverter,
+    get_all_rank_ids_in_group,
 )
 from nemo_rl.models.megatron.refit_utils import (
     gather_params,
