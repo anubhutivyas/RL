@@ -103,7 +103,6 @@ from nemo_rl.models.megatron.common import (
 from nemo_rl.models.megatron.community_import import import_model_from_hf_name
 from nemo_rl.models.megatron.converters.common import (
     MegatronToHFConverter,
-    get_all_rank_ids_in_group,
     get_global_key_from_local_key,
 )
 from nemo_rl.models.megatron.refit_utils import (
@@ -1333,7 +1332,7 @@ class MegatronPolicyWorker:
 
         etp_group = parallel_state.get_expert_tensor_parallel_group()
         etp_world_size = torch.distributed.get_world_size(etp_group)
-        etp_group_rank_ids = get_all_rank_ids_in_group(etp_group)
+        etp_group_rank_ids = get_process_group_ranks(etp_group)
 
         pp_group = parallel_state.get_pipeline_model_parallel_group()
         pp_world_size = torch.distributed.get_world_size(pp_group)
@@ -1342,7 +1341,7 @@ class MegatronPolicyWorker:
 
         ep_group = parallel_state.get_expert_model_parallel_group()
         ep_world_size = torch.distributed.get_world_size(ep_group)
-        ep_group_rank_ids = get_all_rank_ids_in_group(ep_group)
+        ep_group_rank_ids = get_process_group_ranks(ep_group)
 
         # Collect parameter info
         param_info = []
