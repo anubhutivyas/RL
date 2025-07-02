@@ -474,14 +474,15 @@ class MegatronPolicyWorker:
             model_cfg.params_dtype = torch.float32
         model_cfg.pipeline_dtype = dtype_map[self.cfg["megatron_cfg"]["pipeline_dtype"]]
         model_cfg.parallel_output = True
-        model_cfg.moe_router_dtype = "fp64"
+        # Setting moe_router_dtype to higher precision (e.g. fp64) can improve numerical stability,
+        # especially when using many experts.
+        model_cfg.moe_router_dtype = self.cfg["megatron_cfg"]["moe_router_dtype"]
         model_cfg.moe_router_load_balancing_type = self.cfg["megatron_cfg"][
             "moe_router_load_balancing_type"
         ]
         model_cfg.moe_router_bias_update_rate = self.cfg["megatron_cfg"][
             "moe_router_bias_update_rate"
         ]
-        model_cfg.disable_bf16_reduced_precision_matmul = True
         if self.cfg["megatron_cfg"]["activation_checkpointing"]:
             model_cfg.activations_checkpoint_granularity = "full"
             model_cfg.activations_checkpoint_method = "uniform"

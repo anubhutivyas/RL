@@ -153,18 +153,19 @@ def get_basic_megatron_test_config(
         "megatron_cfg": {
             "enabled": True,
             "empty_unused_memory_level": 0,
-            "freeze_moe_router": True,
             "activation_checkpointing": activation_checkpointing,
             "converter_type": "Qwen2ForCausalLM",  # Use Qwen2 converter for Qwen3 models (compatible)
             "tensor_model_parallel_size": tp,
+            "expert_tensor_parallel_size": 1,
+            "expert_model_parallel_size": 1,
             "pipeline_model_parallel_size": pp,
             "num_layers_in_first_pipeline_stage": None,
             "num_layers_in_last_pipeline_stage": None,
             "context_parallel_size": 1,
             "pipeline_dtype": precision,
-            "expert_model_parallel_size": 1,
-            "expert_tensor_parallel_size": 1,
             "sequence_parallel": sequence_parallel,
+            "freeze_moe_router": True,
+            "moe_router_dtype": "fp64",
             "moe_router_load_balancing_type": "none",
             "moe_router_bias_update_rate": 0.0,
             "optimizer": {
