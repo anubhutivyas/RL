@@ -63,7 +63,6 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
             optimizer_path = os.path.abspath(optimizer_path)
 
         node_bundle_indices = None
-        self.cp_size = 1
         tp_size = 1
         pp_size = 1
         cp_size = 1
@@ -92,7 +91,6 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
             tp_size = config["megatron_cfg"]["tensor_model_parallel_size"]
             pp_size = config["megatron_cfg"]["pipeline_model_parallel_size"]
             cp_size = config["megatron_cfg"]["context_parallel_size"]
-            self.cp_size = config["megatron_cfg"]["context_parallel_size"]
             ep_size = config["megatron_cfg"]["expert_model_parallel_size"]
             training_backend = "megatron"
         else:
@@ -210,7 +208,7 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
 
         futures = self.worker_group.run_all_workers_sharded_data(
             "get_logprobs",
-            sharded_data_2d,
+            data=sharded_data_2d,
             in_sharded_axes=["data_parallel", "context_parallel"],
             replicate_on_axes=["tensor_parallel", "pipeline_parallel"],
             output_is_replicated=["tensor_parallel", "pipeline_parallel"],
@@ -266,7 +264,7 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
 
         futures = self.worker_group.run_all_workers_sharded_data(
             "get_reference_policy_logprobs",
-            sharded_data_2d,
+            data=sharded_data_2d,
             in_sharded_axes=["data_parallel", "context_parallel"],
             replicate_on_axes=["tensor_parallel", "pipeline_parallel"],
             output_is_replicated=["tensor_parallel", "pipeline_parallel"],
@@ -316,7 +314,7 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
         # Train each shard in parallel
         futures = self.worker_group.run_all_workers_sharded_data(
             "train",
-            sharded_data,
+            data=sharded_data,
             in_sharded_axes=["data_parallel"],
             replicate_on_axes=[
                 "context_parallel",
@@ -368,7 +366,7 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
         sharded_data = data.shard_by_batch_size(dp_size, batch_size=None)
         futures = self.worker_group.run_all_workers_sharded_data(
             "generate",
-            sharded_data,
+            data=sharded_data,
             in_sharded_axes=["data_parallel"],
             replicate_on_axes=["tensor_parallel", "pipeline_parallel"],
             output_is_replicated=["tensor_parallel", "pipeline_parallel"],
