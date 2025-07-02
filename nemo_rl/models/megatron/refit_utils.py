@@ -13,7 +13,7 @@
 # limitations under the License.
 import re
 import time
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List
 
 import torch
 from megatron.core import parallel_state
@@ -28,21 +28,6 @@ from megatron.core.tensor_parallel.layers import (
     RowParallelLinear,
     VocabParallelEmbedding,
 )
-from nemo_rl.models.megatron.converters.common import get_global_key_from_local_key
-
-REFIT_TIME_DEBUG = False
-
-
-def _rank_0_print(*args, **kwargs):
-    pass
-    """ Utility function to print only on rank 0. """
-    if (
-        REFIT_TIME_DEBUG
-        and parallel_state.get_tensor_model_parallel_rank() == 0
-        and parallel_state.get_pipeline_model_parallel_rank() == 0
-        and parallel_state.get_expert_model_parallel_rank() == 0
-    ):
-        print("[Rank 0] ", *args, **kwargs)
 
 
 def get_tp_dim(model, param_name, named_modules_dict):
@@ -60,7 +45,6 @@ def get_tp_dim(model, param_name, named_modules_dict):
     key = prefix + ".".join(param_name.split(".")[:-1])
     module = named_modules_dict.get(key)
     if module is None:
-        _rank_0_print(f"Module {key} not found in named_modules_dict")
         return None
     if hasattr(module, "parallel_mode") and module.parallel_mode is not None:
         # TE layers sometimes have parallel_mode we can check directly
