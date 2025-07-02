@@ -34,7 +34,10 @@ from nemo_rl.models.generation.interfaces import (
     GenerationInterface,
     GenerationOutputSpec,
 )
-from nemo_rl.models.policy import PolicyConfig
+from nemo_rl.models.policy import (
+    PolicyConfig,
+    PolicyWorkerRegistry,
+)
 from nemo_rl.models.policy.interfaces import (
     ColocatablePolicyInterface,
     LogprobOutputSpec,
@@ -62,53 +65,36 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
         if optimizer_path:
             optimizer_path = os.path.abspath(optimizer_path)
 
-        node_bundle_indices = None
-        self.cp_size = 1
-        tp_size = 1
-        pp_size = 1
-        cp_size = 1
+        # Use registry to create worker configuration
+        worker_builder_cls, parallelism_info, worker_config = (
+            PolicyWorkerRegistry.create(config, cluster.world_size())
+        )
 
-        worker_builder_cls: str
-        training_backend = None
-        if not config.get("megatron_cfg", {}).get(
-            "enabled", False
-        ):  # Huggingface backend
-            if config["dtensor_cfg"]["enabled"]:
-                worker_builder_cls = (
-                    "nemo_rl.models.policy.dtensor_policy_worker.DTensorPolicyWorker"
-                )
-                tp_size = config["dtensor_cfg"]["tensor_parallel_size"]
-                cp_size = config["dtensor_cfg"]["context_parallel_size"]
-            else:
-                worker_builder_cls = (
-                    "nemo_rl.models.policy.fsdp1_policy_worker.FSDP1PolicyWorker"
-                )
-            training_backend = "hf"
-        elif config["megatron_cfg"]["enabled"]:  # Megatron backend
-            worker_builder_cls = (
-                "nemo_rl.models.policy.megatron_policy_worker.MegatronPolicyWorker"
-            )
-            tp_size = config["megatron_cfg"]["tensor_model_parallel_size"]
-            pp_size = config["megatron_cfg"]["pipeline_model_parallel_size"]
-            cp_size = config["megatron_cfg"]["context_parallel_size"]
-            training_backend = "megatron"
-        else:
-            training_backend = "hf"
-            worker_builder_cls = (
-                "nemo_rl.models.policy.fsdp1_policy_worker.FSDP1PolicyWorker"
-            )
+        # Extract parallelism dimensions
+        tp_size = parallelism_info.tensor_parallel_size
+        pp_size = parallelism_info.pipeline_parallel_size
+        cp_size = parallelism_info.context_parallel_size
+        ep_size = parallelism_info.expert_parallel_size
 
+        # Calculate data parallel size from remaining dimensions
+        model_parallel_size = tp_size * pp_size * cp_size * ep_size
+        dp_size = cluster.world_size() // model_parallel_size
+
+        # Create 5D layout to include expert parallelism
+        # Layout: [PP, DP, CP, EP, TP]
         self.sharding_annotations = NamedSharding(
             layout=np.arange(cluster.world_size()).reshape(
                 pp_size,  # PP
-                -1,  # DP
+                dp_size,  # DP
                 cp_size,  # CP
+                ep_size,  # EP
                 tp_size,  # TP
             ),
             names=[
                 "pipeline_parallel",
                 "data_parallel",
                 "context_parallel",
+                "expert_parallel",
                 "tensor_parallel",
             ],
         )
@@ -116,7 +102,7 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
         pre_init_queue = RayQueue()
         worker_builder = RayWorkerBuilder(
             worker_builder_cls,
-            config,
+            worker_config,  # Use the transformed config from registry
             tokenizer=tokenizer,
             init_optimizer=init_optimizer,
             weights_path=weights_path,
@@ -135,12 +121,6 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
         )
 
         if config["dynamic_batching"]["enabled"]:
-            assert config["dtensor_cfg"]["enabled"] or training_backend == "megatron", (
-                "Dynamic batch is only supported for DTensor or Megatron policy."
-            )
-            assert pp_size == 1, (
-                "Dynamic batching is only supported for single pipeline parallel stage"
-            )
             self.use_dynamic_batches = True
             self.dynamic_batching_args: DynamicBatchingArgs = {
                 "input_key": "input_ids",
@@ -154,6 +134,7 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
             self.use_dynamic_batches = False
 
         self.cfg = config
+        self.parallelism_info = parallelism_info
 
     def init_collective(
         self, ip: str, port: int, world_size: int
