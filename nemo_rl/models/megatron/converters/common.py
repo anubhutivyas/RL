@@ -113,6 +113,7 @@ def get_global_layer_num(s, cfg):
 
 def get_global_expert_num(s, cfg):
     """Assumes experts have 'experts.' in their name. Expert num succeeds '.weight'.
+
     Assumes expert model parallel size is set.
     In the state dict, the expert number is the local expert number (expert local).
     This function converts the local expert number to the global expert number.
