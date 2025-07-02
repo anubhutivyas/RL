@@ -104,10 +104,10 @@ from nemo_rl.models.megatron.community_import import import_model_from_hf_name
 from nemo_rl.models.megatron.converters.common import (
     MegatronToHFConverter,
     get_all_rank_ids_in_group,
+    get_global_key_from_local_key,
 )
 from nemo_rl.models.megatron.refit_utils import (
     gather_params,
-    get_global_key_from_local_key,
     get_tp_dim,
 )
 from nemo_rl.models.policy import PolicyConfig
