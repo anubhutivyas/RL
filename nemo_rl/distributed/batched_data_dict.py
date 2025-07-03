@@ -374,7 +374,7 @@ class BatchedDataDict(UserDict, Generic[DictT]):
 
         elif sequence_packing_args is not None:
             bin_packer = get_packer(
-                algorithm=sequence_packing_args["algorithm"],
+                algorithm="modified_first_fit_decreasing",
                 bin_capacity=sequence_packing_args["max_tokens_per_microbatch"],
                 collect_metrics=False,  # TODO(ahmadki): make configurable
             )
@@ -474,7 +474,7 @@ class BatchedDataDict(UserDict, Generic[DictT]):
                 shard.micro_batch_lengths = sharded_micro_lengths[shard_idx]
                 shard.elem_counts_per_gb = sharded_elem_counts_per_gb[shard_idx]
                 aggregated_shards.append(shard)
-
+                
             return aggregated_shards, batch_sorted_indices
 
         else:
