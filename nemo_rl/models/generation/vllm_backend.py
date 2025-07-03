@@ -35,6 +35,12 @@ class VllmInternalWorkerExtension:
         func, args = ipc_handle[device_uuid]
         self.shared_buffer = func(*args)
 
+    def delete_shared_buffer(self):
+        """Deletes the shared buffer."""
+        if hasattr(self, "shared_buffer"):
+            del self.shared_buffer
+            self.shared_buffer = None
+
     def init_collective(
         self, rank_prefix: int, ip: str, port: int, world_size: int
     ) -> None:

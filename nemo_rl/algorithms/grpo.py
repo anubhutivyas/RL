@@ -436,7 +436,7 @@ def refit_policy_generation(
         # Set up the shared memory buffers for efficient refit.
         # The buffer size should be large enough for the largest parameter group.
         # We add a small margin for safety.
-        refit_buffer_size_mb = int((8 * 1024) * 1.1)
+        refit_buffer_size_mb = int((4 * 1024) * 1.1)
         policy.setup_refit(policy_generation, buffer_size_mb=refit_buffer_size_mb)
 
         # do update
@@ -474,6 +474,10 @@ def refit_policy_generation(
         raise RuntimeError(error_message)
 
     if colocated_inference:
+        # Clean up shared memory buffers
+        policy.delete_shared_buffers()
+        policy_generation.delete_shared_buffers()
+
         policy.offload_after_refit()
         policy_generation.prepare_for_generation(tags=["kv_cache"])
 

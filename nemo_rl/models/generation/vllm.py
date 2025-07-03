@@ -378,6 +378,10 @@ class VllmGenerationWorker:
         """Proxy method to initialize the shared buffer in the vLLM worker."""
         self.llm.collective_rpc("init_shared_buffer", args=(ipc_handle,))
 
+    def delete_shared_buffer(self):
+        """Proxy method to delete the shared buffer in the vLLM worker."""
+        self.llm.collective_rpc("delete_shared_buffer", args=())
+
     def llm(self):
         return self.llm
 
@@ -1633,6 +1637,14 @@ class VllmGeneration(GenerationInterface):
         futures = self.worker_group.run_all_workers_single_data(
             "init_shared_buffer",
             ipc_handle=handles,
+            run_rank_0_only_axes=["tensor_parallel", "pipeline_parallel"],
+        )
+        ray.get(futures)
+
+    def delete_shared_buffers(self):
+        """Delete shared buffers on all vLLM workers."""
+        futures = self.worker_group.run_all_workers_single_data(
+            "delete_shared_buffer",
             run_rank_0_only_axes=["tensor_parallel", "pipeline_parallel"],
         )
         ray.get(futures)

@@ -1466,6 +1466,12 @@ class MegatronPolicyWorker:
         handle = reduce_tensor(self.shared_buffer)
         return {device_uuid: handle}
 
+    def delete_shared_buffer(self):
+        """Deletes the shared buffer."""
+        if hasattr(self, "shared_buffer"):
+            del self.shared_buffer
+            self.shared_buffer = None
+
     def stream_weights_to_queue(self, *, keys: list[str] = None, data_queue: "Queue", signal_queue: "Queue"):
         """
         Streams metadata about updated weights to a Ray Queue.

@@ -480,6 +480,13 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
         for worker_handles in handles:
             all_handles.update(worker_handles)
         generation_interface.init_shared_buffers(all_handles)
+    
+    def delete_shared_buffers(self):
+        """Delete the shared buffers."""
+        futures = self.worker_group.run_all_workers_single_data(
+            "delete_shared_buffer"
+        )
+        ray.get(futures)
 
     def stream_weights_metadata(self, keys: list[str]) -> dict[str, Any]:
         """Fetch weight IPC handles from all workers using a per-worker queue for synchronization."""
