@@ -769,7 +769,6 @@ class MegatronPolicyWorker:
                     data_iterator_len = (
                         batch.get_microbatch_iterator_dynamic_shapes_len()
                     )
-                    micro_batch_size = self.cfg["train_micro_batch_size"]
                 elif self.cfg["sequence_packing"]["enabled"]:
                     data_iterator = (
                         batch.make_microbatch_iterator_for_packable_sequences()
@@ -777,7 +776,7 @@ class MegatronPolicyWorker:
                     data_iterator_len, seq_dim_size = (
                         batch.get_microbatch_iterator_for_packable_sequences_len()
                     )
-                    micro_batch_size = 1
+                    mbs = 1
                     pack_seqs = True
                     seqlen_key = "input_lengths"
                     tp_size = self.cfg["megatron_cfg"]["tensor_model_parallel_size"]
@@ -1049,7 +1048,7 @@ class MegatronPolicyWorker:
         else:
             mb_iterator = data.make_microbatch_iterator(logprob_batch_size)
             data_iterator_len = max(1, data.size // logprob_batch_size)
-        micro_batch_size = logprob_batch_size
+            micro_batch_size = logprob_batch_size
 
         forward_backward_func = get_forward_backward_func()
         list_of_logprobs = forward_backward_func(
