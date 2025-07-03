@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import os
+from contextlib import contextmanager
 from tempfile import TemporaryDirectory
 
 import torch
@@ -33,6 +34,7 @@ def dummy_qwen3_megatron_moe_config():
         moe_ffn_hidden_size=32,
         num_moe_experts=2,
         share_embeddings_and_output_weights=True,
+        kv_channels=16,
     )
 
 
@@ -44,6 +46,7 @@ def dummy_qwen3_megatron_dense_config():
         num_query_groups=2,
         ffn_hidden_size=128,
         share_embeddings_and_output_weights=False,
+        kv_channels=16,
     )
 
 
@@ -61,6 +64,7 @@ def create_dummy_hf_moe_config():
     hf_config.moe_intermediate_size = 32
     hf_config.num_experts = 2
     hf_config.tie_word_embeddings = True
+    hf_config.head_dim = 16
 
     return hf_config
 
@@ -77,17 +81,19 @@ def create_dummy_hf_dense_config():
     hf_config.num_key_value_heads = 2
     hf_config.intermediate_size = 128
     hf_config.tie_word_embeddings = False
+    hf_config.head_dim = 16
 
     return hf_config
 
 
-def test_conversion_to_hf_moe():
-    """Test conversion of Qwen3 MoE model to HF format."""
+@contextmanager
+def setup_distributed_environment(port="6000"):
+    """Set up distributed environment for testing."""
     # Set up environment variables for distributed training
     os.environ["WORLD_SIZE"] = "1"
     os.environ["LOCAL_RANK"] = "0"
     os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "6000"
+    os.environ["MASTER_PORT"] = port
 
     # Initialize torch.distributed first
     if not dist.is_initialized():
@@ -111,210 +117,167 @@ def test_conversion_to_hf_moe():
     tensor_parallel_random.model_parallel_cuda_manual_seed(42)
 
     try:
-        # Create megatron model
-        mcore_config = dummy_qwen3_megatron_moe_config()
-        model = Qwen3Model(mcore_config)
-        model.configure_model()
-
-        # Create dummy HF config and save to temporary directory
-        with TemporaryDirectory() as tmp_dir:
-            hf_dir = os.path.join(tmp_dir, "Qwen3-tiny-test-moe")
-            hf_config = create_dummy_hf_moe_config()
-            hf_config.save_pretrained(hf_dir)
-
-            # Create a dummy HF model to get the model class
-            dummy_model = AutoModelForCausalLM.from_config(
-                hf_config, trust_remote_code=True
-            )
-            dummy_model.save_pretrained(hf_dir)
-
-            original_state_dict = model.module.state_dict()
-
-            converter = MegatronToHFConverter(
-                hf_model_name=hf_dir,
-                megatron_model=model.module,
-            )
-
-            converted_state_dict = converter.convert(original_state_dict, model.config)
-
-            ## filter out _extra_state keys
-            original_state_dict = {
-                k: v for k, v in original_state_dict.items() if "_extra_state" not in k
-            }
-
-            ## check that the number of keys in the original state dict is equal to the number of keys in the converted state dict minus the number of extra state keys
-            ## taking into account the qkv merging and the merging of the up and gate projections
-            assert len(original_state_dict) == len(converted_state_dict) - (
-                2 * hf_config.num_hidden_layers
-                + (hf_config.num_hidden_layers * hf_config.num_experts)
-            )
-
-            ## TODO: do not hardcode these values
-            q_chunk_size = 256
-            kv_chunk_size = 256
-
-            ## check a few of the tensors to make sure they match
-            torch.testing.assert_close(
-                original_state_dict[
-                    "decoder.layers.0.self_attention.q_layernorm.weight"
-                ],
-                converted_state_dict["model.layers.0.self_attn.q_norm.weight"],
-            )
-            torch.testing.assert_close(
-                original_state_dict[
-                    "decoder.layers.0.self_attention.linear_qkv.weight"
-                ][:q_chunk_size],
-                converted_state_dict["model.layers.0.self_attn.q_proj.weight"][
-                    :q_chunk_size
-                ],
-            )
-            torch.testing.assert_close(
-                original_state_dict[
-                    "decoder.layers.1.self_attention.linear_qkv.weight"
-                ][(q_chunk_size + kv_chunk_size) : (2 * q_chunk_size + kv_chunk_size)],
-                converted_state_dict["model.layers.1.self_attn.q_proj.weight"][
-                    q_chunk_size:
-                ],
-            )
-            torch.testing.assert_close(
-                original_state_dict["decoder.layers.1.mlp.experts.linear_fc1.weight0"][
-                    mcore_config.moe_ffn_hidden_size :
-                ],
-                converted_state_dict["model.layers.1.mlp.experts.0.up_proj.weight"],
-            )
-            torch.testing.assert_close(
-                original_state_dict["decoder.layers.1.mlp.experts.linear_fc1.weight0"][
-                    : mcore_config.moe_ffn_hidden_size
-                ],
-                converted_state_dict["model.layers.1.mlp.experts.0.gate_proj.weight"],
-            )
-            torch.testing.assert_close(
-                original_state_dict["decoder.layers.0.mlp.experts.linear_fc2.weight1"],
-                converted_state_dict["model.layers.0.mlp.experts.1.down_proj.weight"],
-            )
-
+        yield
     finally:
         # Clean up megatron parallel
         parallel_state.destroy_model_parallel()
         # Clean up distributed
         if dist.is_initialized():
             dist.destroy_process_group()
+
+
+def create_model_and_converter(megatron_config, hf_config, model_name):
+    """Create megatron model and converter for testing."""
+    # Create megatron model
+    model = Qwen3Model(megatron_config)
+    model.configure_model()
+
+    # Create dummy HF config and save to temporary directory
+    with TemporaryDirectory() as tmp_dir:
+        hf_dir = os.path.join(tmp_dir, model_name)
+        hf_config.save_pretrained(hf_dir)
+
+        # Create a dummy HF model to get the model class
+        dummy_model = AutoModelForCausalLM.from_config(
+            hf_config, trust_remote_code=True
+        )
+        dummy_model.save_pretrained(hf_dir)
+
+        original_state_dict = model.module.state_dict()
+
+        converter = MegatronToHFConverter(
+            hf_model_name=hf_dir,
+            megatron_model=model.module,
+        )
+
+        converted_state_dict = converter.convert(original_state_dict, model.config)
+
+        # Filter out _extra_state keys
+        original_state_dict = {
+            k: v for k, v in original_state_dict.items() if "_extra_state" not in k
+        }
+
+        return original_state_dict, converted_state_dict, hf_config, model
+
+
+def calculate_chunk_sizes(hf_config):
+    """Calculate chunk sizes for QKV tensor splitting."""
+    q_chunk_size = hf_config.head_dim * (
+        hf_config.num_attention_heads // hf_config.num_key_value_heads
+    )
+    kv_chunk_size = hf_config.head_dim * 2
+    return q_chunk_size, kv_chunk_size
+
+
+def assert_attention_tensors_match(
+    original_state_dict, converted_state_dict, q_chunk_size, kv_chunk_size
+):
+    """Assert that attention tensors match between original and converted state dicts."""
+    # Check q_layernorm
+    torch.testing.assert_close(
+        original_state_dict["decoder.layers.0.self_attention.q_layernorm.weight"],
+        converted_state_dict["model.layers.0.self_attn.q_norm.weight"],
+    )
+
+    # Check first layer q_proj
+    torch.testing.assert_close(
+        original_state_dict["decoder.layers.0.self_attention.linear_qkv.weight"][
+            :q_chunk_size
+        ],
+        converted_state_dict["model.layers.0.self_attn.q_proj.weight"][:q_chunk_size],
+    )
+
+    # Check second layer q_proj
+    torch.testing.assert_close(
+        original_state_dict["decoder.layers.1.self_attention.linear_qkv.weight"][
+            (q_chunk_size + kv_chunk_size) : (2 * q_chunk_size + kv_chunk_size)
+        ],
+        converted_state_dict["model.layers.1.self_attn.q_proj.weight"][
+            q_chunk_size : (2 * q_chunk_size)
+        ],
+    )
+
+
+def test_conversion_to_hf_moe():
+    """Test conversion of Qwen3 MoE model to HF format."""
+    with setup_distributed_environment("6000"):
+        mcore_config = dummy_qwen3_megatron_moe_config()
+        hf_config = create_dummy_hf_moe_config()
+
+        original_state_dict, converted_state_dict, hf_config, model = (
+            create_model_and_converter(mcore_config, hf_config, "Qwen3-tiny-test-moe")
+        )
+
+        # Check that the number of keys in the original state dict is equal to the number of keys in the converted state dict minus the number of extra state keys
+        # taking into account the qkv merging and the merging of the up and gate projections
+        assert len(original_state_dict) == len(converted_state_dict) - (
+            2 * hf_config.num_hidden_layers
+            + (hf_config.num_hidden_layers * hf_config.num_experts)
+        )
+
+        q_chunk_size, kv_chunk_size = calculate_chunk_sizes(hf_config)
+
+        # Check attention tensors
+        assert_attention_tensors_match(
+            original_state_dict, converted_state_dict, q_chunk_size, kv_chunk_size
+        )
+
+        # Check MoE MLP tensors
+        torch.testing.assert_close(
+            original_state_dict["decoder.layers.1.mlp.experts.linear_fc1.weight0"][
+                mcore_config.moe_ffn_hidden_size :
+            ],
+            converted_state_dict["model.layers.1.mlp.experts.0.up_proj.weight"],
+        )
+        torch.testing.assert_close(
+            original_state_dict["decoder.layers.1.mlp.experts.linear_fc1.weight0"][
+                : mcore_config.moe_ffn_hidden_size
+            ],
+            converted_state_dict["model.layers.1.mlp.experts.0.gate_proj.weight"],
+        )
+        torch.testing.assert_close(
+            original_state_dict["decoder.layers.0.mlp.experts.linear_fc2.weight1"],
+            converted_state_dict["model.layers.0.mlp.experts.1.down_proj.weight"],
+        )
 
 
 def test_conversion_to_hf_dense():
     """Test conversion of Qwen3 dense model to HF format."""
-    # Set up environment variables for distributed training
-    os.environ["WORLD_SIZE"] = "1"
-    os.environ["LOCAL_RANK"] = "0"
-    os.environ["MASTER_ADDR"] = "localhost"
-    os.environ["MASTER_PORT"] = "6001"  # Different port to avoid conflicts
+    with setup_distributed_environment("6001"):
+        mcore_config = dummy_qwen3_megatron_dense_config()
+        hf_config = create_dummy_hf_dense_config()
 
-    # Initialize torch.distributed first
-    if not dist.is_initialized():
-        dist.init_process_group(
-            backend="nccl" if torch.cuda.is_available() else "gloo",
-            rank=0,
-            world_size=1,
+        original_state_dict, converted_state_dict, hf_config, model = (
+            create_model_and_converter(mcore_config, hf_config, "Qwen3-tiny-test-dense")
         )
 
-    # Initialize megatron parallel
-    import megatron.core.parallel_state as parallel_state
-    import megatron.core.tensor_parallel.random as tensor_parallel_random
+        # Check that the number of keys in the original state dict is equal to the number of keys in the converted state dict minus the number of extra state keys
+        # taking into account the qkv merging and the merging of the up and gate projections
+        assert len(original_state_dict) == len(converted_state_dict) - (
+            3 * hf_config.num_hidden_layers
+        )
 
-    parallel_state.initialize_model_parallel(
-        tensor_model_parallel_size=1,
-        pipeline_model_parallel_size=1,
-        expert_model_parallel_size=1,
-    )
+        q_chunk_size, kv_chunk_size = calculate_chunk_sizes(hf_config)
 
-    # Set up CUDA RNG states for model parallel
-    tensor_parallel_random.model_parallel_cuda_manual_seed(42)
+        # Check attention tensors
+        assert_attention_tensors_match(
+            original_state_dict, converted_state_dict, q_chunk_size, kv_chunk_size
+        )
 
-    try:
-        # Create megatron model
-        mcore_config = dummy_qwen3_megatron_dense_config()
-        model = Qwen3Model(mcore_config)
-        model.configure_model()
-
-        # Create dummy HF config and save to temporary directory
-        with TemporaryDirectory() as tmp_dir:
-            hf_dir = os.path.join(tmp_dir, "Qwen3-tiny-test-dense")
-            hf_config = create_dummy_hf_dense_config()
-            hf_config.save_pretrained(hf_dir)
-
-            # Create a dummy HF model to get the model class
-            dummy_model = AutoModelForCausalLM.from_config(
-                hf_config, trust_remote_code=True
-            )
-            dummy_model.save_pretrained(hf_dir)
-
-            original_state_dict = model.module.state_dict()
-
-            converter = MegatronToHFConverter(
-                hf_model_name=hf_dir,
-                megatron_model=model.module,
-            )
-
-            converted_state_dict = converter.convert(original_state_dict, model.config)
-
-            ## filter out _extra_state keys
-            original_state_dict = {
-                k: v for k, v in original_state_dict.items() if "_extra_state" not in k
-            }
-
-            ## check that the number of keys in the original state dict is equal to the number of keys in the converted state dict minus the number of extra state keys
-            ## taking into account the qkv merging and the merging of the up and gate projections
-            assert len(original_state_dict) == len(converted_state_dict) - (
-                3 * hf_config.num_hidden_layers
-            )
-
-            ## TODO: do not hardcode these values
-            q_chunk_size = 256
-            kv_chunk_size = 256
-
-            ## check a few of the tensors to make sure they match
-            torch.testing.assert_close(
-                original_state_dict[
-                    "decoder.layers.0.self_attention.q_layernorm.weight"
-                ],
-                converted_state_dict["model.layers.0.self_attn.q_norm.weight"],
-            )
-            torch.testing.assert_close(
-                original_state_dict[
-                    "decoder.layers.0.self_attention.linear_qkv.weight"
-                ][:q_chunk_size],
-                converted_state_dict["model.layers.0.self_attn.q_proj.weight"][
-                    :q_chunk_size
-                ],
-            )
-            torch.testing.assert_close(
-                original_state_dict[
-                    "decoder.layers.1.self_attention.linear_qkv.weight"
-                ][(q_chunk_size + kv_chunk_size) : (2 * q_chunk_size + kv_chunk_size)],
-                converted_state_dict["model.layers.1.self_attn.q_proj.weight"][
-                    q_chunk_size:
-                ],
-            )
-            torch.testing.assert_close(
-                original_state_dict["decoder.layers.1.mlp.linear_fc1.weight"][
-                    mcore_config.ffn_hidden_size :
-                ],
-                converted_state_dict["model.layers.1.mlp.up_proj.weight"],
-            )
-            torch.testing.assert_close(
-                original_state_dict["decoder.layers.1.mlp.linear_fc1.weight"][
-                    : mcore_config.ffn_hidden_size
-                ],
-                converted_state_dict["model.layers.1.mlp.gate_proj.weight"],
-            )
-            torch.testing.assert_close(
-                original_state_dict["decoder.layers.0.mlp.linear_fc2.weight"],
-                converted_state_dict["model.layers.0.mlp.down_proj.weight"],
-            )
-
-    finally:
-        # Clean up megatron parallel
-        parallel_state.destroy_model_parallel()
-        # Clean up distributed
-        if dist.is_initialized():
-            dist.destroy_process_group()
+        # Check dense MLP tensors
+        torch.testing.assert_close(
+            original_state_dict["decoder.layers.1.mlp.linear_fc1.weight"][
+                mcore_config.ffn_hidden_size :
+            ],
+            converted_state_dict["model.layers.1.mlp.up_proj.weight"],
+        )
+        torch.testing.assert_close(
+            original_state_dict["decoder.layers.1.mlp.linear_fc1.weight"][
+                : mcore_config.ffn_hidden_size
+            ],
+            converted_state_dict["model.layers.1.mlp.gate_proj.weight"],
+        )
+        torch.testing.assert_close(
+            original_state_dict["decoder.layers.0.mlp.linear_fc2.weight"],
+            converted_state_dict["model.layers.0.mlp.down_proj.weight"],
+        )
