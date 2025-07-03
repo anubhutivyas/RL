@@ -1,4 +1,4 @@
-# Packaging Guide
+# NeMo RL Packaging Strategies
 
 This guide covers packaging and deployment strategies for NeMo RL models and applications.
 
@@ -609,7 +609,7 @@ def test_api_endpoint():
 
 ## Getting Help
 
-- [Deployment Examples](../../examples/deployment/) - Complete deployment examples
+- [Deployment Examples](../../examples/) - Complete deployment examples
 - [Configuration Reference](../reference/configuration.md) - Configuration options
 - [Troubleshooting Guide](../reference/troubleshooting.md) - Common deployment issues
 - [API Reference](../reference/api.md) - Programmatic deployment 

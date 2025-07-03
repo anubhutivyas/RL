@@ -158,7 +158,7 @@ This template provides a solid foundation for creating professional, maintainabl
 
 *This template is designed to be easily customizable for your specific documentation needs. The structure and patterns demonstrated here can be adapted to any software product or technical documentation project.*
 
-# Documentation Development
+# Build NeMo RL Documentation
 
 - [Documentation Template](#documentation-template)
   - [What This Template Demonstrates](#what-this-template-demonstrates)
@@ -177,7 +177,7 @@ This template provides a solid foundation for creating professional, maintainabl
   - [Building the Documentation](#building-the-documentation)
   - [Customization Tips](#customization-tips)
   - [Requirements](#requirements)
-- [Documentation Development](#documentation-development)
+- [Build NeMo RL Documentation](#build-nemo-rl-documentation)
   - [Set Up the Documentation Environment](#set-up-the-documentation-environment)
   - [Build the Documentation](#build-the-documentation)
     - [Build Variants](#build-variants)

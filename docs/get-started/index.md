@@ -5,7 +5,7 @@ categories: ["getting-started"]
 ---
 
 (gs-overview)=
-# Get Started with NeMo RL
+# Get Started
 
 Welcome to NeMo RL! This guide will help you set up your environment and run your first reinforcement learning training job with large language models.
 
@@ -26,8 +26,7 @@ Choose the training approach that best fits your needs:
 :gutter: 1 1 1 2
 
 :::{grid-item-card} {octicon}`rocket;1.5em;sd-mr-1` SFT Quickstart
-:link: get-started/quickstart.md
-:link-type: ref
+:link: quickstart
 :link-alt: Supervised Fine-Tuning quickstart guide
 
 Get started with supervised fine-tuning for language models. Perfect for beginners and domain adaptation tasks.
@@ -37,8 +36,7 @@ Get started with supervised fine-tuning for language models. Perfect for beginne
 :::
 
 :::{grid-item-card} {octicon}`zap;1.5em;sd-mr-1` GRPO Quickstart
-:link: guides/grpo.md
-:link-type: ref
+:link: ../guides/grpo
 :link-alt: Group Relative Policy Optimization guide
 
 Learn Group Relative Policy Optimization for reinforcement learning with language models. Advanced RL training.
@@ -48,8 +46,7 @@ Learn Group Relative Policy Optimization for reinforcement learning with languag
 :::
 
 :::{grid-item-card} {octicon}`heart;1.5em;sd-mr-1` DPO Quickstart
-:link: guides/dpo.md
-:link-type: ref
+:link: ../guides/dpo
 :link-alt: Direct Preference Optimization guide
 
 Explore Direct Preference Optimization for preference learning and alignment. Preference-based training.
@@ -59,8 +56,7 @@ Explore Direct Preference Optimization for preference learning and alignment. Pr
 :::
 
 :::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Distributed Training
-:link: get-started/cluster.md
-:link-type: ref
+:link: cluster
 :link-alt: Cluster setup and distributed training guide
 
 Set up multi-GPU and multi-node training clusters for large-scale RL experiments.
@@ -79,8 +75,8 @@ Set up multi-GPU and multi-node training clusters for large-scale RL experiments
 
 ### 2. Environment Configuration
 - [Cluster Setup](cluster.md) - Configure Ray clusters for distributed training
-- [GPU Requirements](installation.md#gpu-requirements) - Understand GPU memory and compute needs
-- [Model Access](installation.md#model-access) - Set up Hugging Face authentication
+- [Hardware Requirements](installation.md) - Understand GPU memory and compute needs
+- [Authentication Setup](installation.md) - Set up Hugging Face authentication
 
 ### 3. First Training Run
 - [Quickstart Tutorial](quickstart.md) - Run your first SFT training job
@@ -102,3 +98,14 @@ After completing your first training run:
 - [Troubleshooting](../reference/troubleshooting.md) - Common issues and solutions
 - [API Reference](../reference/api.md) - Complete API documentation
 - [Community Support](https://github.com/NVIDIA-NeMo/RL/issues) - GitHub issues and discussions
+
+```{toctree}
+:maxdepth: 2
+:caption: Get Started
+
+installation
+quickstart
+local-workstation
+docker
+cluster
+```

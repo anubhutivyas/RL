@@ -5,9 +5,6 @@ tags: ["reference", "api", "configuration", "specifications"]
 categories: ["reference", "onboarding"]
 ---
 
-(ref-overview)=
-# Overview
-
 # Reference
 
 - [API Reference](api.md)
@@ -15,4 +12,15 @@ categories: ["reference", "onboarding"]
 - [Configuration](configuration.md)
 - [Glossary](glossary.md)
 - [Troubleshooting](troubleshooting.md)
+
+```{toctree}
+:maxdepth: 2
+:caption: Reference
+
+api
+cli
+configuration
+glossary
+troubleshooting
+```
 

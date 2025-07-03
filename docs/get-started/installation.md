@@ -1,4 +1,4 @@
-# Installation
+# Install NeMo RL
 
 This guide covers installing NeMo RL on various platforms and environments.
 
@@ -11,6 +11,9 @@ This guide covers installing NeMo RL on various platforms and environments.
 - **Storage**: At least 50GB free space for models and datasets
 
 ### Hardware Requirements
+
+(gpu-requirements)=
+
 - **GPU**: NVIDIA GPU with 8GB+ VRAM (16GB+ recommended)
 - **CPU**: Multi-core processor (8+ cores recommended)
 - **Network**: Stable internet connection for downloading models
@@ -89,6 +92,8 @@ export CUDA_VISIBLE_DEVICES="0,1,2,3"  # Specify GPUs to use
 ```
 
 ### Hugging Face Authentication
+
+(model-access)=
 
 For models requiring authentication (e.g., Llama models):
 

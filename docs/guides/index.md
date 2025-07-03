@@ -19,12 +19,33 @@ Explore detailed guides for NeMo RL algorithms, training, evaluation, and develo
 
 ## Distributed Training
 
-- [Distributed Training](distributed-training.md) - Scale RL training across multiple GPUs and nodes
+- [Set Up Distributed Training with Ray](distributed-training.md) - Scale RL training across multiple GPUs and nodes
 
 ## Advanced Topics
 
-- [Environment Development](environment-development.md) - Create custom RL environments
+- [Create Custom RL Environments](environment-development.md) - Create custom RL environments
 - [Packaging](packaging.md) - Deployment and packaging strategies for production
 - [Model Quirks](model-quirks.md) - Model-specific considerations and workarounds
 - [GRPO on DeepScaler](grpo-deepscaler.md) - DeepScaler integration for large-scale training
 - [SFT on OpenMathInstruct2](sft-openmathinstruct2.md) - Math instruction fine-tuning example 
+
+```{toctree}
+:maxdepth: 2
+:caption: Guides
+
+sft
+grpo
+dpo
+eval
+adding-new-models
+testing
+debugging
+nsys-profiling
+documentation
+distributed-training
+environment-development
+packaging
+model-quirks
+grpo-deepscaler
+sft-openmathinstruct2
+``` 

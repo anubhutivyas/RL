@@ -23,7 +23,7 @@
 import os
 import sys
 
-project = "NeMo-RL"
+project = "NeMo RL"
 copyright = "2025, NVIDIA Corporation"
 author = "NVIDIA Corporation"
 release = "0.2.1"

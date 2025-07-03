@@ -1,4 +1,4 @@
-# Evaluation
+# Evaluate Model Capabilities
 
 This document explains how to use an evaluation script for assessing model capabilities.
 

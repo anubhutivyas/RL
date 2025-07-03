@@ -1,11 +1,13 @@
-# NeMo RL Documentation
+﻿# NeMo RL Documentation
 
-Welcome to the NeMo RL documentation! NeMo RL is a scalable, modular, and efficient post-training library for reinforcement learning and supervised fine-tuning of large language models.
+Welcome to the NeMo RL documentation! NeMo RL is a scalable, modular, and efficient post-training 
+library for reinforcement learning and supervised fine-tuning of large language models.
 
 ## 📖 About
 - [Overview & Philosophy](about/index.md)
 - [Key Features](about/key-features.md)
 - [Architecture](about/architecture.md)
+- [Why NeMo RL](about/why-nemo-rl.md)
 
 ## 🚀 Get Started
 - [Installation](get-started/installation.md)
@@ -14,7 +16,7 @@ Welcome to the NeMo RL documentation! NeMo RL is a scalable, modular, and effici
 - [Docker](get-started/docker.md)
 - [Cluster Setup](get-started/cluster.md)
 
-## 📚 Guides
+## 📚 NeMo RL Guides
 - [SFT Training](guides/sft.md)
 - [GRPO Training](guides/grpo.md)
 - [DPO Training](guides/dpo.md)
@@ -25,8 +27,11 @@ Welcome to the NeMo RL documentation! NeMo RL is a scalable, modular, and effici
 - [NSYS Profiling](guides/nsys-profiling.md)
 - [Documentation](guides/documentation.md)
 - [Packaging](guides/packaging.md)
-- [Environment Development](guides/environment-development.md)
-- [Distributed Training](guides/distributed-training.md)
+- [Create Custom RL Environments](guides/environment-development.md)
+- [Set Up Distributed Training with Ray](guides/distributed-training.md)
+- [Model Quirks](guides/model-quirks.md)
+- [GRPO DeepScaler](guides/grpo-deepscaler.md)
+- [SFT OpenMathInstruct2](guides/sft-openmathinstruct2.md)
 
 ## 📋 Reference
 - [API Reference](reference/api.md)
@@ -44,103 +49,11 @@ _Navigate using the sidebar for more!_
 ```
 
 ```{toctree}
-:caption: 📖 About
-:hidden:
+:maxdepth: 3
 
-about/index.md
-about/key-features.md
-about/architecture.md
-about/concepts/index.md
-about/release-notes/index.md
-
-```
-
-```{toctree}
-:caption: 🚀 Get Started
-:hidden:
-
-get-started/index.md
-get-started/installation.md
-get-started/quickstart.md
-get-started/local-workstation.md
-get-started/docker.md
-get-started/cluster.md
-
-```
-
-```{toctree}
-:caption: 📚 Guides
-:hidden:
-
-guides/index.md
-guides/sft.md
-guides/grpo.md
-guides/dpo.md
-guides/eval.md
-guides/adding-new-models.md
-guides/testing.md
-guides/debugging.md
-guides/nsys-profiling.md
-guides/documentation.md
-guides/packaging.md
-guides/model-quirks.md
-guides/environment-development.md
-guides/distributed-training.md
-guides/grpo-deepscaler.md
-guides/sft-openmathinstruct2.md
-
-```
-
-```{toctree}
-:caption: 📋 Reference
-:hidden:
-
-reference/index.md
-reference/api.md
-reference/cli.md
-reference/configuration.md
-reference/glossary.md
-reference/troubleshooting.md
-
-```
-
-```{toctree}
-:caption: 📐 Design Docs
-:hidden:
-
-design-docs/design-and-philosophy.md
-design-docs/padding.md
-design-docs/logger.md
-design-docs/uv.md
-design-docs/chat-datasets.md
-design-docs/generation.md
-design-docs/checkpointing.md
-design-docs/loss-functions.md
-design-docs/fsdp2-parallel-plan.md
-design-docs/training-backends.md
-
-```
-
-```{toctree}
-:caption: 🎯 Feature Sets
-:hidden:
-
-feature-set-a/index.md
-feature-set-a/category-a/index.md
-feature-set-a/tutorials/index.md
-feature-set-b/index.md
-feature-set-b/category-a/index.md
-feature-set-b/tutorials/index.md
-
-```
-
-```{toctree}
-:caption: ⚙️ Admin
-:hidden:
-
-admin/index.md
-admin/cicd/index.md
-admin/deployment/index.md
-admin/integrations/index.md
-
+about/index
+get-started/index
+guides/index
+reference/index
+design-docs/index
 ```

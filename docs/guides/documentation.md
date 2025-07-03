@@ -1,6 +1,6 @@
-# Documentation Development
+# Build NeMo RL Documentation
 
-- [Documentation Development](#documentation-development)
+- [Build NeMo RL Documentation](#build-nemo-rl-documentation)
   - [Build the Documentation](#build-the-documentation)
   - [Live Building](#live-building)
   - [Run Tests in Python Docstrings](#run-tests-in-python-docstrings)

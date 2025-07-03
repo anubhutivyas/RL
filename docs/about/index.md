@@ -5,7 +5,7 @@ categories: ["concepts"]
 ---
 
 (about-overview)=
-# About NeMo RL
+# About
 
 NeMo RL is an open-source, comprehensive framework for reinforcement learning and supervised fine-tuning of large language models. Built for scalability and efficiency, NeMo RL enables researchers and practitioners to train, evaluate, and deploy RL-enhanced language models at scale.
 
@@ -40,29 +40,25 @@ Explore the foundational concepts and organizational patterns used in NeMo RL.
 :gutter: 1 1 1 2
 
 :::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` RL Algorithms
-:link: about/key-features.md
-:link-type: ref
+:link: key-features
 
 Explore key RL algorithms including SFT, GRPO, and DPO with mathematical foundations and implementation details.
 :::
 
 :::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Distributed Training
-:link: about/architecture.md
-:link-type: ref
+:link: architecture
 
 Learn about Ray-based virtual clusters, worker groups, and multi-node training strategies for scalable RL.
 :::
 
 :::{grid-item-card} {octicon}`cpu;1.5em;sd-mr-1` Model Backends
-:link: about/architecture.md
-:link-type: ref
+:link: architecture
 
 Understand Hugging Face integration, Megatron-LM support, and DTensor capabilities for different model architectures.
 :::
 
 :::{grid-item-card} {octicon}`game;1.5em;sd-mr-1` Environments
-:link: about/key-features.md
-:link-type: ref
+:link: key-features
 
 Discover built-in environments for math problems, games, and custom environment development for RL tasks.
 :::
@@ -71,7 +67,16 @@ Discover built-in environments for math problems, games, and custom environment 
 
 ## Getting Started
 
-- [Installation](get-started/installation.md) - Set up NeMo RL on your system
-- [Quickstart](get-started/quickstart.md) - Run your first RL training job
+- [Installation](../get-started/installation.md) - Set up NeMo RL on your system
+- [Quickstart](../get-started/quickstart.md) - Run your first RL training job
 - [Key Features](key-features.md) - Explore NeMo RL's capabilities
 - [Architecture](architecture.md) - Understand the system design
+
+```{toctree}
+:maxdepth: 2
+:caption: About
+
+key-features
+architecture
+why-nemo-rl
+```

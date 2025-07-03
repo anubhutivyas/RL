@@ -174,7 +174,7 @@ docs/
 - [ ] Identify required content areas for algorithms and environments
 - [ ] Set up advanced Sphinx configuration with NeMo RL extensions
 
-### During Documentation Development
+### During Build NeMo RL Documentation
 
 - [ ] Implement progressive disclosure from RL basics to NeMo RL advanced features
 - [ ] Create multiple entry points for different algorithm users

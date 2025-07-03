@@ -1,4 +1,4 @@
-# Distributed Training Guide
+# Set Up Distributed Training with Ray
 
 This guide covers distributed training strategies in NeMo RL, from single-GPU setups to large-scale multi-node clusters using Ray.
 

@@ -1,4 +1,4 @@
-# Supervised Fine-Tuning in NeMo RL
+# Perform SFT in NeMo RL
 
 This document explains how to perform SFT within NeMo RL. It outlines key operations, including initiating SFT runs, managing experiment configurations using YAML, and integrating custom datasets that conform to the required structure and attributes.
 

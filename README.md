@@ -384,7 +384,7 @@ Refer to `examples/configs/eval.yaml` for a full list of parameters that can be 
 For detailed instructions on how to set up and launch NeMo RL on Slurm or Kubernetes clusters, please refer to the dedicated [Cluster Start](docs/get-started/cluster.md) documentation.
 
 ## Tips and Tricks
-- If you forget to initialize the NeMo and Megatron submodules when cloning the NeMo-RL repository, you may run into an error like this:
+- If you forget to initialize the NeMo and Megatron submodules when cloning the NeMo RL repository, you may run into an error like this:
   
   ```sh
   ModuleNotFoundError: No module named 'megatron'
@@ -417,7 +417,7 @@ note = {GitHub repository},
 
 ## Contributing
 
-We welcome contributions to NeMo RL\! Please see our [Contributing Guidelines](https://github.com/NVIDIA/NeMo-RL/blob/main/CONTRIBUTING.md) for more information on how to get involved.
+We welcome contributions to NeMo RL! Please see our [Contributing Guidelines](https://github.com/NVIDIA/NeMo-RL/blob/main/CONTRIBUTING.md) for more information on how to get involved.
 
 ## Licenses
 
