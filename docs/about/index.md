@@ -74,7 +74,7 @@ Discover built-in environments for math problems, games, and custom environment 
 
 ```{toctree}
 :maxdepth: 2
-:caption: About
+:caption: **About**
 
 key-features
 architecture

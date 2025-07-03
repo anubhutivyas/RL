@@ -31,7 +31,7 @@ Explore detailed guides for NeMo RL algorithms, training, evaluation, and develo
 
 ```{toctree}
 :maxdepth: 2
-:caption: Guides
+:caption: **Guides**
 
 sft
 grpo

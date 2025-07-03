@@ -129,7 +129,7 @@ NeMo RL supports multiple training backends to accommodate different model sizes
 - **DTensor (FSDP2)** - PyTorch's next-generation distributed training with improved memory efficiency
 - **Megatron** - NVIDIA's high-performance training framework for scaling to large models (>100B parameters)
 
-The training backend is automatically determined based on your YAML configuration settings. For detailed information on backend selection, configuration, and examples, see the [Training Backends documentation](docs/design-docs/training-backends.md).
+The training backend is automatically determined based on your YAML configuration settings. For detailed information on backend selection, configuration, and examples, see the [Training Backends documentation](docs/design-docs/training-backends.md) in the Core Design & Architecture section.
 
 ## GRPO
 
@@ -173,7 +173,7 @@ uv run python examples/run_grpo_math.py \
   --config examples/configs/grpo_math_1B_megatron.yaml
 ```
 
-For additional details on supported backends and how to configure the training backend to suit your setup, refer to the [Training Backends documentation](docs/design-docs/training-backends.md).
+For additional details on supported backends and how to configure the training backend to suit your setup, refer to the [Training Backends documentation](docs/design-docs/training-backends.md) in the Core Design & Architecture section.
 
 ### GRPO Multi-node
 
@@ -350,7 +350,7 @@ uv run python examples/convert_dcp_to_hf.py \
 ```
 > **Note:** Adjust the paths according to your training output directory structure.
 
-For an in-depth explanation of checkpointing, refer to the [Checkpointing documentation](docs/design-docs/checkpointing.md).
+For an in-depth explanation of checkpointing, refer to the [Checkpointing documentation](docs/design-docs/checkpointing.md) in the Core Design & Architecture section.
 
 ### Run Evaluation
 

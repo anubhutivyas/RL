@@ -1,4 +1,4 @@
-# GRPO on DeepScaler
+# Train GRPO Models on DeepScaleR
 
 This guide explains how to use NeMo RL to train long Chain of Thought (CoT) reasoning models with Group Relative Policy Optimization (GRPO). To do so, we train [DeepSeek-R1-Distill-Qwen-1.5B](https://huggingface.co/deepseek-ai/DeepSeek-R1-Distill-Qwen-1.5B) on the [DeepScaleR](https://huggingface.co/datasets/agentica-org/DeepScaleR-Preview-Dataset) dataset. We then show how to use NeMo RL's evaluation scripts to evaluate the trained model on the [AIME24](https://huggingface.co/datasets/HuggingFaceH4/aime_2024) benchmark.
 

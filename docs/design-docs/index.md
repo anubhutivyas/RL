@@ -5,7 +5,7 @@ categories: ["design"]
 ---
 
 (design-overview)=
-# Design Documents
+# Core Design & Architecture
 
 This section contains detailed design documents, architectural decisions, and technical specifications for NeMo RL. These documents provide insights into the framework's internals and design philosophy.
 
@@ -92,7 +92,7 @@ Learn about UV integration and package management strategies.
 
 ```{toctree}
 :maxdepth: 2
-:caption: Design Documents
+:caption: **Core Design & Architecture**
 
 design-and-philosophy
 training-backends

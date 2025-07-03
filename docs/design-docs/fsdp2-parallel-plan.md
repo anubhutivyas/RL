@@ -1,4 +1,4 @@
-# FSDP2 Parallel Plan
+# FSDP2 Parallelization Strategy
 
 This guide outlines the parallelization strategy for Fully Sharded Data Parallel version 2 (FSDP2) training in NeMo RL.
 

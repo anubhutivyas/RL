@@ -1,4 +1,4 @@
-# Design and Philosophy
+# Design Philosophy & Architecture
 
 This section introduces the NeMo RL APIs and addresses the challenges of online Reinforcement Learning (RL). Coordinating various software components, known as RL Actors, requires effective resource allocation, isolation, coordination, and communication. Our design philosophy focuses on creating modular abstractions for these tasks, ensuring scalability from one GPU to thousands, regardless of the RL Actor's implementation.
 

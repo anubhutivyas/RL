@@ -101,7 +101,7 @@ After completing your first training run:
 
 ```{toctree}
 :maxdepth: 2
-:caption: Get Started
+:caption: **Get Started**
 
 installation
 quickstart

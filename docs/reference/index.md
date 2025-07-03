@@ -15,7 +15,7 @@ categories: ["reference", "onboarding"]
 
 ```{toctree}
 :maxdepth: 2
-:caption: Reference
+:caption: **Reference**
 
 api
 cli
