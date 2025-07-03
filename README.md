@@ -194,7 +194,7 @@ sbatch \
     --gres=gpu:8 \
     ray.sub
 ```
-The required `CONTAINER` can be built by following the instructions in the [Docker documentation](docs/docker.md).
+The required `CONTAINER` can be built by following the instructions in the [Docker documentation](docs/get-started/docker.md).
 
 #### GRPO Qwen2.5-32B
 
@@ -381,7 +381,7 @@ Refer to `examples/configs/eval.yaml` for a full list of parameters that can be 
 
 ## Set Up Clusters
 
-For detailed instructions on how to set up and launch NeMo RL on Slurm or Kubernetes clusters, please refer to the dedicated [Cluster Start](docs/cluster.md) documentation.
+For detailed instructions on how to set up and launch NeMo RL on Slurm or Kubernetes clusters, please refer to the dedicated [Cluster Start](docs/get-started/cluster.md) documentation.
 
 ## Tips and Tricks
 - If you forget to initialize the NeMo and Megatron submodules when cloning the NeMo-RL repository, you may run into an error like this:

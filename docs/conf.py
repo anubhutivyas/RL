@@ -38,10 +38,16 @@ extensions = [
     "sphinx.ext.doctest",  # Allows testing in docstrings
     "sphinx.ext.napoleon",  # For google style docstrings
     "sphinx_copybutton",  # For copy button in code blocks
+    "sphinx_design",  # For grid, dropdown, tab-set directives
 ]
 
 templates_path = ["_templates"]
-exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
+exclude_patterns = [
+    "_build", 
+    "Thumbs.db", 
+    ".DS_Store",
+    "_extensions/*/README.md",  # Exclude extension README files
+]
 
 # -- Options for MyST Parser (Markdown) --------------------------------------
 # MyST Parser settings
@@ -54,6 +60,17 @@ myst_enable_extensions = [
     "tasklist",  # Adds support for GitHub-style task lists with [ ] and [x]
 ]
 myst_heading_anchors = 5  # Generates anchor links for headings up to level 5
+
+# -- Options for numfig -----------------------------------------------------
+# Note: numfig extension not available in this Sphinx version
+# numfig = True
+# numfig_secnum_depth = 2
+
+# -- Options for custom roles -----------------------------------------------------
+# Add support for octicon role
+def setup(app):
+    app.add_role('octicon', lambda name, rawtext, text, lineno, inliner, options={}, content=[]: 
+                 ([], []))
 
 # -- Options for Autodoc2 ---------------------------------------------------
 sys.path.insert(0, os.path.abspath(".."))

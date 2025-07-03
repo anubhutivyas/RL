@@ -1,70 +1,77 @@
 ---
-description: "Learn about our platform's core concepts, key features, and fundamental architecture to understand how it works."
-tags: ["overview", "concepts", "architecture", "features"]
+description: "Learn about NeMo RL's core concepts, key features, and fundamental architecture for reinforcement learning with large language models."
+tags: ["overview", "concepts", "architecture", "features", "reinforcement learning", "distributed training"]
 categories: ["concepts"]
 ---
 
 (about-overview)=
-# About {{ product_name_short }}
-This Documentation Template is an open-source, comprehensive showcase for scalable, modern documentation structures across multiple product areas and content types.
+# About NeMo RL
 
-This template helps you create high-quality, well-structured documentation for complex software products and enterprise platforms. Whether you work with web documentation, internal knowledge bases, or public-facing product docs, this template supports your workflow.
+NeMo RL is an open-source, comprehensive framework for reinforcement learning and supervised fine-tuning of large language models. Built for scalability and efficiency, NeMo RL enables researchers and practitioners to train, evaluate, and deploy RL-enhanced language models at scale.
 
-(about-overview-target-users)=
 ## Target Users
 
-- **Technical writers and documentation engineers**: Build and maintain comprehensive documentation systems for complex products.
-- **Documentation managers and information architects**: Deploy and scale documentation projects across teams and product lines.
-- **Open source maintainers**: Create professional documentation structures for community projects and developer tools.
-- **Enterprise teams**: Ensure documentation consistency, accessibility, and quality for production software systems.
+- **Researchers**: Explore state-of-the-art RL algorithms (GRPO, DPO, SFT) with large language models
+- **Machine Learning Engineers**: Deploy scalable RL training pipelines with distributed computing
+- **DevOps Engineers**: Manage multi-node training clusters and production deployments
+- **Data Scientists**: Fine-tune language models for specific domains and applications
 
-(about-overview-how-it-works)=
-## How It Works
+## How NeMo RL Works
 
-This template accelerates documentation development by using modern Sphinx extensions and proven content architecture patterns. You can structure content efficiently—from a single product to multi-product ecosystems. With modular layouts, advanced navigation, and seamless integration with modern documentation tools, this template is trusted by technical writing teams.
+NeMo RL provides a unified framework for reinforcement learning with language models through:
 
-- **Product A Workflows**: Content flows through structured sections (loading, processing, reporting), organized with clear navigation hierarchies and cross-references.
-- **Product B Integration**: Uses grid layouts, card-based navigation, and modular content organization for complex integration scenarios.
-- **Product C Analytics**: Built with advanced Sphinx features, conditional content rendering, and scalable information architecture patterns.
+- **Multiple RL Algorithms**: Support for SFT (Supervised Fine-Tuning), GRPO (Group Relative Policy Optimization), and DPO (Direct Preference Optimization)
+- **Distributed Training**: Ray-based virtual clusters for scalable multi-GPU and multi-node training
+- **Model Flexibility**: Support for Hugging Face models and Megatron-LM backends
+- **Environment Integration**: Built-in environments for math problems, games, and custom tasks
 
-For more details, see the [Core Concepts](about-concepts) and [Key Features](about-key-features) sections below.
-
-(about-overview-key-technologies)=
 ### Key Technologies
 
-- **Sphinx Documentation**: Modern documentation generation with powerful extensions and themes.
-- **MyST Markdown**: Advanced markdown parsing with rich directive support and cross-referencing.
-- **Grid Layouts**: Responsive, card-based content organization for complex product documentation.
-- **Conditional Content**: Dynamic content rendering based on build configuration and target audiences.
+- **Ray**: Distributed computing framework for scalable RL training
+- **PyTorch**: Deep learning framework with advanced distributed training capabilities
+- **Transformers**: Hugging Face integration for state-of-the-art language models
+- **Megatron-LM**: High-performance training backend for large models
 
-(about-overview-core-concepts)=
 ## Core Concepts
 
-Explore the foundational concepts and organizational patterns used across this documentation template.
+Explore the foundational concepts and organizational patterns used in NeMo RL.
 
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
 
-:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Product A Concepts
-:link: about-concepts-product-a
+:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` RL Algorithms
+:link: about/key-features.md
 :link-type: ref
 
-Explore key concepts for Product A workflows, including scalable data loading, processing (transformation, validation, filtering), and report generation.
+Explore key RL algorithms including SFT, GRPO, and DPO with mathematical foundations and implementation details.
 :::
 
+:::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Distributed Training
+:link: about/architecture.md
+:link-type: ref
 
+Learn about Ray-based virtual clusters, worker groups, and multi-node training strategies for scalable RL.
+:::
+
+:::{grid-item-card} {octicon}`cpu;1.5em;sd-mr-1` Model Backends
+:link: about/architecture.md
+:link-type: ref
+
+Understand Hugging Face integration, Megatron-LM support, and DTensor capabilities for different model architectures.
+:::
+
+:::{grid-item-card} {octicon}`game;1.5em;sd-mr-1` Environments
+:link: about/key-features.md
+:link-type: ref
+
+Discover built-in environments for math problems, games, and custom environment development for RL tasks.
+:::
 
 ::::
 
-(about-overview-about-template)=
-## About This Template
+## Getting Started
 
-This template demonstrates advanced Sphinx documentation patterns including:
-
-- **Complex Navigation**: Multi-level toctrees with conditional content
-- **Rich Content Layout**: Grid systems, cards, and responsive design
-- **Cross-Reference Systems**: Comprehensive linking and reference management
-- **Extension Integration**: Custom Sphinx extensions and advanced features
-- **Scalable Architecture**: Patterns that work from small projects to enterprise-scale documentation
-
-Perfect for teams who need to create sophisticated, maintainable documentation systems.
+- [Installation](get-started/installation.md) - Set up NeMo RL on your system
+- [Quickstart](get-started/quickstart.md) - Run your first RL training job
+- [Key Features](key-features.md) - Explore NeMo RL's capabilities
+- [Architecture](architecture.md) - Understand the system design
