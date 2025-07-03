@@ -319,7 +319,7 @@ def forward_step_arbitrary_loss(
             loss_fn = SequencePackingLossWrapper(
                 loss_fn=loss_fn,
                 cu_seqlens_q=packed_seq_params.cu_seqlens_q,
-                cu_seqlens_q_padded=packed_seq_params.cu_seqlens_q,
+                cu_seqlens_q_padded=packed_seq_params.cu_seqlens_q_padded,
             )
 
         loss_data = data_dict
