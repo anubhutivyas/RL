@@ -374,6 +374,10 @@ class VllmGenerationWorker:
             ),
         )
 
+    def init_shared_buffer(self, ipc_handle: dict[str, tuple]):
+        """Proxy method to initialize the shared buffer in the vLLM worker."""
+        self.llm.collective_rpc("init_shared_buffer", args=(ipc_handle,))
+
     def llm(self):
         return self.llm
 
@@ -905,87 +909,16 @@ class VllmGenerationWorker:
 
         return cast(list[str], list_of_worker_results)
 
-    def update_weights_from_ipc_handles(self, ipc_handles: dict[str, Any]) -> bool:
-        """Update weights from IPC handles by delegating to the vLLM Worker implementation.
-
-        Args:
-            ipc_handles (dict): Dictionary mapping device UUIDs (str) to parameter IPC handles.
-
-        Returns:
-            bool: True if weights were successfully updated, False otherwise.
-        """
-        try:
-            assert self.llm is not None, (
-                "Attempting to update weights with either an uninitialized vLLM or non-model-owner"
-            )
-
-            if self.cfg["vllm_cfg"]["async_engine"]:
-                raise RuntimeError(
-                    "update_weights_from_ipc_handles cannot be used with async_engine=True. Use update_weights_from_ipc_handles_async instead."
-                )
-
-            result_or_coro = self.llm.collective_rpc(
-                "update_weights_from_ipc_handles", args=(ipc_handles,)
-            )
-            worker_result = result_or_coro[0]
-
-            if not worker_result:
-                print(
-                    f"Error: Worker failed to update weights. Result: {worker_result}"
-                )
-                return False
-            return True
-        except Exception as e:
-            print(f"Exception during collective_rpc for weight update: {e}")
-            import traceback
-
-            traceback.print_exc()
+    def update_weights_from_shared_buffer(self, metadata: dict[str, dict[str, Any]]) -> bool:
+        """Update weights of the policy using a shared buffer."""
+        if not self.llm:
             return False
 
-    async def update_weights_from_ipc_handles_async(
-        self, ipc_handles: dict[str, Any]
-    ) -> bool:
-        """Async version of update_weights_from_ipc_handles.
+        result = self.llm.collective_rpc(
+            "update_weights_from_shared_buffer", args=(metadata,)
+        )
+        return result[0]
 
-        Args:
-            ipc_handles (dict): Dictionary mapping device UUIDs (str) to parameter IPC handles.
-
-        Returns:
-            bool: True if weights were successfully updated, False otherwise.
-        """
-        try:
-            assert self.llm is not None, (
-                "Attempting to update weights with either an uninitialized vLLM or non-model-owner"
-            )
-
-            if not self.cfg["vllm_cfg"]["async_engine"]:
-                raise RuntimeError(
-                    "update_weights_from_ipc_handles_async can only be used with async_engine=True. Use update_weights_from_ipc_handles instead."
-                )
-
-            result_or_coro = await self.llm.collective_rpc(
-                "update_weights_from_ipc_handles", args=(ipc_handles,)
-            )
-
-            if asyncio.iscoroutine(result_or_coro):
-                worker_results = await result_or_coro
-            else:
-                worker_results = result_or_coro
-
-            worker_result = worker_results[0]
-
-            if not worker_result:
-                print(
-                    f"Error: Worker failed to update weights. Result: {worker_result}"
-                )
-                return False
-            return True
-        except Exception as e:
-            print(f"Exception during collective_rpc for weight update: {e}")
-            import traceback
-
-            traceback.print_exc()
-            return False
 
     def update_weights_from_collective(self, info: dict[str, Any]) -> bool:
         """Update the model weights from collective communication."""
@@ -1466,42 +1399,59 @@ class VllmGeneration(GenerationInterface):
     def generate_text(
         self, data: BatchedDataDict[GenerationDatumSpec], greedy: bool = False
     ) -> BatchedDataDict[GenerationOutputSpec]:
-        """Generate text responses using vLLM."""
-        assert isinstance(data, BatchedDataDict), (
-            f"data must be a BatchedDataDict, got type: {type(data)}"
+        """Generate text responses using vLLM generation.
+
+        Args:
+            data: BatchedDataDict containing prompts with text strings
+            greedy: Whether to use greedy decoding instead of sampling
+
+        Returns:
+            BatchedDataDict containing:
+                - texts: List of generated text responses
+        """
+        # Extract stop_strings if provided, else use default from config
+        batch_stop_strings: list[list[str] | None] = data.get(
+            "stop_strings", [self.cfg.get("stop_strings")] * len(data["prompts"])
         )
 
-        # Shard the data across the tied worker groups
-        dp_size = self.sharding_annotations.get_axis_size("data_parallel")
-        sharded_data: list[SlicedDataDict] = data.shard_by_batch_size(
-            dp_size, allow_uneven_shards=True
-        )
-        future_bundle = self.worker_group.run_all_workers_sharded_data(
-            "generate_text",
-            data=sharded_data,
-            in_sharded_axes=["data_parallel"],
-            replicate_on_axes=None,  # just run on tp rank 0
-            output_is_replicated=None,
-            common_kwargs={"greedy": greedy},
-        )
+        # This function requires all generations have the same stop strings, so we collect all here
+        stop_strings: set[str] = set()
+        for sample_stop_strings in batch_stop_strings:
+            if sample_stop_strings:
+                stop_strings.update(sample_stop_strings)
 
-        # Get results from the workers, respecting tied worker groups (only one result per tied worker group)
-        results = self.worker_group.get_all_worker_results(future_bundle)
+        # Add default stop strings from config
+        if self.cfg.get("stop_strings", None):
+            stop_strings.update(self.cfg["stop_strings"])
 
-        # Combine results from all tied worker groups
-        combined: BatchedDataDict[GenerationOutputSpec] = BatchedDataDict.from_batches(
-            results, pad_value_dict={"output_ids": self.cfg["pad_token_id"]}
+        stop_strings: list[str] | None = (
+            list(stop_strings) if len(stop_strings) > 0 else None
         )
 
-        # Verify the output has all required fields
-        required_keys = ["texts"]
-        missing_keys = [key for key in required_keys if key not in combined]
-        if missing_keys:
-            raise ValueError(
-                f"Missing required keys for GenerationOutputSpec: {missing_keys}"
-            )
+        # Read generation parameters from config
+        top_k = self.cfg["top_k"] if self.cfg["top_k"] is not None else -1
+        sampling_params = self.SamplingParams(
+            temperature=self.cfg["temperature"] if not greedy else 0,
+            top_p=self.cfg["top_p"],
+            top_k=top_k if not greedy else 1,
+            max_tokens=self.cfg["max_new_tokens"],
+            stop_token_ids=self.cfg["stop_token_ids"],
+            stop=stop_strings,
+            include_stop_str_in_output=True,  # returning stop strings like hf
+        )
 
-        return combined
+        # Generate outputs
+        assert self.llm is not None, (
+            "Attempting to generate with either an uninitialized vLLM or non-model-owner"
+        )
+        outputs = self.llm.generate(data["prompts"], sampling_params)
+        texts = [output.outputs[0].text for output in outputs]
+
+        # Convert to BatchedDataDict
+        return_data: BatchedDataDict[GenerationOutputSpec] = BatchedDataDict(
+            {"texts": texts}
+        )
+        return return_data
 
     async def generate_async(
         self, data: BatchedDataDict[GenerationDatumSpec], greedy: bool = False
@@ -1678,45 +1628,36 @@ class VllmGeneration(GenerationInterface):
             print(f"Error during policy shutdown: {e}")
             return False
 
-    def update_weights(self, ipc_handles: dict[str, Any]) -> bool:
-        """Update weights of the policy using IPC handles, considering tensor parallelism.
+    def init_shared_buffers(self, handles: list[tuple]):
+        """Initialize shared buffers on all vLLM workers."""
+        futures = self.worker_group.run_all_workers_single_data(
+            "init_shared_buffer",
+            ipc_handle=handles,
+            run_rank_0_only_axes=["tensor_parallel", "pipeline_parallel"],
+        )
+        ray.get(futures)
 
-        For tp > 1, only the leader in each tensor parallel tied worker group will update weights.
-
-        Args:
-            ipc_handles (dict): Dictionary mapping device UUIDs (str) to parameter IPC handles.
-
-        Returns:
-            bool: True if weights were successfully updated, False otherwise.
-        """
+    def update_weights_from_shared_buffer(self, metadata: dict[str, dict[str, Any]]) -> bool:
+        """Update weights of the policy using a shared buffer."""
         if not self.worker_group or not self.worker_group.workers:
             return False
 
-        # Choose the appropriate method based on async_engine setting
-        method_name = (
-            "update_weights_from_ipc_handles_async"
-            if self.cfg["vllm_cfg"]["async_engine"]
-            else "update_weights_from_ipc_handles"
-        )
-
-        # Only send the ipc handles required by the current worker
-        ipc_handles_list = []
+        metadata_list = []
         for worker_device_uuids in self.device_uuids:
-            worker_ipc_handles = {
-                device_uuid: ipc_handles[device_uuid]
-                for device_uuid in worker_device_uuids
-            }
-            ipc_handles_list.append(worker_ipc_handles)
+            worker_metadata = {}
+            for device_uuid in worker_device_uuids:
+                if device_uuid in metadata:
+                    worker_metadata[device_uuid] = metadata[device_uuid]
+            metadata_list.append(worker_metadata)
 
         try:
-            # Directly pass ipc_handles to the method
-            futures = self.worker_group.run_all_workers_multiple_data(
-                method_name,
-                ipc_handles=ipc_handles_list,
+            future = self.worker_group.run_all_workers_multiple_data(
+                "update_weights_from_shared_buffer",
+                metadata=metadata_list,
                 run_rank_0_only_axes=["tensor_parallel", "pipeline_parallel"],
             )
-            # Wait for all futures to complete
-            results = ray.get(futures)
+            return True
+            results = ray.get(future)
             return all(result for result in results if result is not None)
         except Exception as e:
             print(f"Error during update weights: {e}")

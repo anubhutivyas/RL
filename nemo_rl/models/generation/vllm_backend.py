@@ -26,6 +26,15 @@ except ImportError:
 
 
 class VllmInternalWorkerExtension:
+    def init_shared_buffer(self, ipc_handle):
+        """Initialize a shared buffer from an IPC handle."""
+        # The ipc_handle is a tuple returned by `reduce_tensor`.
+        # The first element is the function to rebuild the tensor,
+        # and the second is a tuple of arguments for that function.
+        device_uuid = self.report_device_id()
+        func, args = ipc_handle[device_uuid]
+        self.shared_buffer = func(*args)
+
     def init_collective(
         self, rank_prefix: int, ip: str, port: int, world_size: int
     ) -> None:
@@ -46,37 +55,38 @@ class VllmInternalWorkerExtension:
 
         return get_device_uuid(self.device.index)
 
-    def update_weights_from_ipc_handles(self, ipc_handles):
-        """Update weights from IPC handles.
-
-        Args:
-            ipc_handles (dict): Dictionary mapping device UUIDs to parameter IPC handles.
-
-        Returns:
-            bool: True if weights were successfully updated.
-        """
+    def update_weights_from_shared_buffer(self, metadata: dict[str, Any]) -> bool:
+        """Update weights using data from the shared buffer."""
         try:
-            # Get handles for this device
+            # Get metadata for this device
             device_uuid = self.report_device_id()
-            handles = ipc_handles[device_uuid]
-            device_id = self.device.index
-            weights = []
+            if device_uuid not in metadata:
+                return True
+            metadata = metadata[device_uuid]
 
-            # Process each handle to get the tensor
-            for name, handle in handles:
-                func, args = handle
-                list_args = list(args)
-                # Update device ID to match the current device
-                list_args[6] = device_id
-                tensor = func(*list_args)
-                weights.append((name, tensor))
+            # Wait for the producer to finish copying data.
 
-            # Load weights into the model
-            self.model_runner.model.load_weights(weights=weights)
+            key = metadata["key"]
+            shape = metadata["shape"]
+            dtype = metadata["dtype"]
+
+            # Create a view into the shared buffer.
+            tensor_numel = torch.prod(torch.tensor(shape)).item()
+            tensor_nbytes = tensor_numel * torch.tensor([], dtype=dtype).element_size()
+            buffer_view = self.shared_buffer.narrow(0, 0, tensor_nbytes).view(dtype)
+            tensor = buffer_view[:tensor_numel].view(shape)
+
+            # Load the weight from the view.
+            # self.model_runner.model.load_weights(weights=[(key, tensor.clone())])
+            self.model_runner.model.load_weights(weights=[(key, tensor)])
+
+            event = torch.cuda.Event.from_ipc_handle(self.device.index, metadata["event_handle"])
+            event.record()
+
             return True
         except Exception as e:
             print(
-                f"Error in VllmInternalWorkerExtension.update_weights_from_ipc_handles: {e}"
+                f"Error in VllmInternalWorkerExtension.update_weights_from_shared_buffer: {e}"
             )
             return False
 

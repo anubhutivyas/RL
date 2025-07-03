@@ -113,13 +113,17 @@ class ColocatablePolicyInterface(PolicyInterface):
         pass
 
     @abstractmethod
-    def get_weights_ipc_handles(self, keys: list[str]) -> dict[str, Any]:
-        pass
-
-    @abstractmethod
     def prepare_info_for_collective(self) -> dict[str, Any]:
         pass
 
     @abstractmethod
     def broadcast_weights_for_collective(self) -> list[ray.ObjectRef]:
+        pass
+
+    @abstractmethod
+    def setup_refit(self, *args: Any, **kwargs: Any) -> None:
+        pass
+
+    @abstractmethod
+    def stream_weights_metadata(self, keys: list[str]) -> dict[str, Any]:
         pass

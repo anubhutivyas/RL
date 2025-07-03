@@ -34,6 +34,7 @@ from nemo_rl.models.generation.interfaces import (
     GenerationInterface,
     GenerationOutputSpec,
 )
+from nemo_rl.models.generation.vllm import VllmGeneration
 from nemo_rl.models.policy import PolicyConfig
 from nemo_rl.models.policy.interfaces import (
     ColocatablePolicyInterface,
@@ -456,26 +457,38 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
 
         return grouped_param_keys
 
-    def get_weights_ipc_handles(self, keys: list[str]) -> dict[str, Any]:
-        """Fetch weight IPC handles from all workers.
-
-        Returns:
-            dict: A dictionary mapping device UUIDs to parameter IPC handles.
+    def setup_refit(
+        self, generation_interface: "VllmGeneration", buffer_size_mb: int = 1024
+    ):
         """
-        # Collect IPC handles from all workers
-        worker_handles: list[dict[str, Any]] = ray.get(
-            [
-                worker.get_weights_ipc_handles.remote(keys=keys)
-                for worker in self.worker_group.workers
-            ]
+        Sets up the shared memory buffers for efficient weight transfer between
+        this policy and a generation interface.
+        """
+        handles = self.worker_group.run_all_workers_single_data(
+            "setup_shared_buffer", buffer_size_mb=buffer_size_mb
         )
-
-        # Combine all worker handles into a single dictionary
+        handles = ray.get(handles)
         all_handles = {}
-        for handle in worker_handles:
-            all_handles.update(handle)
+        for worker_handles in handles:
+            all_handles.update(worker_handles)
+        generation_interface.init_shared_buffers(all_handles)
 
-        return all_handles
+    def stream_weights_metadata(self, keys: list[str]) -> dict[str, Any]:
+        """Fetch weight IPC handles from all workers."""
+        # Start all remote generator calls in parallel.
+        remote_generators = [
+            worker.stream_weights_metadata.remote(keys=keys)
+            for worker in self.worker_group.workers
+        ]
+
+        # By zipping the generators, we can process them in lock-step.
+        for obj_refs_from_all_workers in zip(*remote_generators):
+            # For each step, wait for results from any worker and yield them as they become available.
+            pending_refs = list(obj_refs_from_all_workers)
+            while pending_refs:
+                ready_refs, pending_refs = ray.wait(pending_refs, num_returns=1)
+                for ref in ready_refs:
+                    yield ray.get(ref)
 
     def prepare_info_for_collective(self) -> dict[str, Any]:
         """Prepare the info for collective communication.

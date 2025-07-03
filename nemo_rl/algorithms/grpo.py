@@ -432,12 +432,24 @@ def refit_policy_generation(
         print(
             f"[Refit] Split {total_num_keys} keys into {len(grouped_param_keys)} groups"
         )
+
+        # Set up the shared memory buffers for efficient refit.
+        # The buffer size should be large enough for the largest parameter group.
+        # We add a small margin for safety.
+        refit_buffer_size_mb = int((4 * 1024) * 1.1)
+        policy.setup_refit(policy_generation, buffer_size_mb=refit_buffer_size_mb)
+
         # do update
-        for keys in grouped_param_keys:
-            ipc_handles = policy.get_weights_ipc_handles(keys)
-            update_success = policy_generation.update_weights(ipc_handles)
+        import time
+        start_time = time.perf_counter()
+        all_keys = [k for keys in grouped_param_keys for k in keys]
+        for metadata in policy.stream_weights_metadata(keys=all_keys):
+            update_success = policy_generation.update_weights_from_shared_buffer(
+                metadata
+            )
             if not update_success:
                 break
+        print(f"Time taken to refit: {time.perf_counter() - start_time} seconds")
     else:
         # prepare info for update weights
         state_dict_info = policy.prepare_info_for_collective()
@@ -796,6 +808,8 @@ def grpo_train(
                 percent = (v / total_time * 100) if total_time > 0 else 0
                 print(f"  • {k}: {v:.2f}s ({percent:.1f}%)")
 
+        import pprint
+        pprint.pprint(metrics)
         logger.log_metrics(metrics, step + 1, prefix="train")
         logger.log_metrics(timing_metrics, step + 1, prefix="timing/train")
 

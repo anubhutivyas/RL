@@ -328,11 +328,12 @@ def destroy_parallel_state():
         pass
 
 
-@ray.remote(
-    runtime_env={
-        **get_nsight_config_if_pattern_matches("megatron_policy_worker"),
-    }
-)
+# @ray.remote(
+#     runtime_env={
+#         **get_nsight_config_if_pattern_matches("megatron_policy_worker"),
+#     }
+# )
+@ray.remote
 class MegatronPolicyWorker:
     def __repr__(self):
         """Customizes the actor's prefix in the Ray logs.
@@ -1452,46 +1453,69 @@ class MegatronPolicyWorker:
 
         return param_info, total_available_bytes
 
-    # Temporary fix, 'keys' is a kwarg due to some sort of ray bug
-    def get_weights_ipc_handles(self, *, keys: list[str]) -> dict[str, Any]:
-        """Get IPC handles for the requested Megatron model weights.
+    def setup_shared_buffer(self, buffer_size_mb: int):
+        """Allocate a shared buffer on the GPU and return its IPC handle."""
+        from torch.multiprocessing.reductions import reduce_tensor
 
-        Args:
-            keys: List of parameter names to get handles for
-        Returns:
-            Dict mapping device UUID to list of (mapped_key, handle) tuples
+        buffer_size_bytes = buffer_size_mb * 1024 * 1024
+        self.shared_buffer = torch.zeros(
+            buffer_size_bytes, dtype=torch.uint8, device="cuda"
+        )
+        # The handle is a tuple that contains the necessary info to rebuild the tensor.
+        device_uuid = self.report_device_id()
+        handle = reduce_tensor(self.shared_buffer)
+        return {device_uuid: handle}
+
+    def stream_weights_metadata(self, *, keys: list[str] = None):
         """
-        if self._held_gather_buffer is not None:
-            del self._held_gather_buffer
-            self._held_gather_buffer = None
+        Stream metadata about updated weights.
+        The weight data is copied into a pre-allocated shared buffer.
+        """
+        # Get device UUID for IPC handles
+        device_uuid = self.report_device_id()
 
-        gathered_megatron_params = gather_params(
+        megatron_params_generator = gather_params(
             self.model,
             keys,
             key_to_global_keys=self.local_key_to_global_keys,
         )
 
-        gathered_hf_params = self.megatron_to_hf_converter.convert(
-            gathered_megatron_params, self.model.config
-        )
+        for megatron_key, megatron_param in megatron_params_generator:
+            hf_params_dict = self.megatron_to_hf_converter.convert(
+                {megatron_key: megatron_param}, self.model.config
+            )
+            for hf_key, hf_param in hf_params_dict.items():
+                # print(f"RANK {torch.distributed.get_rank()}: Processing {hf_key}")
+                # tensor = hf_param.detach().contiguous()
+                tensor = hf_param.detach()
+                tensor_nbytes = tensor.numel() * tensor.element_size()
 
-        # Get device UUID for IPC handles
-        device_uuid = self.report_device_id()
-        from torch.multiprocessing.reductions import reduce_tensor
+                assert tensor_nbytes <= self.shared_buffer.numel(), (
+                    f"Tensor {hf_key} ({tensor_nbytes} bytes) is larger than the shared buffer "
+                    f"({self.shared_buffer.numel()} bytes)."
+                )
 
-        # Create IPC handles for each parameter
-        all_handles = []
-        for key, tensor in gathered_hf_params.items():
-            handle = reduce_tensor(tensor.detach())
-            all_handles.append((key, handle))
+                # Copy tensor data into the shared buffer.
+                flat_tensor = tensor.flatten()
+                buffer_view = self.shared_buffer.narrow(0, 0, tensor_nbytes).view(
+                    flat_tensor.dtype
+                )
+                buffer_view[: flat_tensor.numel()].copy_(flat_tensor)
 
-        # Store references to avoid premature garbage collection
-        self._held_gather_buffer = gathered_hf_params
-        shapes = {}
-        for key, tensor in gathered_hf_params.items():
-            shapes[key] = tensor.shape
+                # Create and record a CUDA event to signal the copy is done.
+                # The event must be created with `interprocess=True` to be sharable.
+                event = torch.cuda.Event(interprocess=True)
+                # event.record()
 
-        return {device_uuid: all_handles}
+                yield {
+                    device_uuid: {
+                        "key": hf_key,
+                        "shape": tensor.shape,
+                        "dtype": tensor.dtype,
+                        "event_handle": event.ipc_handle(),
+                    }
+                }
+                event.synchronize()
 
     def prepare_for_lp_inference(self):
         self.model = self.move_model(self.model, "cuda", move_grads=False)
@@ -1718,3 +1742,8 @@ class MegatronPolicyWorker:
     def stop_gpu_profiling(self) -> None:
         """Stop GPU profiling."""
         torch.cuda.profiler.stop()
+
+    # def stream(self, n=3):
+    #     for i in range(n):
+    #         print("yielding", i)
+    #         yield i
