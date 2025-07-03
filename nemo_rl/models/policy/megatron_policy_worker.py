@@ -328,11 +328,12 @@ def destroy_parallel_state():
         pass
 
 
-@ray.remote(
-    runtime_env={
-        **get_nsight_config_if_pattern_matches("megatron_policy_worker"),
-    }
-)
+# @ray.remote(
+#     runtime_env={
+#         **get_nsight_config_if_pattern_matches("megatron_policy_worker"),
+#     }
+# )
+@ray.remote
 class MegatronPolicyWorker:
     def __repr__(self):
         """Customizes the actor's prefix in the Ray logs.
@@ -1453,7 +1454,9 @@ class MegatronPolicyWorker:
         return param_info, total_available_bytes
 
     # Temporary fix, 'keys' is a kwarg due to some sort of ray bug
-    def get_weights_ipc_handles(self, *, keys: list[str]) -> dict[str, Any]:
+    # @ray.method(num_returns=1)
+    # @ray.method(num_returns="dynamic")
+    def get_weights_ipc_handles(self, *, keys: list[str] = None, queue: Queue = None):
         """Get IPC handles for the requested Megatron model weights.
 
         Args:
@@ -1461,37 +1464,28 @@ class MegatronPolicyWorker:
         Returns:
             Dict mapping device UUID to list of (mapped_key, handle) tuples
         """
-        if self._held_gather_buffer is not None:
-            del self._held_gather_buffer
-            self._held_gather_buffer = None
+        # Get device UUID for IPC handles
+        device_uuid = self.report_device_id()
+        from torch.multiprocessing.reductions import reduce_tensor
 
-        gathered_megatron_params = gather_params(
+        megatron_params_generator = gather_params(
             self.model,
             keys,
             key_to_global_keys=self.local_key_to_global_keys,
         )
 
-        gathered_hf_params = self.megatron_to_hf_converter.convert(
-            gathered_megatron_params, self.model.config
-        )
-
-        # Get device UUID for IPC handles
-        device_uuid = self.report_device_id()
-        from torch.multiprocessing.reductions import reduce_tensor
-
-        # Create IPC handles for each parameter
-        all_handles = []
-        for key, tensor in gathered_hf_params.items():
-            handle = reduce_tensor(tensor.detach())
-            all_handles.append((key, handle))
-
-        # Store references to avoid premature garbage collection
-        self._held_gather_buffer = gathered_hf_params
-        shapes = {}
-        for key, tensor in gathered_hf_params.items():
-            shapes[key] = tensor.shape
-
-        return {device_uuid: all_handles}
+        for megatron_key, megatron_param in megatron_params_generator:
+            hf_params_dict = self.megatron_to_hf_converter.convert(
+                {megatron_key: megatron_param}, self.model.config
+            )
+            all_handles = []
+            for hf_key, hf_param in hf_params_dict.items():
+                handle = reduce_tensor(hf_param.detach())
+                all_handles.append((hf_key, handle))
+            queue.put({device_uuid: all_handles})
+        
+        # Use None as a sentinel value to indicate the end of the stream.
+        queue.put(None)
 
     def prepare_for_lp_inference(self):
         self.model = self.move_model(self.model, "cuda", move_grads=False)
@@ -1718,3 +1712,8 @@ class MegatronPolicyWorker:
     def stop_gpu_profiling(self) -> None:
         """Stop GPU profiling."""
         torch.cuda.profiler.stop()
+
+    # def stream(self, n=3):
+    #     for i in range(n):
+    #         print("yielding", i)
+    #         yield i

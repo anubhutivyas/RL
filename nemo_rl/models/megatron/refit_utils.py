@@ -74,8 +74,6 @@ def get_tp_dim(model, param_name, named_modules_dict):
 
 @torch.no_grad()
 def gather_params(model, keys, key_to_global_keys: Dict[str, List[str]]):
-    st = time.perf_counter()
-
     tp_group = parallel_state.get_tensor_model_parallel_group()
     tp_world_size = torch.distributed.get_world_size(tp_group)
     etp_group = parallel_state.get_expert_tensor_parallel_group()
@@ -89,10 +87,9 @@ def gather_params(model, keys, key_to_global_keys: Dict[str, List[str]]):
 
     named_modules_dict = dict(model.named_modules())
     state_dict = model.state_dict()
-    gathered_params = {}
     ep_pattern = re.compile(r"mlp\.experts.*\.weight\d*$")
 
-    for local_key, owner_pp_local_rank_id, shape, dtype in sorted(keys):
+    for local_key, owner_pp_local_rank_id, shape, dtype in keys:
         if local_key in state_dict and owner_pp_local_rank_id == pp_local_rank_id:
             param = state_dict[local_key]
 
@@ -151,7 +148,4 @@ def gather_params(model, keys, key_to_global_keys: Dict[str, List[str]]):
         ]
         for k, p in zip(flat_gathered_global_keys, flat_gathered_params):
             if k is not None:
-                gathered_params[k] = p
-
-    print(f"Time taken to gather params: {time.perf_counter() - st}")
-    return gathered_params
+                yield k, p

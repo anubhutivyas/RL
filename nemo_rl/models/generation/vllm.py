@@ -1702,11 +1702,11 @@ class VllmGeneration(GenerationInterface):
         # Only send the ipc handles required by the current worker
         ipc_handles_list = []
         for worker_device_uuids in self.device_uuids:
-            worker_ipc_handles = {
-                device_uuid: ipc_handles[device_uuid]
-                for device_uuid in worker_device_uuids
-            }
-            ipc_handles_list.append(worker_ipc_handles)
+            for device_uuid in worker_device_uuids:
+                if device_uuid in ipc_handles:
+                    ipc_handles_list.append({device_uuid: ipc_handles[device_uuid]})
+                else:
+                    ipc_handles_list.append({})
 
         try:
             # Directly pass ipc_handles to the method

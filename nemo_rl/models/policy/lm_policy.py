@@ -462,20 +462,40 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
         Returns:
             dict: A dictionary mapping device UUIDs to parameter IPC handles.
         """
-        # Collect IPC handles from all workers
-        worker_handles: list[dict[str, Any]] = ray.get(
-            [
-                worker.get_weights_ipc_handles.remote(keys=keys)
-                for worker in self.worker_group.workers
-            ]
-        )
 
-        # Combine all worker handles into a single dictionary
-        all_handles = {}
-        for handle in worker_handles:
-            all_handles.update(handle)
+        @ray.remote
+        def _get_from_queue(queue: RayQueue):
+            return queue.get()
 
-        return all_handles
+        # Create a queue for each worker to send results back on.
+        queues = [RayQueue() for _ in self.worker_group.workers]
+
+        # Start the IPC handle generation on all workers in parallel.
+        # Each worker will put its results onto its dedicated queue.
+        for i, worker in enumerate(self.worker_group.workers):
+            worker.get_weights_ipc_handles.remote(keys=keys, queue=queues[i])
+
+        # Get the first item from each queue and create a map from the
+        # ObjectRef back to the queue it came from.
+        obj_ref_to_queue = {_get_from_queue.remote(q): q for q in queues}
+        pending_refs = list(obj_ref_to_queue.keys())
+
+        # Stream results as they become available.
+        while pending_refs:
+            ready_refs, pending_refs = ray.wait(pending_refs, num_returns=1)
+
+            for ref in ready_refs:
+                # Get the result and yield it if it's not a sentinel.
+                result = ray.get(ref)
+                if result is None:  # Sentinel value means this worker is done.
+                    continue
+                yield result
+
+                # Request the next item from the queue that just finished.
+                queue = obj_ref_to_queue.pop(ref)
+                new_ref = _get_from_queue.remote(queue)
+                obj_ref_to_queue[new_ref] = queue
+                pending_refs.append(new_ref)
 
     def prepare_info_for_collective(self) -> dict[str, Any]:
         """Prepare the info for collective communication.
