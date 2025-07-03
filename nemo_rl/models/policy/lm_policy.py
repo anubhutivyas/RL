@@ -462,20 +462,23 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
         Returns:
             dict: A dictionary mapping device UUIDs to parameter IPC handles.
         """
-        # Collect IPC handles from all workers
-        worker_handles: list[dict[str, Any]] = ray.get(
-            [
-                worker.get_weights_ipc_handles.remote(keys=keys)
-                for worker in self.worker_group.workers
-            ]
-        )
+        # Start all remote generator calls in parallel.
+        remote_generators = [
+            worker.get_weights_ipc_handles.remote(keys=keys)
+            for worker in self.worker_group.workers
+        ]
 
-        # Combine all worker handles into a single dictionary
-        all_handles = {}
-        for handle in worker_handles:
-            all_handles.update(handle)
-
-        return all_handles
+        # By zipping the generators, we can process them in lock-step.
+        # This ensures that for each key, every worker is processing it at roughly the same time,
+        # which is necessary for the underlying NCCL calls.
+        for obj_refs_from_all_workers in zip(*remote_generators):
+            # For each step, wait for results from any worker and yield them as they become available.
+            # This avoids blocking until all workers have finished the current step.
+            pending_refs = list(obj_refs_from_all_workers)
+            while pending_refs:
+                ready_refs, pending_refs = ray.wait(pending_refs, num_returns=1)
+                for ref in ready_refs:
+                    yield ray.get(ref)
 
     def prepare_info_for_collective(self) -> dict[str, Any]:
         """Prepare the info for collective communication.
