@@ -19,6 +19,7 @@ from collections import defaultdict
 from contextlib import AbstractContextManager, contextmanager, nullcontext
 from functools import partial
 from typing import Any, Iterator, Optional, TypeVar
+import time 
 
 import ray
 import torch
@@ -120,6 +121,9 @@ from nemo_rl.models.policy.utils import get_gpu_info
 
 TokenizerType = TypeVar("TokenizerType", bound=PreTrainedTokenizerBase)
 
+
+profiled = False
+profile_cnt = 0
 
 def setup_megatron_model(
     policy_cfg: PolicyConfig,
@@ -476,6 +480,8 @@ class MegatronPolicyWorker:
                 "a lambda and couldn't be serialized). This is based on this check "
                 "https://github.com/NVIDIA/Megatron-LM/blob/1ab876ddc4c1893c76f26d775226a8d1dcdfb3d2/megatron/core/transformer/mlp.py#L174."
             )
+        model_cfg.apply_rope_fusion = self.cfg["megatron_cfg"].get("tensor_model_parallel_size", True)
+
 
         checkpoint_config = CheckpointConfig(
             save_interval=100,
@@ -917,6 +923,13 @@ class MegatronPolicyWorker:
     def get_logprobs(
         self, *, data: BatchedDataDict[Any], micro_batch_size: Optional[int] = None
     ) -> BatchedDataDict[LogprobOutputSpec]:
+
+        global profile_cnt
+        if profile_cnt == 2:
+            torch.cuda.synchronize()
+            print("STARTING PROFILE")
+            torch.cuda.cudart().cudaProfilerStart()
+
         """Get the logprobs of the model for a batch of data.
 
         Uses the configured logprob_batch_size to do microbatching.
@@ -937,6 +950,8 @@ class MegatronPolicyWorker:
             if micro_batch_size is not None
             else self.cfg["logprob_batch_size"]
         )
+
+        tic = time.time()
 
         # dim 1 is always assumed to be the sequence dim, sanity check this here
         sequence_dim = 1
@@ -1008,6 +1023,7 @@ class MegatronPolicyWorker:
                 tp_grp = get_tensor_model_parallel_group()
                 tp_rank = get_tensor_model_parallel_rank()
                 if self.cfg["sequence_packing"]["enabled"]:
+                    tic2 = time.time()
                     token_logprobs = from_parallel_logits_to_logprobs_packed_sequences(
                         output_tensor,
                         target=input_ids,
@@ -1018,6 +1034,8 @@ class MegatronPolicyWorker:
                         group=tp_grp,
                         inference_only=True,
                     )
+                    toc2 = time.time()
+                    print(f"from_parallel_logits_to_logprobs_packed_sequences {toc2-tic2}")
                 else:
                     token_logprobs = from_parallel_logits_to_logprobs(
                         output_tensor.to(torch.float32),
@@ -1082,6 +1100,15 @@ class MegatronPolicyWorker:
             )
 
         no_grad.__exit__(None, None, None)
+
+        toc = time.time()
+        print(f"GET LOGPROBS TIME {toc-tic}")
+
+        if profile_cnt == 2:
+            print("STOPPING PROFILE")
+            torch.cuda.cudart().cudaProfilerStop()
+        profile_cnt +=1
+
         return BatchedDataDict[LogprobOutputSpec](logprobs=logprobs).to("cpu")
 
     @contextmanager
