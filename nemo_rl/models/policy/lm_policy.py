@@ -41,6 +41,14 @@ from nemo_rl.models.policy.interfaces import (
     LogprobOutputSpec,
     ReferenceLogprobOutputSpec,
 )
+from ray.util.queue import Queue
+
+
+@ray.remote(num_cpus=0)
+def _get_from_queue(q: Queue) -> Any:
+    """Helper remote function to block and get an item from a Ray queue."""
+    return q.get()
+
 
 PathLike = Union[str, "os.PathLike[Any]"]
 
@@ -474,21 +482,46 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
         generation_interface.init_shared_buffers(all_handles)
 
     def stream_weights_metadata(self, keys: list[str]) -> dict[str, Any]:
-        """Fetch weight IPC handles from all workers."""
-        # Start all remote generator calls in parallel.
-        remote_generators = [
-            worker.stream_weights_metadata.remote(keys=keys)
-            for worker in self.worker_group.workers
-        ]
+        """Fetch weight IPC handles from all workers using a per-worker queue for synchronization."""
+        num_workers = len(self.worker_group.workers)
 
-        # By zipping the generators, we can process them in lock-step.
-        for obj_refs_from_all_workers in zip(*remote_generators):
-            # For each step, wait for results from any worker and yield them as they become available.
-            pending_refs = list(obj_refs_from_all_workers)
-            while pending_refs:
-                ready_refs, pending_refs = ray.wait(pending_refs, num_returns=1)
-                for ref in ready_refs:
-                    yield ray.get(ref)
+        # Create one data queue and one signal queue per worker
+        data_queues = [Queue() for _ in range(num_workers)]
+        signal_queues = [Queue() for _ in range(num_workers)]
+
+        # Start all workers, each with its own queue pair
+        for i, worker in enumerate(self.worker_group.workers):
+            worker.stream_weights_to_queue.remote(
+                keys=keys, data_queue=data_queues[i], signal_queue=signal_queues[i]
+            )
+
+        # Get a future from a remote task that is waiting on each worker's queue
+        futures_to_worker_idx = {_get_from_queue.remote(data_queues[i]): i for i in range(num_workers)}
+
+        while futures_to_worker_idx:
+            # Wait for any worker to send a batch of weights
+            ready_futures, _ = ray.wait(list(futures_to_worker_idx.keys()))
+
+            # Process the first ready worker
+            future = ready_futures[0]
+            worker_idx = futures_to_worker_idx.pop(future)
+
+            item = ray.get(future)
+
+            # A `None` item signals that the worker is finished
+            if item is None:
+                continue
+
+            # Yield the batch of weights to the consumer (e.g., vLLM)
+            yield item
+
+            # After the consumer is done, signal the worker to continue
+            signal_queues[worker_idx].put(True)
+
+            # Add a new future to listen for the next batch from this worker
+            new_future = _get_from_queue.remote(data_queues[worker_idx])
+            futures_to_worker_idx[new_future] = worker_idx
+
 
     def prepare_info_for_collective(self) -> dict[str, Any]:
         """Prepare the info for collective communication.

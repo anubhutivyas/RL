@@ -1466,56 +1466,98 @@ class MegatronPolicyWorker:
         handle = reduce_tensor(self.shared_buffer)
         return {device_uuid: handle}
 
-    def stream_weights_metadata(self, *, keys: list[str] = None):
+    def stream_weights_to_queue(self, *, keys: list[str] = None, data_queue: "Queue", signal_queue: "Queue"):
         """
-        Stream metadata about updated weights.
-        The weight data is copied into a pre-allocated shared buffer.
+        Streams metadata about updated weights to a Ray Queue.
+        The weight data is copied into a pre-allocated shared buffer. This method
+        blocks after putting a batch onto the queue until it receives a signal
+        to continue, ensuring lock-step execution with other workers.
         """
-        # Get device UUID for IPC handles
-        device_uuid = self.report_device_id()
+        try:
+            device_uuid = self.report_device_id()
 
-        megatron_params_generator = gather_params(
-            self.model,
-            keys,
-            key_to_global_keys=self.local_key_to_global_keys,
-        )
-
-        for megatron_key, megatron_param in megatron_params_generator:
-            hf_params_dict = self.megatron_to_hf_converter.convert(
-                {megatron_key: megatron_param}, self.model.config
+            megatron_params_generator = gather_params(
+                self.model,
+                keys,
+                key_to_global_keys=self.local_key_to_global_keys,
             )
-            for hf_key, hf_param in hf_params_dict.items():
-                # print(f"RANK {torch.distributed.get_rank()}: Processing {hf_key}")
-                # tensor = hf_param.detach().contiguous()
-                tensor = hf_param.detach()
-                tensor_nbytes = tensor.numel() * tensor.element_size()
 
-                assert tensor_nbytes <= self.shared_buffer.numel(), (
-                    f"Tensor {hf_key} ({tensor_nbytes} bytes) is larger than the shared buffer "
-                    f"({self.shared_buffer.numel()} bytes)."
+            packed_keys_info = []
+            current_offset = 0
+            for megatron_key, megatron_param in megatron_params_generator:
+                hf_params_dict = self.megatron_to_hf_converter.convert(
+                    {megatron_key: megatron_param}, self.model.config
                 )
+                for hf_key, hf_param in hf_params_dict.items():
+                    tensor = hf_param.detach()
+                    tensor_nbytes = tensor.numel() * tensor.element_size()
 
-                # Copy tensor data into the shared buffer.
-                flat_tensor = tensor.flatten()
-                buffer_view = self.shared_buffer.narrow(0, 0, tensor_nbytes).view(
-                    flat_tensor.dtype
-                )
-                buffer_view[: flat_tensor.numel()].copy_(flat_tensor)
+                    # If current packed keys are not empty and adding new tensor exceeds buffer size, send what we have.
+                    if packed_keys_info and current_offset + tensor_nbytes > self.shared_buffer.numel():
+                        start_event = torch.cuda.Event(interprocess=True)
+                        end_event = torch.cuda.Event(interprocess=True)
 
-                # Create and record a CUDA event to signal the copy is done.
-                # The event must be created with `interprocess=True` to be sharable.
-                event = torch.cuda.Event(interprocess=True)
-                # event.record()
+                        start_event.record()
+                        payload = {
+                            device_uuid: {
+                                "keys_and_tensors_info": packed_keys_info,
+                                "start_event_handle": start_event.ipc_handle(),
+                                "end_event_handle": end_event.ipc_handle(),
+                            }
+                        }
+                        data_queue.put(payload)
+                        # Block and wait for the orchestrator to signal continuation
+                        signal_queue.get()
+                        end_event.synchronize()
 
-                yield {
+                        packed_keys_info = []
+                        current_offset = 0
+
+                    if tensor_nbytes > self.shared_buffer.numel():
+                        raise ValueError(
+                            f"Tensor {hf_key} ({tensor_nbytes} bytes) is larger than the shared buffer "
+                            f"({self.shared_buffer.numel()} bytes)."
+                        )
+
+                    # Copy tensor data into the shared buffer.
+                    flat_tensor = tensor.flatten()
+                    buffer_view = self.shared_buffer.narrow(0, current_offset, tensor_nbytes).view(
+                        flat_tensor.dtype
+                    )
+                    buffer_view[: flat_tensor.numel()].copy_(flat_tensor)
+
+                    packed_keys_info.append(
+                        {
+                            "key": hf_key,
+                            "shape": tensor.shape,
+                            "dtype": tensor.dtype,
+                            "offset": current_offset,
+                            "nbytes": tensor_nbytes,
+                        }
+                    )
+                    current_offset += tensor_nbytes
+
+            # Send any remaining packed keys
+            if packed_keys_info:
+                start_event = torch.cuda.Event(interprocess=True)
+                end_event = torch.cuda.Event(interprocess=True)
+
+                start_event.record()
+                payload = {
                     device_uuid: {
-                        "key": hf_key,
-                        "shape": tensor.shape,
-                        "dtype": tensor.dtype,
-                        "event_handle": event.ipc_handle(),
+                        "keys_and_tensors_info": packed_keys_info,
+                        "start_event_handle": start_event.ipc_handle(),
+                        "end_event_handle": end_event.ipc_handle(),
                     }
                 }
-                event.synchronize()
+                data_queue.put(payload)
+                # Block and wait for the orchestrator to signal continuation
+                signal_queue.get()
+                end_event.synchronize()
+
+        finally:
+            # Signal that this worker is finished.
+            data_queue.put(None)
 
     def prepare_for_lp_inference(self):
         self.model = self.move_model(self.model, "cuda", move_grads=False)

@@ -57,31 +57,45 @@ class VllmInternalWorkerExtension:
 
     def update_weights_from_shared_buffer(self, metadata: dict[str, Any]) -> bool:
         """Update weights using data from the shared buffer."""
+        device_uuid = self.report_device_id()
+        if device_uuid not in metadata:
+            return True
+        metadata = metadata[device_uuid]
+        end_event = torch.cuda.Event.from_ipc_handle(self.device.index, metadata["end_event_handle"])
+
         try:
-            # Get metadata for this device
-            device_uuid = self.report_device_id()
-            if device_uuid not in metadata:
-                return True
-            metadata = metadata[device_uuid]
-
             # Wait for the producer to finish copying data.
+            start_event = torch.cuda.Event.from_ipc_handle(self.device.index, metadata["start_event_handle"])
+            start_event.synchronize()
 
-            key = metadata["key"]
-            shape = metadata["shape"]
-            dtype = metadata["dtype"]
+            weights_to_load = []
+            if "keys_and_tensors_info" in metadata:
+                for tensor_info in metadata["keys_and_tensors_info"]:
+                    key = tensor_info["key"]
+                    shape = tensor_info["shape"]
+                    dtype = tensor_info["dtype"]
+                    offset = tensor_info["offset"]
+                    nbytes = tensor_info["nbytes"]
 
-            # Create a view into the shared buffer.
-            tensor_numel = torch.prod(torch.tensor(shape)).item()
-            tensor_nbytes = tensor_numel * torch.tensor([], dtype=dtype).element_size()
-            buffer_view = self.shared_buffer.narrow(0, 0, tensor_nbytes).view(dtype)
-            tensor = buffer_view[:tensor_numel].view(shape)
+                    # Create a view into the shared buffer.
+                    buffer_view = self.shared_buffer.narrow(0, offset, nbytes).view(dtype)
+                    tensor_numel = torch.prod(torch.tensor(shape)).item()
+                    tensor = buffer_view[:tensor_numel].view(shape)
+                    weights_to_load.append((key, tensor))
+            else:  # For backward compatibility
+                key = metadata["key"]
+                shape = metadata["shape"]
+                dtype = metadata["dtype"]
 
-            # Load the weight from the view.
-            # self.model_runner.model.load_weights(weights=[(key, tensor.clone())])
-            self.model_runner.model.load_weights(weights=[(key, tensor)])
+                # Create a view into the shared buffer.
+                tensor_numel = torch.prod(torch.tensor(shape)).item()
+                tensor_nbytes = tensor_numel * torch.tensor([], dtype=dtype).element_size()
+                buffer_view = self.shared_buffer.narrow(0, 0, tensor_nbytes).view(dtype)
+                tensor = buffer_view[:tensor_numel].view(shape)
+                weights_to_load.append((key, tensor))
 
-            event = torch.cuda.Event.from_ipc_handle(self.device.index, metadata["event_handle"])
-            event.record()
+            if weights_to_load:
+                self.model_runner.model.load_weights(weights=weights_to_load)
 
             return True
         except Exception as e:
@@ -89,6 +103,9 @@ class VllmInternalWorkerExtension:
                 f"Error in VllmInternalWorkerExtension.update_weights_from_shared_buffer: {e}"
             )
             return False
+        finally:
+            # Always record the end event to prevent the producer from deadlocking.
+            end_event.record()
 
     def update_weights_from_collective(self, info: dict[str, Any]) -> bool:
         """Update the model weights from collective communication."""

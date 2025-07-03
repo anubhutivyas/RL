@@ -42,7 +42,10 @@ dependencies = [
     "debugpy",
     "nvtx",
     "matplotlib",
-    "plotly"
+    "plotly",
+    "transformer-engine[pytorch]==2.3.0",
+    "megatron-core",
+    "nemo-tron",
 ]
 
 [project.optional-dependencies]
