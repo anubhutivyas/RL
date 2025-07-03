@@ -316,14 +316,14 @@ class ClippedPGLossFn(LossFunction):
 class MaskClippedPGLossFn(ClippedPGLossFn):
     def __init__(self, cfg: MaskClippedPGLossConfig):
         super().__init__(cfg)
-        self.mask_type = cfg["mask_type"]
+        self.mask_type = MaskType(cfg["mask_type"])  # Convert string to enum
         self.mask_density = cfg["mask_density"]
 
     def random_mask(self, data: BatchedDataDict[ClippedPGLossDataDict]):
         """
         Mask out a fraction of the tokens in the sequence, randomly.
         """
-        mask = torch.rand_like(data["token_mask"].float()) < self.random_mask_prob
+        mask = torch.rand_like(data["token_mask"].float()) < self.mask_density
         data["token_mask"] = data["token_mask"] * mask
         return data
     
@@ -331,9 +331,14 @@ class MaskClippedPGLossFn(ClippedPGLossFn):
         """
         Mask out the first density% of the tokens in the sequence.
         """
-        num_non_zero = torch.sum(data["token_mask"], dim=-1)
+        num_non_zero = torch.sum(data["token_mask"], dim=-1)  # [batch_size]
         mask = torch.zeros_like(data["token_mask"].float())
-        mask[:, :int(num_non_zero * self.mask_density)] = 1
+        
+        # For each sequence, mask the first mask_density fraction of tokens
+        for i in range(mask.shape[0]):
+            num_tokens_to_mask = int(num_non_zero[i].item() * self.mask_density)
+            mask[i, :num_tokens_to_mask] = 1
+        
         mask = mask.bool()
         data["token_mask"] = data["token_mask"] * mask
         return data
@@ -342,9 +347,15 @@ class MaskClippedPGLossFn(ClippedPGLossFn):
         """
         Mask out the last density% of the tokens in the sequence.
         """
-        num_non_zero = torch.sum(data["token_mask"], dim=-1)
+        num_non_zero = torch.sum(data["token_mask"], dim=-1)  # [batch_size]
         mask = torch.zeros_like(data["token_mask"].float())
-        mask[:, -int(num_non_zero * self.mask_density):] = 1
+        
+        # For each sequence, mask the last mask_density fraction of tokens
+        for i in range(mask.shape[0]):
+            num_tokens_to_mask = int(num_non_zero[i].item() * self.mask_density)
+            if num_tokens_to_mask > 0:
+                mask[i, -num_tokens_to_mask:] = 1
+        
         mask = mask.bool()
         data["token_mask"] = data["token_mask"] * mask
         return data
