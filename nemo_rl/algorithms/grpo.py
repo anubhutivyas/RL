@@ -71,6 +71,7 @@ class GRPOConfig(TypedDict):
     val_batch_size: int
     val_at_start: bool
     checkpoint_dir: str
+    check_baseline_correctness: bool  # Enable baseline correctness assertions
 
 
 class GRPOSaveState(TypedDict):
@@ -450,6 +451,10 @@ def grpo_train(
                 rewards = repeated_batch["total_reward"]
 
                 print("▶ Computing advantages...")
+                
+                # Check for potentially problematic configuration
+                expected_responses = master_config["grpo"]["num_generations_per_prompt"] if master_config["grpo"].get("check_baseline_correctness", True) else None
+                
                 baseline, std, more_rollout_metrics = (
                     calculate_baseline_and_std_per_prompt(
                         input_ids,
@@ -458,6 +463,7 @@ def grpo_train(
                         leave_one_out_baseline=master_config["grpo"][
                             "use_leave_one_out_baseline"
                         ],
+                        expected_responses_per_prompt=expected_responses,
                     )
                 )
                 advantages = (rewards - baseline).unsqueeze(-1)

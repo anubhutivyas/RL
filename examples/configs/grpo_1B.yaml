@@ -144,6 +144,29 @@ env:
     reasoning_split_word: "</think>" # The word to split the response into reasoning and answer
     stop: null # Stop strings for the judge's evaluation
     max_concurrency: 16 # Maximum concurrent step calls for the environment actor (default: 16)
+  genrm_pairwise: # Configuration for the GenRM pairwise comparison environment
+    enable: false
+    num_workers: 2 # Number of parallel GenRM workers
+    model_name: "nvidia/Llama-3_3-Nemotron-Super-49B-GenRM" # GenRM model for pairwise comparison
+    tensor_parallel_size: 4 # TP size for the GenRM model (requires substantial GPU memory)
+    gpu_memory_utilization: 0.95 # GPU memory utilization for GenRM model
+    max_model_len: 40000 # Max sequence length for GenRM model
+    num_generations_per_prompt: ${grpo.num_generations_per_prompt} # The exected number of responses to generate per prompt for pairwise comparison, for validation purpose
+    temperature: 0.0 # GenRM temperature (usually 0 for deterministic evaluation)
+    max_tokens: 32768 # Max tokens for GenRM's comparison output
+    stop: null # Stop strings for GenRM evaluation
+    reasoning_split_word: "</think>" # The word to split the response into reasoning and answer
+    max_concurrency: 16 # Maximum concurrent step calls for the environment actor
+    # Reward aggregation configuration
+    aggregator_method: "win_rate" # Options: "win_rate", "weighted_win_loss", "elo_rating", "individual_scores", "combined", "bradley_terry"
+    # aggregator_config: # Additional config for the aggregator
+    #   score_mapping: # Mapping from ranking scores (1-6) to weighted points for weighted_win_loss
+    #     1: 1.0    # Much better
+    #     2: 0.8   # Better
+    #     3: 0.6    # Slightly better
+    #     4: 0.4    # Slightly worse
+    #     5: 0.2   # Worse
+    #     6: 0.0    # Much worse
   ifeval:
     num_workers: 8
     enable: false

@@ -44,6 +44,7 @@ def calculate_baseline_and_std_per_prompt(
     rewards: torch.Tensor,
     valid_mask: torch.Tensor,
     leave_one_out_baseline: bool = True,
+    expected_responses_per_prompt: Optional[int] = None,
 ):
     """Function to compute a baseline for each (prompt, response) pair in the batch.
 
@@ -55,11 +56,29 @@ def calculate_baseline_and_std_per_prompt(
     valid_mask: tensor (b,)       Vector of 0/1, where 0 is to ignore and 1 is to keep
     leave_one_out_baseline: bool  Compute an unbiased baseline by leaving out the sample that
                                   the baseline is for (from RLOO https://arxiv.org/abs/2402.14740)
+    expected_responses_per_prompt: int  Expected number of responses per prompt (for validation)
 
     Returns:
     tensor (b,) of baselines on the same device as 'rewards'
     """
     unique_prompts = torch.unique(prompts, dim=0)
+
+    # ASSERTION 1: Check that each prompt has the expected number of responses
+    if expected_responses_per_prompt is not None:
+        for i in range(len(unique_prompts)):
+            is_matching_prompt = (prompts == unique_prompts[i]).all(1)
+            num_responses_this_prompt = is_matching_prompt.sum().item()
+            
+            if num_responses_this_prompt != expected_responses_per_prompt:
+                prompt_repr = unique_prompts[i][:10]  # First 10 tokens for debugging
+                raise AssertionError(
+                    f"Baseline calculation correctness violation: "
+                    f"Prompt {prompt_repr}... has {num_responses_this_prompt} responses "
+                    f"but expected {expected_responses_per_prompt}. "
+                    f"This indicates that responses for the same prompt are split across DP ranks, "
+                    f"which will result in incorrect baseline calculation. "
+                    f"Consider using grouped sharding or ensuring num_prompts >= num_dp_ranks."
+                )
 
     baseline = torch.zeros_like(rewards)
     sq_baseline = torch.zeros_like(rewards)
