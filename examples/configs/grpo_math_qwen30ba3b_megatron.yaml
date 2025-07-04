@@ -6,7 +6,7 @@ grpo:
   num_generations_per_prompt: 32
 
 policy:
-  model_name: "meta-llama/Llama-3.3-70B-Instruct"
+  model_name: "Qwen/Qwen3-30B-A3B"
   tokenizer:
     name: ${policy.model_name} ## specify if you'd like to use a tokenizer different from the model's default
   train_global_batch_size: 512
