@@ -17,7 +17,6 @@ import os
 from collections import defaultdict
 from contextlib import contextmanager, nullcontext
 from copy import deepcopy
-from copy import deepcopy
 from typing import Any, Dict, Iterable, Optional, Tuple, Union
 
 import numpy as np
