@@ -31,7 +31,6 @@ loss_fn:
   use_generation_logprobs_in_ppo_baseline: false
   use_kl_fix: false
   use_stable_loss: false
-  use_kl_fix: false
 
 checkpointing:
   enabled: true
