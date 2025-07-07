@@ -446,6 +446,68 @@ class BradleyTerryAggregator(PairwiseRewardAggregator):
         return "bradley_terry"
 
 
+class SimpleTiebreakerAggregator(PairwiseRewardAggregator):
+    """Use individual scores primarily, with simple ranking-based tiebreaking when scores are equal."""
+    
+    def __init__(self, score_range: Tuple[float, float] = (1.0, 5.0)):
+        """
+        Args:
+            score_range: (min_score, max_score) for normalization
+        """
+        self.min_score, self.max_score = score_range
+    
+    def aggregate_scores(
+        self,
+        comparison_results: List[Tuple[str, float, float, float]],
+        comparison_metadata: List[Tuple[str, int, int]],
+        prompt_groups: Dict[str, Dict[str, Any]]
+    ) -> Dict[str, List[float]]:
+        """Aggregate using individual scores with simple ranking tiebreaking."""
+        
+        # Collect individual scores for each response
+        individual_scores = {}
+        score_counts = {}
+        
+        for prompt_key, group_data in prompt_groups.items():
+            num_responses = len(group_data["conversations"])
+            individual_scores[prompt_key] = [0.0 for _ in range(num_responses)]
+            score_counts[prompt_key] = [0 for _ in range(num_responses)]
+        
+        # Process each comparison result
+        for (request_id, score_1, score_2, ranking_score), (prompt_key, resp_i, resp_j) in zip(
+            comparison_results, comparison_metadata
+        ):
+            # Apply simple tiebreaking logic when scores are equal
+            if score_1 == score_2:
+                # When individual scores are equal, use ranking to break ties
+                score_1 = score_1 + 3.5 - ranking_score  # Response 1 adjustment
+                score_2 = score_2 + ranking_score - 3.5  # Response 2 adjustment
+            
+            # Accumulate individual scores (with tiebreaking adjustments if applied)
+            individual_scores[prompt_key][resp_i] += score_1
+            individual_scores[prompt_key][resp_j] += score_2
+            score_counts[prompt_key][resp_i] += 1
+            score_counts[prompt_key][resp_j] += 1
+        
+        # Calculate average individual scores
+        final_scores = {}
+        for prompt_key, group_data in prompt_groups.items():
+            num_responses = len(group_data["conversations"])
+            final_scores[prompt_key] = []
+            for resp_idx in range(num_responses):
+                if score_counts[prompt_key][resp_idx] > 0:
+                    avg_score = individual_scores[prompt_key][resp_idx] / score_counts[prompt_key][resp_idx]
+                else:
+                    avg_score = (self.min_score + self.max_score) / 2  # Neutral score if no comparisons
+                final_scores[prompt_key].append(avg_score)
+            
+        return final_scores
+    
+    @property
+    def name(self) -> str:
+        return "simple_tiebreaker"
+
+
 # Factory function to create aggregators
 def create_aggregator(method: str, **kwargs) -> PairwiseRewardAggregator:
     """Create a reward aggregator by name."""
@@ -456,6 +518,7 @@ def create_aggregator(method: str, **kwargs) -> PairwiseRewardAggregator:
         "weighted_win_loss": WeightedWinLossAggregator,
         "combined": CombinedAggregator,
         "bradley_terry": BradleyTerryAggregator,
+        "simple_tiebreaker": SimpleTiebreakerAggregator,
     }
     
     if method not in aggregators:
@@ -479,6 +542,7 @@ def compare_aggregation_methods(
         ("weighted_win_loss", {}),
         ("combined", {"alpha": 0.3}),
         ("bradley_terry", {}),
+        ("simple_tiebreaker", {}),
     ]
     
     results = {}
