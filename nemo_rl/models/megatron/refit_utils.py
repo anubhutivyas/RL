@@ -169,5 +169,4 @@ def gather_params(
             if k is not None:
                 gathered_params[k] = p
 
-    print(f"Time taken to gather params: {time.perf_counter() - st}")
     return gathered_params

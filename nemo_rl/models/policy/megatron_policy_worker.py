@@ -669,6 +669,21 @@ class MegatronPolicyWorker:
             state_dict_info=self.prepare_weights_for_ipc()[0]
         )
 
+        # torch profiler
+        import socket
+        if os.getenv("NEMO_RL_TORCH_PROFILE_REFIT", "0") == "1" and get_rank_safe() == 0:
+            self.profiler = torch.profiler.profile(
+                activities=[torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA],
+                with_stack=True,
+                on_trace_ready=torch.profiler.tensorboard_trace_handler(
+                    "grpo_refit_trace/get_weight_ipc_handles",
+                    worker_name=f"{socket.gethostname()}_megatron_policy_worker_0",
+                    use_gzip=True,
+                ),
+            )
+        else:
+            self.profiler = None
+
     def configure_worker(self, num_gpus: int, bundle_indices: Optional[tuple] = None):
         USE_EXPANDABLE_SEGMENTS = False  # Disabling this right now as it seems to cause vLLM refit issues with Ampere
         if USE_EXPANDABLE_SEGMENTS:
@@ -1436,6 +1451,9 @@ class MegatronPolicyWorker:
         Returns:
             Dict mapping device UUID to list of (mapped_key, handle) tuples
         """
+        if os.getenv("NEMO_RL_TORCH_PROFILE_REFIT", "0") == "1" and self.profiler is not None:
+            self.profiler.start()
+
         if self._held_gather_buffer is not None:
             del self._held_gather_buffer
             self._held_gather_buffer = None
@@ -1515,6 +1533,9 @@ class MegatronPolicyWorker:
                 all_handles.append((key, handle))
             self._held_gather_buffer = gathered_hf_params
             serialized = (False, all_handles)
+
+        if os.getenv("NEMO_RL_TORCH_PROFILE_REFIT", "0") == "1" and self.profiler is not None:
+            self.profiler.stop()
 
         return {device_uuid: serialized}
 

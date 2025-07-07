@@ -20,6 +20,7 @@ import ray
 import torch
 from torchdata.stateful_dataloader import StatefulDataLoader
 from transformers import PreTrainedTokenizerBase
+from contextlib import nullcontext
 
 from nemo_rl.algorithms.interfaces import LossFunction
 from nemo_rl.algorithms.loss_functions import (
@@ -362,6 +363,9 @@ def setup(
     print(" " * 18 + "SETUP COMPLETE")
     print("=" * 60 + "\n")
 
+    if os.getenv("RAY_PROFILING", None) == "1":
+        ray.timeline(filename=os.getenv("NEMO_RL_RAY_TIMELINE_FILE", "/tmp/ray_timeline.json"))
+
     return (
         policy,
         policy_generation,
@@ -386,6 +390,7 @@ def refit_policy_generation(
     policy_generation: GenerationInterface,
     colocated_inference: bool,
     _refit_buffer_size_gb: Optional[int] = None,
+    timer: Optional[Timer] = None,
 ) -> None:
     """Refit the policy generation interface with the latest policy weights.
 
@@ -410,8 +415,10 @@ def refit_policy_generation(
         print(f"[Refit] Number of splits: {len(grouped_param_keys)}")
         # do update
         for keys in grouped_param_keys:
-            ipc_handles = policy.get_weights_ipc_handles(keys)
-            update_success = policy_generation.update_weights(ipc_handles)
+            with timer.time("prepare_for_generation/get_weights_ipc_handles") if timer else nullcontext():
+                ipc_handles = policy.get_weights_ipc_handles(keys)
+            with timer.time("prepare_for_generation/update_weights") if timer else nullcontext():
+                update_success = policy_generation.update_weights(ipc_handles)
             if not update_success:
                 break
     else:
@@ -528,7 +535,7 @@ def grpo_train(
             with timer.time("prepare_for_generation"):
                 if NEED_REFIT and POLICY_GENERATION_STALE:
                     refit_policy_generation(
-                        policy, policy_generation, colocated_inference
+                        policy, policy_generation, colocated_inference, timer=timer
                     )
                     POLICY_GENERATION_STALE = False
                 else:

@@ -348,6 +348,21 @@ class VllmGenerationWorker:
         else:
             self.llm = vllm.LLM(**llm_kwargs)
 
+        # torch profiler
+        import socket
+        if os.getenv("NEMO_RL_TORCH_PROFILE_REFIT", "0") == "1" and self.is_model_owner and (0 in bundle_indices):
+            self.profiler = torch.profiler.profile(
+                activities=[torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA],
+                with_stack=True,
+                on_trace_ready=torch.profiler.tensorboard_trace_handler(
+                    "grpo_refit_trace/update_weights_from_ipc_handles",
+                    worker_name=f"{socket.gethostname()}_vllm_worker_{self.rank}",
+                    use_gzip=True,
+                ),
+            )
+        else:
+            self.profiler = None
+
     def init_collective(self, data: int, ip: str, port: int, world_size: int) -> None:
         self.llm.collective_rpc(
             "init_collective",
@@ -879,10 +894,16 @@ class VllmGenerationWorker:
                     "update_weights_from_ipc_handles cannot be used with async_engine=True. Use update_weights_from_ipc_handles_async instead."
                 )
 
+            if os.getenv("NEMO_RL_TORCH_PROFILE_REFIT", "0") == "1" and self.profiler is not None:
+                self.profiler.start()
+
             result_or_coro = self.llm.collective_rpc(
                 "update_weights_from_ipc_handles", args=(data,)
             )
             worker_result = result_or_coro[0]
+
+            if os.getenv("NEMO_RL_TORCH_PROFILE_REFIT", "0") == "1" and self.profiler is not None:
+                self.profiler.stop()
 
             if not worker_result:
                 print(
