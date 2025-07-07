@@ -131,6 +131,9 @@ class VllmGenerationWorker:
                 seed = node_idx * 1024 + bundle_id
 
             init_kwargs["seed"] = seed
+            # Need to give each DP group its own vllm cache to address:
+            # https://github.com/vllm-project/vllm/issues/18851
+            env_vars["VLLM_CACHE_ROOT"] = os.path.expanduser(f"~/.cache/vllm_{seed}")
 
         # Check if this worker is part of a parallel group (TP or TP+PP).
         # A worker is part of a parallel group if it's a secondary member (local_bundle_indices is None)
@@ -330,8 +333,7 @@ class VllmGenerationWorker:
             enable_prefix_caching=torch.cuda.get_device_capability()[0] >= 8,
             dtype=self.cfg["vllm_cfg"]["precision"],
             seed=seed,
-            # Don't use cuda-graph by default as it leads to convergence issues (see https://github.com/NVIDIA/NeMo-RL/issues/186)
-            enforce_eager=True,
+            enforce_eager=self.cfg["vllm_cfg"]["enforce_eager"],
             max_model_len=self.cfg["vllm_cfg"]["max_model_len"],
             trust_remote_code=True,
             worker_extension_cls="nemo_rl.models.generation.vllm_backend.VllmInternalWorkerExtension",
@@ -1219,6 +1221,13 @@ class VllmGeneration(GenerationInterface):
             "nemo_rl.models.generation.vllm.VllmGenerationWorker", config
         )
 
+        # It's necessary to set env_vars here to ensure that vllm non-leader workers also have these env_vars
+        # Disable NCCL SHM if training and generation are not co-located: https://github.com/NVIDIA-NeMo/RL/issues/564
+        env_vars = {}
+        if not self.cfg["colocated"]["enabled"]:
+            env_vars["NCCL_SHM_DISABLE"] = "1"
+            env_vars["NCCL_P2P_DISABLE"] = "1"
+
         # Check if we need parallelism-aware worker group creation
         if self.model_parallel_size > 1:
             # For parallelism, create node-aware worker groups
@@ -1230,6 +1239,7 @@ class VllmGeneration(GenerationInterface):
                 name_prefix=name_prefix,
                 bundle_indices_list=node_bundle_indices,
                 sharding_annotations=self.sharding_annotations,
+                env_vars=env_vars,
             )
         else:
             # Use standard worker group creation for non-parallel case
@@ -1239,6 +1249,7 @@ class VllmGeneration(GenerationInterface):
                 name_prefix=name_prefix,
                 workers_per_node=workers_per_node,
                 sharding_annotations=self.sharding_annotations,
+                env_vars=env_vars,
             )
 
         # Number of data parallel groups is the number of tied worker groups

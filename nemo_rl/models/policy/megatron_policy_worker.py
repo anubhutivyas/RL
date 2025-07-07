@@ -92,7 +92,6 @@ from nemo_rl.distributed.model_utils import (
     from_parallel_logits_to_logprobs_packed_sequences,
 )
 from nemo_rl.distributed.named_sharding import NamedSharding
-from nemo_rl.distributed.worker_group_utils import get_nsight_config_if_pattern_matches
 from nemo_rl.models.generation.interfaces import (
     GenerationDatumSpec,
     GenerationOutputSpec,
@@ -116,7 +115,7 @@ from nemo_rl.models.policy.interfaces import (
     LogprobOutputSpec,
     ReferenceLogprobOutputSpec,
 )
-from nemo_rl.models.policy.utils import get_gpu_info
+from nemo_rl.models.policy.utils import get_gpu_info, get_runtime_env_for_policy_worker
 
 TokenizerType = TypeVar("TokenizerType", bound=PreTrainedTokenizerBase)
 
@@ -326,11 +325,7 @@ def destroy_parallel_state():
         pass
 
 
-@ray.remote(
-    runtime_env={
-        **get_nsight_config_if_pattern_matches("megatron_policy_worker"),
-    }
-)
+@ray.remote(runtime_env=get_runtime_env_for_policy_worker("megatron_policy_worker"))
 class MegatronPolicyWorker:
     def __repr__(self):
         """Customizes the actor's prefix in the Ray logs.
@@ -475,6 +470,7 @@ class MegatronPolicyWorker:
                 "a lambda and couldn't be serialized). This is based on this check "
                 "https://github.com/NVIDIA/Megatron-LM/blob/1ab876ddc4c1893c76f26d775226a8d1dcdfb3d2/megatron/core/transformer/mlp.py#L174."
             )
+        model_cfg.apply_rope_fusion = self.cfg["megatron_cfg"]["apply_rope_fusion"]
 
         checkpoint_config = CheckpointConfig(
             save_interval=100,
@@ -1024,7 +1020,7 @@ class MegatronPolicyWorker:
                         target=unpacked_input_ids,
                         vocab_start_index=tp_rank * output_tensor.shape[-1],
                         vocab_end_index=(tp_rank + 1) * output_tensor.shape[-1],
-                        group=tp_grp,
+                        tp_group=tp_grp,
                         inference_only=True,
                     )
 
