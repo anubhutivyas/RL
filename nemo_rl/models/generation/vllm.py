@@ -362,6 +362,7 @@ class VllmGenerationWorker:
             )
         else:
             self.profiler = None
+        self.maybe_profile_refit_times = 0
 
     def init_collective(self, data: int, ip: str, port: int, world_size: int) -> None:
         self.llm.collective_rpc(
@@ -895,7 +896,9 @@ class VllmGenerationWorker:
                 )
 
             if os.getenv("NEMO_RL_TORCH_PROFILE_REFIT", "0") == "1" and self.profiler is not None:
-                self.profiler.start()
+                self.maybe_profile_refit_times += 1
+                if self.maybe_profile_refit_times == 3:
+                    self.profiler.start()
 
             result_or_coro = self.llm.collective_rpc(
                 "update_weights_from_ipc_handles", args=(data,)
@@ -903,7 +906,8 @@ class VllmGenerationWorker:
             worker_result = result_or_coro[0]
 
             if os.getenv("NEMO_RL_TORCH_PROFILE_REFIT", "0") == "1" and self.profiler is not None:
-                self.profiler.stop()
+                if self.maybe_profile_refit_times == 3:
+                    self.profiler.stop()
 
             if not worker_result:
                 print(
@@ -937,6 +941,11 @@ class VllmGenerationWorker:
                     "update_weights_from_ipc_handles_async can only be used with async_engine=True. Use update_weights_from_ipc_handles instead."
                 )
 
+            if os.getenv("NEMO_RL_TORCH_PROFILE_REFIT", "0") == "1" and self.profiler is not None:
+                self.maybe_profile_refit_times += 1
+                if self.maybe_profile_refit_times == 3:
+                    self.profiler.start()
+
             result_or_coro = await self.llm.collective_rpc(
                 "update_weights_from_ipc_handles", args=(data,)
             )
@@ -947,6 +956,10 @@ class VllmGenerationWorker:
                 worker_results = result_or_coro
 
             worker_result = worker_results[0]
+
+            if os.getenv("NEMO_RL_TORCH_PROFILE_REFIT", "0") == "1" and self.profiler is not None:
+                if self.maybe_profile_refit_times == 3:
+                    self.profiler.stop()
 
             if not worker_result:
                 print(

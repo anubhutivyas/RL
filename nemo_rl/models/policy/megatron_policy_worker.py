@@ -683,6 +683,7 @@ class MegatronPolicyWorker:
             )
         else:
             self.profiler = None
+        self.maybe_profile_refit_times = 0
 
     def configure_worker(self, num_gpus: int, bundle_indices: Optional[tuple] = None):
         USE_EXPANDABLE_SEGMENTS = False  # Disabling this right now as it seems to cause vLLM refit issues with Ampere
@@ -1452,7 +1453,9 @@ class MegatronPolicyWorker:
             Dict mapping device UUID to list of (mapped_key, handle) tuples
         """
         if os.getenv("NEMO_RL_TORCH_PROFILE_REFIT", "0") == "1" and self.profiler is not None:
-            self.profiler.start()
+            self.maybe_profile_refit_times += 1
+            if self.maybe_profile_refit_times == 3:
+                self.profiler.start()
 
         if self._held_gather_buffer is not None:
             del self._held_gather_buffer
@@ -1535,7 +1538,8 @@ class MegatronPolicyWorker:
             serialized = (False, all_handles)
 
         if os.getenv("NEMO_RL_TORCH_PROFILE_REFIT", "0") == "1" and self.profiler is not None:
-            self.profiler.stop()
+            if self.maybe_profile_refit_times == 3:
+                self.profiler.stop()
 
         return {device_uuid: serialized}
 
