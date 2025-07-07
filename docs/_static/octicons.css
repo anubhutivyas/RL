@@ -1,0 +1,73 @@
+/* GitHub Octicons CSS for NeMo RL Documentation */
+
+/* Base octicon styling */
+.octicon {
+  display: inline-block;
+  vertical-align: text-top;
+  fill: currentColor;
+  overflow: visible;
+  width: 1em;
+  height: 1em;
+  transition: all 0.2s ease;
+}
+
+/* Size variations */
+.octicon-1\.5em {
+  width: 1.5em;
+  height: 1.5em;
+}
+
+.octicon-2em {
+  width: 2em;
+  height: 2em;
+}
+
+/* Spacing utilities */
+.octicon-sd-mr-1 {
+  margin-right: 0.25em;
+}
+
+.octicon-sd-ml-1 {
+  margin-left: 0.25em;
+}
+
+/* Grid card specific styling */
+.grid-item-card .octicon {
+  margin-right: 0.5em;
+  color: var(--pst-color-primary);
+}
+
+/* Hover effects for interactive elements */
+.grid-item-card:hover .octicon {
+  transform: scale(1.1);
+  color: var(--pst-color-link);
+}
+
+/* Dark mode support */
+[data-theme="dark"] .octicon {
+  color: var(--pst-color-text);
+}
+
+/* Accessibility improvements */
+.octicon[data-icon] {
+  aria-label: attr(data-icon);
+}
+
+/* Responsive sizing */
+@media (max-width: 768px) {
+  .octicon-1\.5em {
+    width: 1.25em;
+    height: 1.25em;
+  }
+}
+
+/* Ensure icons are visible even without JavaScript */
+.octicon:before {
+  content: "";
+  font-size: inherit;
+}
+
+/* Hide the fallback when SVG is loaded */
+.octicon svg + :before {
+  display: none;
+}

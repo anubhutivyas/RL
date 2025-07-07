@@ -5,9 +5,25 @@ categories: ["concepts"]
 ---
 
 (about-overview)=
-# About
+# About NeMo RL
 
 NeMo RL is an open-source, comprehensive framework for reinforcement learning and supervised fine-tuning of large language models. Built for scalability and efficiency, NeMo RL enables researchers and practitioners to train, evaluate, and deploy RL-enhanced language models at scale.
+
+## What is NeMo RL?
+
+NeMo RL is a production-ready framework that combines the power of reinforcement learning with large language models. It provides a unified platform for training, fine-tuning, and deploying language models using state-of-the-art RL algorithms.
+
+The framework is designed to handle the complexities of distributed training across multiple GPUs and nodes, making it suitable for both research and production environments. NeMo RL supports multiple training backends, including Hugging Face Transformers and Megatron-LM, providing flexibility for different model architectures and training requirements.
+
+## Why Use NeMo RL?
+
+NeMo RL offers several key advantages for reinforcement learning with language models:
+
+- **Scalability**: Built on Ray for distributed computing, enabling training across hundreds of GPUs
+- **Flexibility**: Support for multiple model backends and RL algorithms
+- **Production Ready**: Comprehensive tooling for deployment and monitoring
+- **Research Friendly**: Easy experimentation with different algorithms and environments
+- **Performance**: Optimized for high-throughput training with advanced parallelization strategies
 
 ## Target Users
 
@@ -16,67 +32,71 @@ NeMo RL is an open-source, comprehensive framework for reinforcement learning an
 - **DevOps Engineers**: Manage multi-node training clusters and production deployments
 - **Data Scientists**: Fine-tune language models for specific domains and applications
 
-## How NeMo RL Works
+## Key Technologies
 
-NeMo RL provides a unified framework for reinforcement learning with language models through:
+NeMo RL is built on a robust technology stack designed for performance and scalability:
 
-- **Multiple RL Algorithms**: Support for SFT (Supervised Fine-Tuning), GRPO (Group Relative Policy Optimization), and DPO (Direct Preference Optimization)
-- **Distributed Training**: Ray-based virtual clusters for scalable multi-GPU and multi-node training
-- **Model Flexibility**: Support for Hugging Face models and Megatron-LM backends
-- **Environment Integration**: Built-in environments for math problems, games, and custom tasks
-
-### Key Technologies
-
-- **Ray**: Distributed computing framework for scalable RL training
+- **Ray**: Distributed computing framework for scalable RL training and resource management
 - **PyTorch**: Deep learning framework with advanced distributed training capabilities
 - **Transformers**: Hugging Face integration for state-of-the-art language models
-- **Megatron-LM**: High-performance training backend for large models
+- **Megatron-LM**: High-performance training backend for large models with advanced parallelization
+- **DTensor**: Distributed tensor operations for efficient model parallelism
 
-## Core Concepts
-
-Explore the foundational concepts and organizational patterns used in NeMo RL.
+## Core Architecture
 
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
 
-:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` RL Algorithms
+:::{grid-item-card} {octicon}graph;1.5em;sd-mr-1 RL Algorithms
 :link: key-features
 
 Explore key RL algorithms including SFT, GRPO, and DPO with mathematical foundations and implementation details.
+
++++
+{bdg-primary}`Foundation`
 :::
 
-:::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Distributed Training
+:::{grid-item-card} {octicon}server;1.5em;sd-mr-1 Distributed Training
 :link: architecture
 
 Learn about Ray-based virtual clusters, worker groups, and multi-node training strategies for scalable RL.
+
++++
+{bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} {octicon}`cpu;1.5em;sd-mr-1` Model Backends
+:::{grid-item-card} {octicon}database;1.5em;sd-mr-1 Model Backends
 :link: architecture
 
 Understand Hugging Face integration, Megatron-LM support, and DTensor capabilities for different model architectures.
+
++++
+{bdg-info}`Implementation`
 :::
 
-:::{grid-item-card} {octicon}`game;1.5em;sd-mr-1` Environments
+:::{grid-item-card} {octicon}game;1.5em;sd-mr-1 Environments
 :link: key-features
 
 Discover built-in environments for math problems, games, and custom environment development for RL tasks.
+
++++
+{bdg-secondary}`Development`
 :::
 
 ::::
 
-## Getting Started
-
-- [Installation](../get-started/installation.md) - Set up NeMo RL on your system
-- [Quickstart](../get-started/quickstart.md) - Run your first RL training job
-- [Key Features](key-features.md) - Explore NeMo RL's capabilities
-- [Architecture](architecture.md) - Understand the system design
-
 ```{toctree}
+:caption: About NeMo RL
 :maxdepth: 2
-:caption: **About**
+:expanded:
 
-key-features
 architecture
+key-features
 why-nemo-rl
 ```
+
+
+
+
+
+

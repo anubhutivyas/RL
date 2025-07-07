@@ -23,31 +23,75 @@
 import os
 import sys
 
+# Add custom extensions directory to Python path
+sys.path.insert(0, os.path.abspath('_extensions'))
+
 project = "NeMo RL"
 copyright = "2025, NVIDIA Corporation"
 author = "NVIDIA Corporation"
-release = "0.2.1"
+release = "0.0.1"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
     "myst_parser",  # For our markdown docs
-    "autodoc2",  # Generates API docs
+    # "autodoc2" - Added conditionally below based on package availability
     "sphinx.ext.viewcode",  # For adding a link to view source code in docs
     "sphinx.ext.doctest",  # Allows testing in docstrings
     "sphinx.ext.napoleon",  # For google style docstrings
-    "sphinx_copybutton",  # For copy button in code blocks
-    "sphinx_design",  # For grid, dropdown, tab-set directives
+    "sphinx_copybutton",  # For copy button in code blocks,
+    "sphinx_design",  # For grid layout
+    "sphinx.ext.ifconfig",  # For conditional content
+    "content_gating",  # Unified content gating extension
+    "myst_codeblock_substitutions",  # Our custom MyST substitutions in code blocks
+    "json_output",  # Generate JSON output for each page
+    "search_assets",  # Enhanced search assets extension
+    "ai_assistant",  # AI Assistant extension for intelligent search responses
+    "sphinxcontrib.mermaid",  # For Mermaid diagrams
 ]
 
 templates_path = ["_templates"]
 exclude_patterns = [
-    "_build", 
-    "Thumbs.db", 
+    "_build",
+    "Thumbs.db",
     ".DS_Store",
-    "_extensions/*/README.md",  # Exclude extension README files
+    "_extensions/*/README.md",     # Exclude README files in extension directories
+    "_extensions/README.md",       # Exclude main extensions README
+    "_extensions/*/__pycache__",   # Exclude Python cache directories
+    "_extensions/*/*/__pycache__", # Exclude nested Python cache directories
 ]
+
+# -- Options for Intersphinx -------------------------------------------------
+# Cross-references to external NVIDIA documentation
+intersphinx_mapping = {
+    "ctk": ("https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest", None),
+    "gpu-op": ("https://docs.nvidia.com/datacenter/cloud-native/gpu-operator/latest", None),
+    "ngr-tk": ("https://docs.nvidia.com/nemo/guardrails/latest", None),
+    "nim-cs": ("https://docs.nvidia.com/nim/llama-3-1-nemoguard-8b-contentsafety/latest/", None),
+    "nim-tc": ("https://docs.nvidia.com/nim/llama-3-1-nemoguard-8b-topiccontrol/latest/", None),
+    "nim-jd": ("https://docs.nvidia.com/nim/nemoguard-jailbreakdetect/latest/", None),
+    "nim-llm": ("https://docs.nvidia.com/nim/large-language-models/latest/", None),
+    "driver-linux": ("https://docs.nvidia.com/datacenter/tesla/driver-installation-guide", None),
+    "nim-op": ("https://docs.nvidia.com/nim-operator/latest", None),
+}
+
+# Intersphinx timeout for slow connections
+intersphinx_timeout = 30
+
+# -- Options for JSON Output -------------------------------------------------
+# Configure the JSON output extension for comprehensive search indexes
+json_output_settings = {
+    'enabled': True,
+}
+
+# -- Options for AI Assistant -------------------------------------------------
+# Configure the AI Assistant extension for intelligent search responses
+ai_assistant_enabled = True
+ai_assistant_endpoint = "https://prod-1-data.ke.pinecone.io/assistant/chat/test-assistant"
+ai_assistant_api_key = ""  # Set this to your Pinecone API key
+ai_trigger_threshold = 2  # Trigger AI when fewer than N search results
+ai_auto_trigger = True  # Automatically trigger AI analysis
 
 # -- Options for MyST Parser (Markdown) --------------------------------------
 # MyST Parser settings
@@ -58,44 +102,151 @@ myst_enable_extensions = [
     "deflist",  # Supports definition lists with term: definition format
     "fieldlist",  # Enables field lists for metadata like :author: Name
     "tasklist",  # Adds support for GitHub-style task lists with [ ] and [x]
+    "attrs_inline", # Enables inline attributes for markdown
+    "substitution", # Enables substitution for markdown
 ]
+
 myst_heading_anchors = 5  # Generates anchor links for headings up to level 5
 
-# -- Options for numfig -----------------------------------------------------
-# Note: numfig extension not available in this Sphinx version
-# numfig = True
-# numfig_secnum_depth = 2
+# MyST substitutions for reusable variables across documentation
+myst_substitutions = {
+    "product_name": "NVIDIA NeMo RL",
+    "product_name_short": "NeMo RL",
+    "company": "NVIDIA",
+    "version": release,
+    "current_year": "2025",
+    "github_repo": "https://github.com/NVIDIA/NeMo-RL",
+    "docs_url": "https://docs.nvidia.com/nemo-rl",
+    "support_email": "nemo-rl-support@nvidia.com",
+    "min_python_version": "3.9",
+    "recommended_cuda": "12.0+",
+}
+
+# Enable figure numbering
+numfig = True
+
+# Optional: customize numbering format
+numfig_format = {
+    'figure': 'Figure %s',
+    'table': 'Table %s',
+    'code-block': 'Listing %s'
+}
+
+# Optional: number within sections
+numfig_secnum_depth = 1  # Gives you "Figure 1.1, 1.2, 2.1, etc."
 
 # -- Options for custom roles -----------------------------------------------------
-# Add support for octicon role
+# Add support for octicon role with proper SVG rendering
 def setup(app):
-    app.add_role('octicon', lambda name, rawtext, text, lineno, inliner, options={}, content=[]: 
-                 ([], []))
+    from docutils import nodes
+    from docutils.parsers.rst import roles
+    
+    # Define the octicon role with proper SVG rendering
+    def octicon_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
+        # Parse the octicon syntax: {octicon}`icon-name;size;classes`
+        parts = text.split(';')
+        icon_name = parts[0].strip()
+        size = parts[1].strip() if len(parts) > 1 else "1em"
+        classes = parts[2].strip() if len(parts) > 2 else ""
+        
+        # Create a span with proper octicon classes
+        # The octicon CSS will handle the SVG rendering
+        node = nodes.inline(rawtext, "", classes=['octicon', f'octicon-{icon_name}', classes])
+        node['style'] = f'font-size: {size}; margin-right: 0.25em;'
+        
+        # Add data attributes for JavaScript enhancement
+        node['data-icon'] = icon_name
+        node['data-size'] = size
+        
+        return [node], []
+    
+    # Register the octicon role for both RST and MyST
+    app.add_role('octicon', octicon_role)
+    
+    # Also register as a MyST role
+    try:
+        from myst_parser.roles import MystRole
+        class OcticonMystRole(MystRole):
+            def __call__(self, name, rawtext, text, lineno, inliner, options=None, content=None):
+                return octicon_role(name, rawtext, text, lineno, inliner, options or {}, content or [])
+        
+        app.add_role('octicon', OcticonMystRole())
+    except ImportError:
+        # Fallback to regular role if MyST role not available
+        pass
+    
+    # Add custom CSS for enhanced octicon styling
+    app.add_css_file('octicons.css')
+    
+    # Add JavaScript for octicon enhancement
+    app.add_js_file('octicons.js')
+
+# Suppress expected warnings for conditional content builds
+suppress_warnings = [
+    "toc.not_included",  # Expected when video docs are excluded from GA builds
+    "toc.no_title",      # Expected for helm docs that include external README files
+    "docutils",          # Expected for autodoc2-generated content with regex patterns and complex syntax
+
+]
 
 # -- Options for Autodoc2 ---------------------------------------------------
 sys.path.insert(0, os.path.abspath(".."))
 
-autodoc2_packages = [
+# Conditional autodoc2 configuration - only enable if packages exist
+autodoc2_packages_list = [
     "../nemo_rl",  # Path to your package relative to conf.py
 ]
-autodoc2_render_plugin = "myst"  # Use MyST for rendering docstrings
-autodoc2_output_dir = "apidocs"  # Output directory for autodoc2 (relative to docs/)
-# This is a workaround that uses the parser located in autodoc2_docstrings_parser.py to allow autodoc2 to
-# render google style docstrings.
-# Related Issue: https://github.com/sphinx-extensions2/sphinx-autodoc2/issues/33
-autodoc2_docstring_parser_regexes = [
-    (r".*", "docs.autodoc2_docstrings_parser"),
-]
+
+# Check if any of the packages actually exist before enabling autodoc2
+autodoc2_packages = []
+for pkg_path in autodoc2_packages_list:
+    abs_pkg_path = os.path.abspath(os.path.join(os.path.dirname(__file__), pkg_path))
+    if os.path.exists(abs_pkg_path):
+        autodoc2_packages.append(pkg_path)
+
+# Only include autodoc2 in extensions if we have valid packages
+if autodoc2_packages:
+    if "autodoc2" not in extensions:
+        extensions.append("autodoc2")
+
+    autodoc2_render_plugin = "myst"  # Use MyST for rendering docstrings
+    autodoc2_output_dir = "apidocs"  # Output directory for autodoc2 (relative to docs/)
+    # This is a workaround that uses the parser located in autodoc2_docstrings_parser.py to allow autodoc2 to
+    # render google style docstrings.
+    # Related Issue: https://github.com/sphinx-extensions2/sphinx-autodoc2/issues/33
+    # autodoc2_docstring_parser_regexes = [
+    #     (r".*", "docs.autodoc2_docstrings_parser"),
+    # ]
+else:
+    # Remove autodoc2 from extensions if no valid packages
+    if "autodoc2" in extensions:
+        extensions.remove("autodoc2")
+    print("INFO: autodoc2 disabled - no valid packages found in autodoc2_packages_list")
+
+# -- Options for Napoleon (Google Style Docstrings) -------------------------
+napoleon_google_docstring = True
+napoleon_numpy_docstring = False  # Focus on Google style only
+napoleon_include_init_with_doc = False
+napoleon_include_private_with_doc = False
+napoleon_include_special_with_doc = True
+napoleon_use_admonition_for_examples = True
+napoleon_use_admonition_for_notes = True
+napoleon_use_param = True
+napoleon_use_rtype = True
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = "nvidia_sphinx_theme"
+
 html_theme_options = {
     "switcher": {
-        "json_url": "../versions1.json",
+        "json_url": "./versions1.json",
         "version_match": release,
     },
+    # Configure PyData theme search
+    "search_bar_text": "Search NVIDIA docs...",
+    "navbar_persistent": ["search-button"],  # Ensure search button is present
     "extra_head": {
         """
     <script src="https://assets.adobedtm.com/5d4962a43b79/c1061d2c5e7b/launch-191c2462b890.min.js" ></script>
@@ -107,4 +258,18 @@ html_theme_options = {
     """
     },
 }
+
+html_static_path = ["_static"]
+html_css_files = [
+    "https://cdnjs.cloudflare.com/ajax/libs/octicons/8.5.0/build.css",  # GitHub Octicons CDN
+    "octicons.css",  # Custom octicon styling
+]
+
+html_js_files = [
+    "octicons.js",  # Octicon enhancement script
+]
+
 html_extra_path = ["project.json", "versions1.json"]
+
+# Note: JSON output configuration has been moved to the consolidated
+# json_output_settings dictionary above for better organization and new features!
