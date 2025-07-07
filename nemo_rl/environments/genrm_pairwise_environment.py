@@ -220,7 +220,7 @@ class AsyncGenRMWorker:
                 # Parse the scores from GenRM output
                 individual_score_1, individual_score_2, ranking_score = self._parse_genrm_output(generated_text)
                 
-                logging.info(f"GenRM comparison {request_id}: scores=({individual_score_1}, {individual_score_2}), ranking={ranking_score}")
+                logging.info(f"GenRM comparison {request_id}: scores=({individual_score_1}, {individual_score_2}), ranking={ranking_score}, generated_text={generated_text}")
                 
                 return request_id, individual_score_1, individual_score_2, ranking_score
             else:
