@@ -73,8 +73,8 @@ Select the training method that best fits your needs and experience level:
 :gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`play;1.5em;sd-mr-1` SFT Training
-:link: quickstart
-:link-alt: Supervised Fine-Tuning quickstart guide
+:link: ../guides/algorithms/sft
+:link-alt: Supervised Fine-Tuning guide
 
 Get started with supervised fine-tuning for language models. Perfect for beginners and domain adaptation tasks.
 

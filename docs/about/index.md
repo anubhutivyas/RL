@@ -45,10 +45,11 @@ NeMo RL is built on a robust technology stack designed for performance and scala
 ## Core Architecture
 
 ::::{grid} 1 1 1 2
-:gutter: 1 1 1 2
+:gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` RL Algorithms
 :link: key-features
+:link-type: doc
 
 Explore key RL algorithms including SFT, GRPO, and DPO with mathematical foundations and implementation details.
 
@@ -58,6 +59,7 @@ Explore key RL algorithms including SFT, GRPO, and DPO with mathematical foundat
 
 :::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Distributed Training
 :link: architecture
+:link-type: doc
 
 Learn about Ray-based virtual clusters, worker groups, and multi-node training strategies for scalable RL.
 
@@ -67,6 +69,7 @@ Learn about Ray-based virtual clusters, worker groups, and multi-node training s
 
 :::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Model Backends
 :link: architecture
+:link-type: doc
 
 Understand Hugging Face integration, Megatron-LM support, and DTensor capabilities for different model architectures.
 
@@ -76,6 +79,7 @@ Understand Hugging Face integration, Megatron-LM support, and DTensor capabiliti
 
 :::{grid-item-card} {octicon}`beaker;1.5em;sd-mr-1` Environments
 :link: key-features
+:link-type: doc
 
 Discover built-in environments for math problems, games, and custom environment development for RL tasks.
 

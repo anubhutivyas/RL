@@ -73,7 +73,7 @@ Access comprehensive reference documentation including API specifications, confi
 :gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`play;1.5em;sd-mr-1` SFT Training
-:link: guides/algorithms/sft
+:link: guides/algorithms/sft.md
 :link-type: doc
 
 Supervised Fine-Tuning for language models - the foundation of RL training.
@@ -83,7 +83,7 @@ Supervised Fine-Tuning for language models - the foundation of RL training.
 :::
 
 :::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` GRPO Training
-:link: guides/algorithms/grpo
+:link: guides/algorithms/grpo.md
 :link-type: doc
 
 Group Relative Policy Optimization for advanced reinforcement learning training.
@@ -93,7 +93,7 @@ Group Relative Policy Optimization for advanced reinforcement learning training.
 :::
 
 :::{grid-item-card} {octicon}`heart;1.5em;sd-mr-1` DPO Training
-:link: guides/algorithms/dpo
+:link: guides/algorithms/dpo.md
 :link-type: doc
 
 Direct Preference Optimization for preference learning and model alignment.
@@ -103,7 +103,7 @@ Direct Preference Optimization for preference learning and model alignment.
 :::
 
 :::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Evaluation
-:link: guides/algorithms/eval
+:link: guides/algorithms/eval.md
 :link-type: doc
 
 Model evaluation and benchmarking strategies for RL-trained models.
@@ -120,7 +120,7 @@ Model evaluation and benchmarking strategies for RL-trained models.
 :gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`cloud;1.5em;sd-mr-1` Train GRPO Models on DeepScaleR
-:link: guides/examples/grpo-deepscaler
+:link: guides/examples/grpo-deepscaler.md
 :link-type: doc
 
 DeepScaleR integration for large-scale distributed training.
@@ -130,7 +130,7 @@ DeepScaleR integration for large-scale distributed training.
 :::
 
 :::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Fine-tune Models on OpenMathInstruct-2
-:link: guides/examples/sft-openmathinstruct2
+:link: guides/examples/sft-openmathinstruct2.md
 :link-type: doc
 
 Math instruction fine-tuning example with OpenMathInstruct-2 dataset.
@@ -147,7 +147,7 @@ Math instruction fine-tuning example with OpenMathInstruct-2 dataset.
 :gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Distributed Training
-:link: guides/development/distributed-training
+:link: guides/development/distributed-training.md
 :link-type: doc
 
 Scale RL training across multiple GPUs and nodes with Ray clusters.
@@ -157,7 +157,7 @@ Scale RL training across multiple GPUs and nodes with Ray clusters.
 :::
 
 :::{grid-item-card} {octicon}`plus;1.5em;sd-mr-1` Adding New Models
-:link: guides/development/adding-new-models
+:link: guides/development/adding-new-models.md
 :link-type: doc
 
 Extend NeMo RL with custom model architectures and backends.
@@ -167,7 +167,7 @@ Extend NeMo RL with custom model architectures and backends.
 :::
 
 :::{grid-item-card} {octicon}`checklist;1.5em;sd-mr-1` Testing & Debugging
-:link: guides/development/testing
+:link: guides/development/testing.md
 :link-type: doc
 
 Testing strategies and debugging techniques for RL training pipelines.
@@ -177,7 +177,7 @@ Testing strategies and debugging techniques for RL training pipelines.
 :::
 
 :::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Packaging
-:link: guides/development/packaging
+:link: guides/development/packaging.md
 :link-type: doc
 
 Deployment and packaging strategies for production environments.
