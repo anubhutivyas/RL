@@ -534,9 +534,23 @@ def grpo_train(
             print(f"▶ Generating responses for batch of size {repeated_batch.size}...")
             with timer.time("prepare_for_generation"):
                 if NEED_REFIT and POLICY_GENERATION_STALE:
-                    refit_policy_generation(
-                        policy, policy_generation, colocated_inference, timer=timer
-                    )
+                    if os.getenv("NEMO_RL_TORCH_PROFILE_REFIT", "0") == "1" and step == 1:
+                        import socket
+                        profile_context = torch.profiler.profile(
+                            activities=[torch.profiler.ProfilerActivity.CPU],
+                            with_stack=True,
+                            on_trace_ready=torch.profiler.tensorboard_trace_handler(
+                                "grpo_refit_trace",
+                                worker_name=f"{socket.gethostname()}",
+                                use_gzip=True,
+                            ),
+                        )
+                    else:
+                        profile_context = nullcontext()
+                    with profile_context:
+                        refit_policy_generation(
+                            policy, policy_generation, colocated_inference, timer=timer
+                        )
                     POLICY_GENERATION_STALE = False
                 else:
                     policy_generation.prepare_for_generation()
