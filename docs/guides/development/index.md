@@ -106,6 +106,7 @@ Model-specific considerations and workarounds for special cases.
 ```{toctree}
 :maxdepth: 1
 :caption: Development
+:hidden:
 
 
 adding-new-models

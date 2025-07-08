@@ -156,6 +156,7 @@ Understand the checkpointing mechanisms and strategies for model state persisten
 ```{toctree}
 :caption: Core Design & Architecture
 :maxdepth: 2
+:hidden:
 
 
 core-architecture/design-and-philosophy

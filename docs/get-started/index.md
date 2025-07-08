@@ -187,6 +187,7 @@ After completing your first training run:
 ```{toctree}
 :caption: Get Started
 :maxdepth: 2
+:hidden:
 
 
 installation

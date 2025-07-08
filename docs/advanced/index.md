@@ -215,6 +215,7 @@ Real-time performance monitoring, alerting, and analysis tools.
 ```{toctree}
 :caption: Advanced Topics
 :maxdepth: 2
+:hidden:
 
 
 theory/index

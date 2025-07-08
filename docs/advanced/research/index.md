@@ -200,6 +200,7 @@ After understanding the research methodologies:
 ```{toctree}
 :caption: Research
 :maxdepth: 2
+:hidden:
 
 
 experimental-design

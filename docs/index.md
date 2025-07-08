@@ -196,6 +196,7 @@ Deployment and packaging strategies for production environments.
 
 ```{toctree}
 :maxdepth: 3
+:hidden:
 about/index
 get-started/index
 guides/index

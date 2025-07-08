@@ -139,6 +139,7 @@ Deployment and packaging strategies for production environments.
 ```{toctree}
 :maxdepth: 1
 :caption: Training Algorithms
+:hidden:
 
 algorithms/sft
 algorithms/grpo
@@ -149,6 +150,7 @@ algorithms/eval
 ```{toctree}
 :maxdepth: 1
 :caption: Examples & Tutorials
+:hidden:
 
 examples/grpo-deepscaler
 examples/sft-openmathinstruct2
@@ -157,6 +159,7 @@ examples/sft-openmathinstruct2
 ```{toctree}
 :maxdepth: 1
 :caption: Development & Deployment
+:hidden:
 
 development/adding-new-models
 development/environment-development

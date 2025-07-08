@@ -56,6 +56,7 @@ Model evaluation and benchmarking strategies for RL-trained models.
 ```{toctree}
 :maxdepth: 1
 :caption: Algorithms
+:hidden:
 
 
 sft

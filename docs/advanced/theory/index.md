@@ -125,6 +125,7 @@ After understanding the mathematical foundations:
 ```{toctree}
 :caption: Theory
 :maxdepth: 2
+:hidden:
 
 
 mathematical-foundations

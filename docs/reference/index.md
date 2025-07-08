@@ -123,6 +123,7 @@ Common issues, error messages, and solutions for NeMo RL.
 ```{toctree}
 :caption: Reference
 :maxdepth: 2
+:hidden:
 
 
 api

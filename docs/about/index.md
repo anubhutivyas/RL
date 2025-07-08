@@ -88,6 +88,7 @@ Discover built-in environments for math problems, games, and custom environment 
 ```{toctree}
 :caption: About NeMo RL
 :maxdepth: 2
+:hidden:
 
 
 why-nemo-rl

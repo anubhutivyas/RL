@@ -206,6 +206,7 @@ After understanding performance optimization:
 ```{toctree}
 :caption: Performance
 :maxdepth: 2
+:hidden:
 
 
 profiling
