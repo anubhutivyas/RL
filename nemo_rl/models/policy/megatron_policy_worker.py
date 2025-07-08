@@ -1446,19 +1446,17 @@ class MegatronPolicyWorker:
             key_to_global_keys=self.local_key_to_global_keys,
         )
 
-        gathered_hf_params = self.megatron_to_hf_converter.convert(
-            gathered_megatron_params, self.model.config
-        )
+        gathered_hf_params = self.megatron_to_hf_converter.convert(gathered_megatron_params, self.model.config)
 
         # Get device UUID for IPC handles
         device_uuid = self.report_device_id()
         from torch.multiprocessing.reductions import reduce_tensor
 
         # Create IPC handles for each parameter
-        tensor_number_threshold = os.getenv(
-            "NEMO_RL_MEGATRON_IPC_TENSOR_PACKING_THRESHOLD", "32"
-        ) # an arbitrary threshold
-        if len(gathered_hf_params) >= int(tensor_number_threshold):
+        tensor_number_threshold = int(
+            os.getenv("NEMO_RL_MEGATRON_IPC_TENSOR_PACKING_THRESHOLD", "0")
+        )  # an arbitrary threshold
+        if len(gathered_hf_params) >= tensor_number_threshold:
             pack_tensor_for_ipc = True
         else:
             pack_tensor_for_ipc = False
