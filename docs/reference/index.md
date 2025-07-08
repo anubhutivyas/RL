@@ -30,7 +30,7 @@ Common issues, error messages, and solutions for NeMo RL. Find quick answers to 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} <span class="octicon" data-icon="book" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> API Reference
+:::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` API Reference
 :link: api
 :link-type: doc
 
@@ -47,7 +47,7 @@ Complete API documentation for all NeMo RL components and functions.
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} <span class="octicon" data-icon="gear" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Configuration
+:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Configuration
 :link: configuration
 :link-type: doc
 
@@ -64,7 +64,7 @@ Detailed configuration options for training parameters and system settings.
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} <span class="octicon" data-icon="terminal" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> CLI Reference
+:::{grid-item-card} {octicon}`terminal;1.5em;sd-mr-1` CLI Reference
 :link: cli
 :link-type: doc
 
@@ -81,7 +81,7 @@ Complete command-line interface reference for all NeMo RL tools.
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} <span class="octicon" data-icon="bug" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Troubleshooting
+:::{grid-item-card} {octicon}`bug;1.5em;sd-mr-1` Troubleshooting
 :link: troubleshooting
 :link-type: doc
 
@@ -119,15 +119,15 @@ Common issues, error messages, and solutions for NeMo RL.
 - **Troubleshooting**: Common issues and debugging strategies
 - **Community Support**: GitHub issues and community discussions
 
+
 ```{toctree}
 :caption: Reference
 :maxdepth: 2
 :expanded:
 
 api
-configuration
 cli
+configuration
 troubleshooting
 ```
-
 

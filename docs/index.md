@@ -8,18 +8,9 @@ library for reinforcement learning and supervised fine-tuning of large language 
 ::::{grid} 1 2 2 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}info;1.5em;sd-mr-1 About
-:link: about/index
-:link-type: doc
-:class-body: text-center
 
-Learn about NeMo RL's core concepts, key features, and fundamental architecture for reinforcement learning with large language models.
 
-+++
-{bdg-primary}`Concepts` {bdg-secondary}`Overview`
-:::
-
-:::{grid-item-card} {octicon}rocket;1.5em;sd-mr-1 Get Started
+:::{grid-item-card} {octicon}`rocket;1.5em;sd-mr-1` Get Started
 :link: get-started/index
 :link-type: doc
 :class-body: text-center
@@ -30,7 +21,7 @@ Set up your environment and run your first reinforcement learning training job w
 {bdg-success}`Beginner` {bdg-secondary}`Setup`
 :::
 
-:::{grid-item-card} {octicon}book;1.5em;sd-mr-1 Guides
+:::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` Guides
 :link: guides/index
 :link-type: doc
 :class-body: text-center
@@ -41,7 +32,7 @@ Master NeMo RL with organized guides covering training algorithms, examples, per
 {bdg-warning}`Advanced` {bdg-secondary}`Tutorials`
 :::
 
-:::{grid-item-card} {octicon}gear;1.5em;sd-mr-1 Core Design & Architecture
+:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Core Design & Architecture
 :link: design-docs/index
 :link-type: doc
 :class-body: text-center
@@ -52,7 +43,18 @@ Explore NeMo RL's architectural foundations, data management, computational syst
 {bdg-secondary}`Architecture` {bdg-secondary}`Design`
 :::
 
-:::{grid-item-card} {octicon}terminal;1.5em;sd-mr-1 Reference
+:::{grid-item-card} {octicon}`flask;1.5em;sd-mr-1` Advanced Topics
+:link: advanced/index
+:link-type: doc
+:class-body: text-center
+
+Deep technical content for researchers and advanced practitioners including mathematical foundations, research methodologies, and optimization techniques.
+
++++
+{bdg-warning}`Advanced` {bdg-secondary}`Research`
+:::
+
+:::{grid-item-card} {octicon}`terminal;1.5em;sd-mr-1` Reference
 :link: reference/index
 :link-type: doc
 :class-body: text-center
@@ -70,7 +72,7 @@ Access comprehensive reference documentation including API specifications, confi
 ::::{grid} 1 2 2 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}play;1.5em;sd-mr-1 SFT Training
+:::{grid-item-card} {octicon}`play;1.5em;sd-mr-1` SFT Training
 :link: guides/algorithms/sft
 :link-type: doc
 
@@ -80,7 +82,7 @@ Supervised Fine-Tuning for language models - the foundation of RL training.
 {bdg-primary}`Beginner`
 :::
 
-:::{grid-item-card} {octicon}graph;1.5em;sd-mr-1 GRPO Training
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` GRPO Training
 :link: guides/algorithms/grpo
 :link-type: doc
 
@@ -90,7 +92,7 @@ Group Relative Policy Optimization for advanced reinforcement learning training.
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} {octicon}heart;1.5em;sd-mr-1 DPO Training
+:::{grid-item-card} {octicon}`heart;1.5em;sd-mr-1` DPO Training
 :link: guides/algorithms/dpo
 :link-type: doc
 
@@ -100,7 +102,7 @@ Direct Preference Optimization for preference learning and model alignment.
 {bdg-info}`Intermediate`
 :::
 
-:::{grid-item-card} {octicon}graph;1.5em;sd-mr-1 Evaluation
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Evaluation
 :link: guides/algorithms/eval
 :link-type: doc
 
@@ -117,7 +119,7 @@ Model evaluation and benchmarking strategies for RL-trained models.
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}cloud;1.5em;sd-mr-1 Train GRPO Models on DeepScaleR
+:::{grid-item-card} {octicon}`cloud;1.5em;sd-mr-1` Train GRPO Models on DeepScaleR
 :link: guides/examples/grpo-deepscaler
 :link-type: doc
 
@@ -127,7 +129,7 @@ DeepScaleR integration for large-scale distributed training.
 {bdg-secondary}`Cloud`
 :::
 
-:::{grid-item-card} {octicon}calculator;1.5em;sd-mr-1 Fine-tune Models on OpenMathInstruct-2
+:::{grid-item-card} {octicon}`calculator;1.5em;sd-mr-1` Fine-tune Models on OpenMathInstruct-2
 :link: guides/examples/sft-openmathinstruct2
 :link-type: doc
 
@@ -144,7 +146,7 @@ Math instruction fine-tuning example with OpenMathInstruct-2 dataset.
 ::::{grid} 1 2 2 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}server;1.5em;sd-mr-1 Distributed Training
+:::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Distributed Training
 :link: guides/development/distributed-training
 :link-type: doc
 
@@ -154,7 +156,7 @@ Scale RL training across multiple GPUs and nodes with Ray clusters.
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} {octicon}plus;1.5em;sd-mr-1 Adding New Models
+:::{grid-item-card} {octicon}`plus;1.5em;sd-mr-1` Adding New Models
 :link: guides/development/adding-new-models
 :link-type: doc
 
@@ -164,7 +166,7 @@ Extend NeMo RL with custom model architectures and backends.
 {bdg-info}`Development`
 :::
 
-:::{grid-item-card} {octicon}checklist;1.5em;sd-mr-1 Testing & Debugging
+:::{grid-item-card} {octicon}`checklist;1.5em;sd-mr-1` Testing & Debugging
 :link: guides/development/testing
 :link-type: doc
 
@@ -174,7 +176,7 @@ Testing strategies and debugging techniques for RL training pipelines.
 {bdg-success}`Quality`
 :::
 
-:::{grid-item-card} {octicon}package;1.5em;sd-mr-1 Packaging
+:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Packaging
 :link: guides/development/packaging
 :link-type: doc
 
@@ -192,32 +194,12 @@ Deployment and packaging strategies for production environments.
 :relative-docs: docs/
 ```
 
-::::{toctree}
-:maxdepth: 2
-:name: about
+```{toctree}
+:maxdepth: 3
 about/index
-::::
-
-::::{toctree}
-:maxdepth: 2
-:name: get-started
 get-started/index
-::::
-
-::::{toctree}
-:maxdepth: 2
-:name: guides
 guides/index
-::::
-
-::::{toctree}
-:maxdepth: 2
-:name: design-docs
 design-docs/index
-::::
-
-::::{toctree}
-:maxdepth: 2
-:name: reference
+advanced/index
 reference/index
-::::
+```

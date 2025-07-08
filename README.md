@@ -31,7 +31,7 @@
 What you can expect:
 
 - **Seamless integration with Hugging Face** for ease of use, allowing users to leverage a wide range of pre-trained models and tools.
-- **High-performance implementation with Megatron Core**, supporting various parallelism techniques for large models (>100B) and large context lengths.
+- **High-performance implementation with Megatron-LM**, supporting various parallelism techniques for large models and large context lengths.
 - **Efficient resource management using Ray**, enabling scalable and flexible deployment across different hardware configurations.
 - **Flexibility** with a modular design that allows easy integration and customization.
 - **Comprehensive documentation** that is both detailed and user-friendly, with practical examples.
@@ -55,7 +55,7 @@ What you can expect:
 - ✅ **Advanced Parallelism** - PyTorch native FSDP2, TP, and SP for efficient training.
 - ✅ **Worker Isolation** - Process isolation between RL Actors (no worries about global state).
 - ✅ **Environment Isolation** - Dependency isolation between components.
-- ✅ **(even) Larger Model Support with Long(er) Sequence** - Support advanced parallelism in training with Megatron Core.
+- ✅ **(even) Larger Model Support with Long(er) Sequence** - Support advanced parallelism in training with Megatron-LM.
 - ✅ **Megatron Inference** - (static) Megatron Inference for day-0 support for new megatron models.
 
 - 🔜 **Improved Native Performance** - Improve training time for Native Pytorch Models.
@@ -127,7 +127,7 @@ uv venv
 NeMo RL supports multiple training backends to accommodate different model sizes and hardware configurations:
 
 - **DTensor (FSDP2)** - PyTorch's next-generation distributed training with improved memory efficiency
-- **Megatron** - NVIDIA's high-performance training framework for scaling to large models (>100B parameters)
+- **Megatron-LM** - NVIDIA's high-performance training framework for scaling to large models with pipeline parallelism
 
 The training backend is automatically determined based on your YAML configuration settings. For detailed information on backend selection, configuration, and examples, see the [Training Backends documentation](docs/design-docs/training-backends.md) in the Core Design & Architecture section.
 

@@ -5,7 +5,7 @@ NeMo RL supports multiple training backends to accommodate different model sizes
 ## Available Backends
 
 - **DTensor (FSDP2)** - PyTorch's next-generation distributed training with improved memory efficiency
-- **Megatron** - NVIDIA's high-performance training framework for scaling to large models (>100B parameters)
+- **Megatron-LM** - NVIDIA's high-performance training framework for scaling to large models with pipeline parallelism
 
 ## Backend Selection
 

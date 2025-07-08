@@ -1,0 +1,94 @@
+# Documentation Toctree Structure Rule
+
+## Overview
+This rule defines the standard toctree structure pattern for main documentation sections to ensure consistent navigation and proper nesting.
+
+## Basic Index Structure Pattern
+
+### Main Index Toctree Format
+All main documentation sections should use this consistent toctree format in `docs/index.md`:
+
+```markdown
+::::{toctree}
+:maxdepth: 3
+section-name/index
+:::::
+```
+
+### Key Requirements
+1. **No Caption**: Do not use `:caption:` directive in main index toctree entries
+2. **Consistent Depth**: Use `:maxdepth: 3` for all sections
+3. **Index Files Only**: Only include the main index file for each section (e.g., `guides/index`, not individual guide files)
+4. **Nested Structure**: Let each section's index.md file control its own nested structure via internal toctree
+
+### Section Organization Pattern
+All sections follow this structure:
+- **About NeMo RL**: `about/index`
+- **Get Started**: `get-started/index` 
+- **Guides**: `guides/index`
+- **Core Design & Architecture**: `design-docs/index`
+- **Reference**: `reference/index`
+
+### Individual Section Index Files
+Each section's index.md file should contain its own toctree to control nested items:
+
+```markdown
+```{toctree}
+:caption: Section Name
+:maxdepth: 2
+:expanded:
+
+subsection1/file1
+subsection1/file2
+subsection2/file1
+subsection2/file2
+```
+```
+
+### Benefits of This Structure
+1. **Clean Navigation**: No duplicate top-level entries in main TOC
+2. **Proper Nesting**: Sub-items appear under their parent sections
+3. **Expandable Sections**: Users can expand/collapse sections as needed
+4. **Consistent Experience**: Uniform navigation across all documentation
+5. **Maintainable**: Easy to add/remove items by editing section index files
+
+### Implementation Checklist
+When organizing documentation sections:
+- [ ] Main index toctree has no captions
+- [ ] Main index toctree uses `:maxdepth: 3`
+- [ ] Main index toctree only includes index files
+- [ ] Each section index.md has its own toctree
+- [ ] Section toctrees include all sub-items with proper paths
+- [ ] No duplicate entries between main index and section indexes
+
+### Example Structure
+```
+docs/index.md:
+::::{toctree}
+:maxdepth: 3
+about/index
+get-started/index
+guides/index
+design-docs/index
+reference/index
+:::::
+
+docs/guides/index.md:
+```{toctree}
+:caption: Guides
+:maxdepth: 2
+:expanded:
+
+theory/mathematical-foundations
+algorithms/sft
+algorithms/grpo
+examples/grpo-deepscaler
+development/adding-new-models
+```
+```
+
+This structure ensures consistent, maintainable, and user-friendly documentation navigation.
+description:
+globs:
+alwaysApply: false
+---

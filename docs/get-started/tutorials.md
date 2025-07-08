@@ -105,7 +105,7 @@ Review performance benchmarks and test suites to understand training efficiency 
 - **Ray Integration**: Learn to use Ray for distributed computing
 - **Multi-GPU Training**: Master training across multiple GPUs efficiently
 - **Cluster Management**: Understand cluster setup and resource management
-- **Scaling Strategies**: Learn to scale training to hundreds of GPUs
+- **Scaling Strategies**: Learn to scale training to multiple nodes and GPUs
 
 ## Advanced Tutorials
 

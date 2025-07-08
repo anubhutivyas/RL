@@ -19,7 +19,7 @@ The framework is designed to handle the complexities of distributed training acr
 
 NeMo RL offers several key advantages for reinforcement learning with language models:
 
-- **Scalability**: Built on Ray for distributed computing, enabling training across hundreds of GPUs
+- **Scalability**: Built on Ray for distributed computing, enabling training across multiple nodes and GPUs
 - **Flexibility**: Support for multiple model backends and RL algorithms
 - **Production Ready**: Comprehensive tooling for deployment and monitoring
 - **Research Friendly**: Easy experimentation with different algorithms and environments
@@ -39,7 +39,7 @@ NeMo RL is built on a robust technology stack designed for performance and scala
 - **Ray**: Distributed computing framework for scalable RL training and resource management
 - **PyTorch**: Deep learning framework with advanced distributed training capabilities
 - **Transformers**: Hugging Face integration for state-of-the-art language models
-- **Megatron-LM**: High-performance training backend for large models with advanced parallelization
+- **Megatron-LM**: High-performance training backend for large models with pipeline parallelism
 - **DTensor**: Distributed tensor operations for efficient model parallelism
 
 ## Core Architecture
@@ -47,7 +47,7 @@ NeMo RL is built on a robust technology stack designed for performance and scala
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
 
-:::{grid-item-card} {octicon}graph;1.5em;sd-mr-1 RL Algorithms
+:::{grid-item-card} <span class="octicon" data-icon="graph" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> RL Algorithms
 :link: key-features
 
 Explore key RL algorithms including SFT, GRPO, and DPO with mathematical foundations and implementation details.
@@ -56,7 +56,7 @@ Explore key RL algorithms including SFT, GRPO, and DPO with mathematical foundat
 {bdg-primary}`Foundation`
 :::
 
-:::{grid-item-card} {octicon}server;1.5em;sd-mr-1 Distributed Training
+:::{grid-item-card} <span class="octicon" data-icon="server" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Distributed Training
 :link: architecture
 
 Learn about Ray-based virtual clusters, worker groups, and multi-node training strategies for scalable RL.
@@ -65,7 +65,7 @@ Learn about Ray-based virtual clusters, worker groups, and multi-node training s
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} {octicon}database;1.5em;sd-mr-1 Model Backends
+:::{grid-item-card} <span class="octicon" data-icon="database" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Model Backends
 :link: architecture
 
 Understand Hugging Face integration, Megatron-LM support, and DTensor capabilities for different model architectures.
@@ -74,7 +74,7 @@ Understand Hugging Face integration, Megatron-LM support, and DTensor capabiliti
 {bdg-info}`Implementation`
 :::
 
-:::{grid-item-card} {octicon}game;1.5em;sd-mr-1 Environments
+:::{grid-item-card} <span class="octicon" data-icon="game" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Environments
 :link: key-features
 
 Discover built-in environments for math problems, games, and custom environment development for RL tasks.
@@ -90,13 +90,7 @@ Discover built-in environments for math problems, games, and custom environment 
 :maxdepth: 2
 :expanded:
 
-architecture
-key-features
 why-nemo-rl
+key-features
+architecture
 ```
-
-
-
-
-
-

@@ -152,25 +152,17 @@ Understand the checkpointing mechanisms and strategies for model state persisten
 
 ::::
 
+
 ```{toctree}
 :caption: Core Design & Architecture
 :maxdepth: 2
 :expanded:
 
-core-architecture/index
-data-management/index
+core-architecture/design-and-philosophy
+core-architecture/fsdp2-parallel-plan
+core-architecture/generation
 computational-systems/index
+data-management/index
 development-infrastructure/index
 ```
 
-
-
-
-
-
-
-
-
-
-
- 

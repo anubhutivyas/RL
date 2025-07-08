@@ -6,13 +6,13 @@ NeMo RL provides a comprehensive suite of features for scalable reinforcement le
 ## 🚀 Core Capabilities
 
 ### Scalable Training
-- **1 GPU to Thousands**: Scale seamlessly from single GPU to large clusters
-- **Tiny to 100B+ Parameters**: Support for models ranging from small to massive scale
+- **1 GPU to 64+ GPUs**: Scale seamlessly from single GPU to multi-node clusters
+- **Tiny to 70B+ Parameters**: Support for models ranging from small to large scale
 - **Advanced Parallelism**: FSDP2, Tensor Parallelism, Pipeline Parallelism, and Context Parallelism
 
 ### Multiple Training Backends
 - **Hugging Face Integration**: Easy integration with popular pre-trained models
-- **Megatron Core**: High-performance training for large models (>100B parameters)
+- **Megatron-LM**: High-performance training for large models with pipeline parallelism
 - **DTensor (FSDP2)**: Next-generation distributed training with improved memory efficiency
 
 ### RL and Alignment Algorithms
@@ -75,7 +75,7 @@ NeMo RL provides a comprehensive suite of features for scalable reinforcement le
 ## 🌐 Ecosystem Integration
 
 ### Model Support
-- **Hugging Face Models**: 1-32B parameter models (Qwen2.5, Llama, etc.)
+- **Hugging Face Models**: 0.6B-70B parameter models (Qwen, Llama, Gemma, etc.)
 - **Custom Models**: Easy integration of custom model architectures
 - **Model Conversion**: Tools for converting between different formats
 

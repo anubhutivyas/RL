@@ -12,7 +12,7 @@ Welcome to NeMo RL! This guide will help you set up your environment and run you
 ## Before You Start
 
 - **System Requirements**: Ensure you have CUDA-compatible GPUs and sufficient memory
-- **Python Environment**: Python 3.9+ with PyTorch 2.0+ and Ray 2.6+
+- **Python Environment**: Python 3.9+ with PyTorch 2.0+ and Ray
 - **Model Access**: Access to Hugging Face models (Qwen, Llama, etc.)
 - **Cluster Setup**: For distributed training, prepare your Ray cluster
 
@@ -182,6 +182,8 @@ After completing your first training run:
 - [Configuration Guide](../reference/configuration.md) - Understand training parameters
 - [Community Support](https://github.com/NVIDIA-NeMo/RL/issues) - GitHub issues and discussions
 
+---
+
 ```{toctree}
 :caption: Get Started
 :maxdepth: 2
@@ -193,7 +195,11 @@ local-workstation
 docker
 cluster
 tutorials
+feature-set-a
+feature-set-b
 ```
+
+
 
 
 

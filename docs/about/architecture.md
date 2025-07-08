@@ -65,7 +65,7 @@ NeMo RL supports multiple training backends to accommodate different model sizes
 - **Flexibility**: Custom model architectures and tokenizers
 
 ### Megatron Backend
-- **Large Model Support**: >100B parameter models
+- **Large Model Support**: Up to 70B parameter models
 - **Advanced Parallelism**: Tensor, Pipeline, and Context Parallelism
 - **High Performance**: Optimized for large-scale training
 

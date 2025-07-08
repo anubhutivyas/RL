@@ -5,7 +5,7 @@ NeMo RL is a comprehensive, open-source framework designed for reinforcement lea
 ## Key Benefits
 
 ### 🚀 **Scalable Training**
-- **Multi-GPU & Multi-Node Support**: Scale from single GPU to hundreds of GPUs across multiple nodes
+- **Multi-GPU & Multi-Node Support**: Scale from single GPU to 64+ GPUs across multiple nodes
 - **Ray-Based Distributed Computing**: Leverage Ray's proven distributed computing capabilities
 - **Memory-Efficient Training**: Advanced memory management for large model training
 
@@ -16,7 +16,7 @@ NeMo RL is a comprehensive, open-source framework designed for reinforcement lea
 
 ### 🔧 **Flexible Model Integration**
 - **Hugging Face Models**: Seamless integration with the Hugging Face ecosystem
-- **Megatron-LM Support**: High-performance training backend for large models
+- **Megatron-LM Support**: High-performance training backend for large models with pipeline parallelism
 - **DTensor Support**: Advanced distributed tensor capabilities
 
 ### 🎯 **Built-in Environments**
@@ -68,9 +68,9 @@ NeMo RL is a comprehensive, open-source framework designed for reinforcement lea
 
 ### 🏗️ **Modern Architecture**
 - **PyTorch 2.0+**: Latest PyTorch features and optimizations
-- **Transformers 4.30+**: Cutting-edge transformer model support
-- **Ray 2.6+**: Proven distributed computing framework
-- **CUDA 11.8+**: Optimized GPU acceleration
+- **Transformers**: Cutting-edge transformer model support
+- **Ray**: Proven distributed computing framework
+- **CUDA**: Optimized GPU acceleration
 
 ### 📊 **Advanced Features**
 - **Gradient Checkpointing**: Memory-efficient training for large models
