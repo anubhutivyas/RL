@@ -487,8 +487,8 @@ ray logs
 
 ## Getting Help
 
-- [Cluster Setup](../get-started/cluster.md) - Detailed cluster configuration
+- [Cluster Setup](../../get-started/cluster.md) - Detailed cluster configuration
 - [Debugging](debugging.md) - Debugging distributed training issues
 - [Performance Profiling](nsys-profiling.md) - Profiling tools and techniques
-- [API Reference](../reference/api.md) - Complete distributed training API
+- [API Reference](../../reference/api.md) - Complete distributed training API
 - [Community Support](https://github.com/NVIDIA-NeMo/RL/issues) - GitHub issues and discussions 

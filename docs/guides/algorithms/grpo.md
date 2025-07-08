@@ -4,7 +4,7 @@ This guide details the Group Relative Policy Optimization(GRPO) implementation w
 
 ## Quickstart: Launch a GRPO Run
 
-To get started quickly, use the script [examples/run_grpo_math.py](../../examples/run_grpo_math.py), which demonstrates how to train a model on math problems using GRPO. You can launch this script locally or via Slurm. For detailed instructions on setting up Ray and launching a job with Slurm, refer to the [cluster documentation](../get-started/cluster.md).
+To get started quickly, use the script [examples/run_grpo_math.py](../../../examples/run_grpo_math.py), which demonstrates how to train a model on math problems using GRPO. You can launch this script locally or via Slurm. For detailed instructions on setting up Ray and launching a job with Slurm, refer to the [cluster documentation](../../get-started/cluster.md).
 
 We recommend launching the job using `uv`:
 
@@ -12,7 +12,7 @@ We recommend launching the job using `uv`:
 uv run examples/run_grpo_math.py --config <PATH TO YAML CONFIG> {overrides}
 ```
 
-If not specified, `config` will default to [examples/configs/grpo.yaml](../../examples/configs/grpo_math_1B.yaml).
+If not specified, `config` will default to [examples/configs/grpo.yaml](../../../examples/configs/grpo_math_1B.yaml).
 
 **Reminder**: Don't forget to set your HF_HOME, WANDB_API_KEY, and HF_DATASETS_CACHE (if needed). You'll need to do a `huggingface-cli login` as well for Llama models.
 
@@ -28,7 +28,7 @@ In this guide, we'll walk through how we handle:
 
 We support training with multiple RL "Environments" at the same time.
 
-An [Environment](../../nemo_rl/environments/interfaces.py) is an object that accepts a state/action history and returns an update state and rewards for the step. They run as Ray Remote Actors. Example [MathEnvironment](../../nemo_rl/environments/math_environment.py).
+An [Environment](../../../nemo_rl/environments/interfaces.py) is an object that accepts a state/action history and returns an update state and rewards for the step. They run as Ray Remote Actors. Example [MathEnvironment](../../../nemo_rl/environments/math_environment.py).
 
 To support this, we need to know:
 
@@ -38,7 +38,7 @@ To support this, we need to know:
 
 #### Common Data Format
 
-We define a [DatumSpec](../../nemo_rl/data/interfaces.py) that holds all relevant information for each training example:
+We define a [DatumSpec](../../../nemo_rl/data/interfaces.py) that holds all relevant information for each training example:
 
 ```python
 class DatumSpec(TypedDict):
@@ -55,7 +55,7 @@ class DatumSpec(TypedDict):
 
 We refer to each distinct environment your model aims to optimize against as a "task." For example, you might define tasks like "math" or "code."
 
-For each task, you should provide a data processor that reads from your dataset and returns a [DatumSpec](../../nemo_rl/data/interfaces.py)
+For each task, you should provide a data processor that reads from your dataset and returns a [DatumSpec](../../../nemo_rl/data/interfaces.py)
 
 ```python
 def my_data_processor(
@@ -67,7 +67,7 @@ def my_data_processor(
 ) -> DatumSpec:
 ```
 
-We have an example of this as `math_data_processor` in [run_grpo_math.py](../../examples/run_grpo_math.py)
+We have an example of this as `math_data_processor` in [run_grpo_math.py](../../../examples/run_grpo_math.py)
 
 #### Putting it all together
 
@@ -103,16 +103,16 @@ Ensure you provide a mapping of tasks to their processors so the dataset knows w
 
 We define a {py:class}`PolicyInterface]() <nemo_rl.models.interfaces>` that contains everything you need to train a Policy model.
 
-This Policy object holds a [RayWorkerGroup](../../nemo_rl/distributed/worker_groups.py) of SPMD (1 proc/gpu) processes that run HF/MCore, all coordinated by this object so it appears to you like 1 GPU!
+This Policy object holds a [RayWorkerGroup](../../../nemo_rl/distributed/worker_groups.py) of SPMD (1 proc/gpu) processes that run HF/MCore, all coordinated by this object so it appears to you like 1 GPU!
 
 ## Fast Generation
 
-We support vLLM through the [VllmGeneration](../../nemo_rl/models/generation/vllm.py) class right now.
+We support vLLM through the [VllmGeneration](../../../nemo_rl/models/generation/vllm.py) class right now.
 
-The function [grpo_train](../../nemo_rl/algorithms/grpo.py) contains the core GRPO training loop.
+The function [grpo_train](../../../nemo_rl/algorithms/grpo.py) contains the core GRPO training loop.
 
 ## Loss
-We use the [ClippedPGLossFn](../../nemo_rl/algorithms/loss_functions.py) to calculate the loss for GRPO. Formally,
+We use the [ClippedPGLossFn](../../../nemo_rl/algorithms/loss_functions.py) to calculate the loss for GRPO. Formally,
 
 $$
 L(\theta) = E_{x \sim \pi_{\theta_{\text{old}}}} \Big[ \min \Big(\frac{\pi_\theta(x)}{\pi_{\theta_{\text{old}}}(x)}A_t, \text{clip} \big( \frac{\pi_\theta(x)}{\pi_{\theta_{\text{old}}}(x)}, 1 - \varepsilon, 1 + \varepsilon \big) A_t \Big) \Big] - \beta D_{\text{KL}} (\pi_\theta \| \pi_\text{ref})
@@ -166,7 +166,7 @@ To enable the on-policy KL approximation, set the config `use_on_policy_kl_appro
 
 
 #### Importance Sampling Correction (use_importance_sampling_correction)
-The policy we use to draw samples, $\pi_{\theta_{\text{old}}}$, is used in both the inference framework and the training framework. To account for this distinction, we refer to the inference framework policy as $\pi_{\text{inference}}$ and the training framework policy as $\pi_{\text{training}}$. As noted in [Adding New Models](adding-new-models.md#understand-discrepancies-between-backends), it is possible for the token probabilities from $\pi_{\text{training}}$ and $\pi_{\text{inference}}$ to have discrepancies (from numerics, precision differences, bugs, etc.), leading to off-policy samples. We can correct for this by introducing importance weights between $\pi_{\text{training}}$ and $\pi_{\text{inference}}$ to the first term of the loss function. 
+The policy we use to draw samples, $\pi_{\theta_{\text{old}}}$, is used in both the inference framework and the training framework. To account for this distinction, we refer to the inference framework policy as $\pi_{\text{inference}}$ and the training framework policy as $\pi_{\text{training}}$. As noted in [Adding New Models](../development/adding-new-models.md#understand-discrepancies-between-backends), it is possible for the token probabilities from $\pi_{\text{training}}$ and $\pi_{\text{inference}}$ to have discrepancies (from numerics, precision differences, bugs, etc.), leading to off-policy samples. We can correct for this by introducing importance weights between $\pi_{\text{training}}$ and $\pi_{\text{inference}}$ to the first term of the loss function. 
 
 Let $f_\theta(x) = \min \Big(\frac{\pi_\theta(x)}{\pi_{\theta_{\text{old}}}(x)}A_t, \text{clip} \big( \frac{\pi_\theta(x)}{\pi_{\theta_{\text{old}}}(x)}, 1 - \varepsilon, 1 + \varepsilon \big) A_t \Big)$ represent the first term of loss function. Then,
 
@@ -187,7 +187,7 @@ To enable the importance sampling correction, set the config `use_importance_sam
 We track a few metrics during training for scientific experimentation and to validate correctness as the run progresses.
 
 ### Multiplicative Token Probability Error (token_mult_prob_error)
-This is equal to the 'Logprob consistency metric' defined in [Adding New Models](adding-new-models.md#importance-of-log-probability-consistency-in-training-and-inference):
+This is equal to the 'Logprob consistency metric' defined in [Adding New Models](../development/adding-new-models.md#importance-of-log-probability-consistency-in-training-and-inference):
 
 $$
 \text{token-mult-prob-error} = \frac{1}{n}\sum_{i=1}^{n\text{(tokens)}}\exp\left(\left\|\text{log-train-fwk}_i - \text{logprobs-inference-fwk}_i\right\|\right)
@@ -217,4 +217,4 @@ We use this to track if our models are entropy-collapsing too quickly during tra
 
 ## Evaluate the Trained Model
 
-Upon completion of the training process, you can refer to our [evaluation guide](eval.md) to assess model capabilities.
+Upon completion of the training process, you can refer to our [evaluation guide](../algorithms/eval.md) to assess model capabilities.

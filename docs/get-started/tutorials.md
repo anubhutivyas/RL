@@ -12,23 +12,23 @@ Welcome to the NeMo RL tutorials! This comprehensive guide will help you learn N
 
 Follow this structured learning path to master NeMo RL:
 
-### 🚀 **Beginner Path** (0-2 weeks)
+### **Beginner Path** (0-2 weeks)
 1. **Installation & Setup** → [Installation Guide](installation.md)
 2. **First Training Run** → [Quickstart Guide](quickstart.md)
 3. **Basic Concepts** → [About NeMo RL](../about/index.md)
-4. **SFT Training** → [SFT Tutorial](../guides/sft.md)
+4. **SFT Training** → [SFT Tutorial](../guides/algorithms/sft.md)
 
-### 🔧 **Intermediate Path** (2-4 weeks)
-1. **DPO Training** → [DPO Tutorial](../guides/dpo.md)
-2. **Model Evaluation** → [Evaluation Guide](../guides/eval.md)
-3. **Custom Environments** → [Environment Development](../guides/environment-development.md)
-4. **Distributed Training** → [Distributed Training Guide](../guides/distributed-training.md)
+### **Intermediate Path** (2-4 weeks)
+1. **DPO Training** → [DPO Tutorial](../guides/algorithms/dpo.md)
+2. **Model Evaluation** → [Evaluation Guide](../guides/algorithms/eval.md)
+3. **Custom Environments** → [Environment Development](../guides/development/environment-development.md)
+4. **Distributed Training** → [Distributed Training Guide](../guides/development/distributed-training.md)
 
 ### 🎯 **Advanced Path** (4+ weeks)
-1. **GRPO Training** → [GRPO Tutorial](../guides/grpo.md)
-2. **Performance Optimization** → [NSYS Profiling](../guides/nsys-profiling.md)
-3. **Custom Model Integration** → [Adding New Models](../guides/adding-new-models.md)
-4. **Production Deployment** → [Packaging Guide](../guides/packaging.md)
+1. **GRPO Training** → [GRPO Tutorial](../guides/algorithms/grpo.md)
+2. **Performance Optimization** → [NSYS Profiling](../guides/development/nsys-profiling.md)
+3. **Custom Model Integration** → [Adding New Models](../guides/development/adding-new-models.md)
+4. **Production Deployment** → [Packaging Guide](../guides/development/packaging.md)
 
 ## Tutorial Series
 
@@ -137,7 +137,7 @@ Explore cutting-edge training techniques and optimizations:
 - **Multi-Task Learning**: Train models that excel at multiple related tasks
 - **Continual Learning**: Develop models that learn continuously without forgetting
 
-### 🚀 **Production and Deployment**
+### **Production and Deployment**
 
 #### **High-Performance Training**
 Optimize your training pipeline for maximum efficiency:
@@ -163,7 +163,7 @@ Master the tools and techniques for debugging complex training issues:
 - **Distributed Debugging**: Troubleshoot issues in distributed training setups
 - **Reproducibility**: Ensure reproducible results across different environments
 
-### 🔬 **Research and Experimentation**
+### **Research and Experimentation**
 
 #### **Novel Algorithm Implementation**
 Implement and experiment with cutting-edge RL algorithms:

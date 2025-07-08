@@ -17,18 +17,20 @@ Performance profiling is essential for identifying bottlenecks and optimizing tr
 ### NSYS Profiler
 
 #### GPU Performance Analysis
-NSYS provides detailed GPU performance analysis for NeMo RL training:
+NeMo RL provides integrated NSYS profiling through environment variables for Ray workers:
 
 ```bash
-# Basic NSYS profiling
-nsys profile --stats=true python train_grpo.py
+# Profile policy workers for steps 2-3
+NRL_NSYS_PROFILE_STEP_RANGE=2:3 NRL_NSYS_WORKER_PATTERNS="*policy*" uv run examples/run_grpo.py
 
-# Detailed profiling with timeline
-nsys profile --trace=cuda,nvtx,osrt python train_grpo.py
+# Profile multiple worker types
+NRL_NSYS_PROFILE_STEP_RANGE=1:2 NRL_NSYS_WORKER_PATTERNS="*policy*,*vllm*" uv run examples/run_grpo.py
 
-# Memory profiling
-nsys profile --trace=cuda,nvtx,osrt --stats=true --export=sqlite python train_grpo.py
+# Profile with detailed tracing
+NRL_NSYS_PROFILE_STEP_RANGE=3:5 NRL_NSYS_WORKER_PATTERNS="dtensor_policy_worker" uv run examples/run_grpo.py
 ```
+
+**Note**: For detailed NSYS profiling setup and usage, see the [NSYS Profiling Guide](../../guides/development/nsys-profiling.md).
 
 #### Custom NVTX Markers
 Add custom markers to identify specific operations:
@@ -85,7 +87,7 @@ class ProfiledTraining:
 ```
 
 #### Memory Profiling
-Analyze GPU memory usage patterns:
+Analyze GPU memory usage patterns during training:
 
 ```python
 import torch.cuda.memory as memory
@@ -827,6 +829,14 @@ After understanding performance profiling:
 3. **Optimize Communication**: Reduce distributed training overhead
 4. **Measure Improvements**: Validate optimization impact
 5. **Monitor Continuously**: Set up ongoing performance monitoring
+
+## Performance Considerations
+
+**Note**: Performance improvements and memory reductions mentioned in this guide are estimates based on typical usage patterns. Actual results may vary depending on:
+- Hardware configuration (GPU model, memory, interconnect)
+- Model architecture and size
+- Batch size and sequence length
+- Training workload characteristics
 
 ## References
 

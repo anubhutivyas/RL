@@ -36,7 +36,7 @@ Math instruction fine-tuning example with OpenMathInstruct-2 dataset.
 ```{toctree}
 :maxdepth: 1
 :caption: Examples
-:expanded:
+
 
 grpo-deepscaler
 sft-openmathinstruct2

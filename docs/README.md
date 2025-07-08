@@ -11,7 +11,7 @@ This is a comprehensive Sphinx documentation template designed for technical wri
 This template showcases advanced Sphinx documentation patterns and features:
 
 (️-complex-structure)=
-### 🏗️ **Complex Structure**
+### **Complex Structure**
 - Multi-level navigation with toctrees
 - Product-based content organization (Product A, B, C)
 - Hierarchical information architecture
@@ -27,12 +27,12 @@ This template showcases advanced Sphinx documentation patterns and features:
 - Multi-section organization
 
 (️-sphinx-extensions)=
-### 🛠️ **Sphinx Extensions**
+### **Sphinx Extensions**
 - MyST Markdown with advanced features
 - Sphinx Design for grid layouts
 - Custom extensions for specialized functionality
 
-### 📊 **Content Patterns**
+### **Content Patterns**
 - Concept documentation with detailed explanations
 - Tutorial and how-to guide structures
 - Reference documentation organization

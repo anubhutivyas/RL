@@ -43,7 +43,7 @@ Explore NeMo RL's architectural foundations, data management, computational syst
 {bdg-secondary}`Architecture` {bdg-secondary}`Design`
 :::
 
-:::{grid-item-card} {octicon}`flask;1.5em;sd-mr-1` Advanced Topics
+:::{grid-item-card} {octicon}`beaker;1.5em;sd-mr-1` Advanced Topics
 :link: advanced/index
 :link-type: doc
 :class-body: text-center
@@ -129,7 +129,7 @@ DeepScaleR integration for large-scale distributed training.
 {bdg-secondary}`Cloud`
 :::
 
-:::{grid-item-card} {octicon}`calculator;1.5em;sd-mr-1` Fine-tune Models on OpenMathInstruct-2
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Fine-tune Models on OpenMathInstruct-2
 :link: guides/examples/sft-openmathinstruct2
 :link-type: doc
 

@@ -12,13 +12,13 @@ Welcome to the NeMo RL Advanced Topics section! This comprehensive collection pr
 
 Our advanced topics are organized into three main categories to help you navigate specialized content:
 
-### 🧮 **Mathematical Foundations & Theory**
+### **Mathematical Foundations & Theory**
 Deep dive into the mathematical foundations that underpin all NeMo RL algorithms. Understand the theoretical background, convergence proofs, and mathematical formulations for GRPO, DPO, and SFT algorithms.
 
-### 🔬 **Research & Experimentation**
+### **Research & Experimentation**
 Comprehensive guides for AI scientists and researchers conducting research with NeMo RL. Learn experimental design, reproducibility best practices, and advanced research methodologies.
 
-### ⚡ **Performance & Optimization**
+### **Performance & Optimization**
 Master the performance optimization and scaling aspects of NeMo RL. Learn distributed training strategies, performance profiling techniques, and how to handle model-specific considerations for optimal results.
 
 ## Mathematical Foundations & Theory
@@ -26,7 +26,7 @@ Master the performance optimization and scaling aspects of NeMo RL. Learn distri
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`function;1.5em;sd-mr-1` Mathematical Foundations
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Mathematical Foundations
 :link: theory/mathematical-foundations
 :link-type: doc
 
@@ -83,7 +83,7 @@ Comprehensive analysis of all loss function implementations and mathematical for
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`flask;1.5em;sd-mr-1` Experimental Design
+:::{grid-item-card} {octicon}`beaker;1.5em;sd-mr-1` Experimental Design
 :link: research/experimental-design
 :link-type: doc
 
@@ -123,6 +123,26 @@ Advanced hyperparameter optimization techniques including Bayesian optimization 
 {bdg-warning}`Advanced`
 :::
 
+:::{grid-item-card} {octicon}`plus;1.5em;sd-mr-1` Custom Algorithm Development
+:link: research/custom-algorithms
+:link-type: doc
+
+Guidelines for developing custom algorithms and extending NeMo RL with novel research contributions.
+
++++
+{bdg-warning}`Advanced`
+:::
+
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Performance Analysis
+:link: research/performance-analysis
+:link-type: doc
+
+Deep analysis of training dynamics, convergence properties, and performance benchmarking.
+
++++
+{bdg-info}`Intermediate`
+:::
+
 ::::
 
 ## Performance & Optimization
@@ -144,27 +164,47 @@ Advanced profiling techniques with NSYS, PyTorch Profiler, and custom profiling 
 :link: performance/distributed-training
 :link-type: doc
 
-Scaling strategies for multi-GPU and multi-node training with Ray clusters.
+Multi-GPU and multi-node training strategies for scaling NeMo RL across clusters.
 
 +++
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} {octicon}`memory;1.5em;sd-mr-1` Memory Optimization
+:::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Memory Optimization
 :link: performance/memory-optimization
 :link-type: doc
 
-Memory management techniques including gradient checkpointing and mixed precision.
+Memory management techniques including gradient checkpointing and activation checkpointing.
+
++++
+{bdg-warning}`Advanced`
+:::
+
+:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Mixed Precision
+:link: performance/mixed-precision
+:link-type: doc
+
+Mixed precision training with FP16/BF16 for faster training and reduced memory usage.
 
 +++
 {bdg-info}`Intermediate`
 :::
 
-:::{grid-item-card} {octicon}`zap;1.5em;sd-mr-1` Mixed Precision
-:link: performance/mixed-precision
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Benchmarking
+:link: performance/benchmarking
 :link-type: doc
 
-Mixed precision training techniques for faster training and reduced memory usage.
+Comprehensive benchmarking frameworks and performance testing tools.
+
++++
+{bdg-info}`Intermediate`
+:::
+
+:::{grid-item-card} {octicon}`eye;1.5em;sd-mr-1` Performance Monitoring
+:link: performance/monitoring
+:link-type: doc
+
+Real-time performance monitoring, alerting, and analysis tools.
 
 +++
 {bdg-info}`Intermediate`
@@ -175,7 +215,7 @@ Mixed precision training techniques for faster training and reduced memory usage
 ```{toctree}
 :caption: Advanced Topics
 :maxdepth: 2
-:expanded:
+
 
 theory/index
 research/index

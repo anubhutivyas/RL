@@ -16,7 +16,7 @@ To enable Megatron-based training:
 
 1. Add the `megatron_cfg` key to your policy configuration.
 2. Set `policy.megatron_cfg.enabled=True`.
-3. Refer to [examples/configs/grpo_math_1B_megatron.yaml](../../examples/configs/grpo_math_1B_megatron.yaml) for a complete configuration example.
+3. Refer to [examples/configs/grpo_math_1B_megatron.yaml](../../../examples/configs/grpo_math_1B_megatron.yaml) for a complete configuration example.
 
 _Note_: When using Megatron, the optimizer and learning rate schedule are configured through `policy.megatron_cfg.optimizer` and `policy.megatron_cfg.scheduler`, respectively.
 
@@ -24,7 +24,7 @@ _Note_: When using Megatron, the optimizer and learning rate schedule are config
 To enable DTensor (FSDP2) training:
 
 1. Set `policy.dtensor_config.enabled=True`.
-2. Refer to [examples/configs/grpo_math_1B.yaml](../../examples/configs/grpo_math_1B.yaml) for a configuration example.
+2. Refer to [examples/configs/grpo_math_1B.yaml](../../../examples/configs/grpo_math_1B.yaml) for a configuration example.
 
 ## Backend Priority
 

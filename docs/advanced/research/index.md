@@ -12,16 +12,16 @@ This section provides comprehensive guides for AI scientists and researchers con
 
 Our research documentation covers the essential aspects of conducting rigorous research with NeMo RL, including:
 
-### 🔬 **Experimental Design**
+### **Experimental Design**
 Methodologies for designing robust experiments, including hypothesis testing, control groups, and statistical analysis frameworks.
 
-### 📊 **Reproducibility Best Practices**
+### **Reproducibility Best Practices**
 Comprehensive guidelines for ensuring reproducible research, including seed management, environment setup, and result validation.
 
-### 🧪 **Advanced Research Methodologies**
+### **Advanced Research Methodologies**
 Cutting-edge research techniques including ablation studies, hyperparameter optimization, and novel algorithm development.
 
-### 📈 **Performance Analysis**
+### **Performance Analysis**
 Deep analysis of training dynamics, convergence properties, and performance benchmarking across different algorithms and configurations.
 
 ## Research Methodologies
@@ -29,7 +29,7 @@ Deep analysis of training dynamics, convergence properties, and performance benc
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} <span class="octicon" data-icon="flask" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Experimental Design
+:::{grid-item-card} {octicon}`beaker;1.5em;sd-mr-1` Experimental Design
 :link: experimental-design
 :link-type: doc
 
@@ -39,7 +39,7 @@ Methodologies for designing robust experiments with proper controls and statisti
 {bdg-primary}`Foundation`
 :::
 
-:::{grid-item-card} <span class="octicon" data-icon="checklist" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Reproducibility
+:::{grid-item-card} {octicon}`checklist;1.5em;sd-mr-1` Reproducibility
 :link: reproducibility
 :link-type: doc
 
@@ -49,7 +49,7 @@ Best practices for ensuring reproducible research including seed management and 
 {bdg-primary}`Foundation`
 :::
 
-:::{grid-item-card} <span class="octicon" data-icon="graph" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Ablation Studies
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Ablation Studies
 :link: ablation-studies
 :link-type: doc
 
@@ -59,7 +59,7 @@ Systematic ablation studies to understand component contributions and algorithm 
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} <span class="octicon" data-icon="gear" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Hyperparameter Optimization
+:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Hyperparameter Optimization
 :link: hyperparameter-optimization
 :link-type: doc
 
@@ -69,7 +69,7 @@ Advanced hyperparameter optimization techniques including Bayesian optimization 
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} <span class="octicon" data-icon="plus" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Custom Algorithm Development
+:::{grid-item-card} {octicon}`plus;1.5em;sd-mr-1` Custom Algorithm Development
 :link: custom-algorithms
 :link-type: doc
 
@@ -79,7 +79,7 @@ Guidelines for developing custom algorithms and extending NeMo RL with novel res
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} <span class="octicon" data-icon="chart" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Performance Analysis
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Performance Analysis
 :link: performance-analysis
 :link-type: doc
 
@@ -200,7 +200,7 @@ After understanding the research methodologies:
 ```{toctree}
 :caption: Research
 :maxdepth: 2
-:expanded:
+
 
 experimental-design
 reproducibility

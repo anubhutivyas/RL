@@ -23,7 +23,7 @@ Welcome to NeMo RL! This guide will help you set up your environment and run you
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} <span class="octicon" data-icon="gear" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Installation
+:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Installation
 :link: installation
 :link-type: doc
 
@@ -33,7 +33,7 @@ Complete setup instructions for all environments and platforms.
 {bdg-success}`Essential`
 :::
 
-:::{grid-item-card} <span class="octicon" data-icon="rocket" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Quickstart
+:::{grid-item-card} {octicon}`rocket;1.5em;sd-mr-1` Quickstart
 :link: quickstart
 :link-type: doc
 
@@ -43,7 +43,7 @@ Run your first RL training job in minutes with our step-by-step guide.
 {bdg-primary}`Beginner`
 :::
 
-:::{grid-item-card} <span class="octicon" data-icon="computer" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Local Workstation
+:::{grid-item-card} {octicon}`device-desktop;1.5em;sd-mr-1` Local Workstation
 :link: local-workstation
 :link-type: doc
 
@@ -53,7 +53,7 @@ Configure your development environment for optimal performance.
 {bdg-secondary}`Setup`
 :::
 
-:::{grid-item-card} <span class="octicon" data-icon="package" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Docker Setup
+:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Docker Setup
 :link: docker
 :link-type: doc
 
@@ -72,7 +72,7 @@ Select the training method that best fits your needs and experience level:
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} <span class="octicon" data-icon="play" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> SFT Training
+:::{grid-item-card} {octicon}`play;1.5em;sd-mr-1` SFT Training
 :link: quickstart
 :link-alt: Supervised Fine-Tuning quickstart guide
 
@@ -82,7 +82,7 @@ Get started with supervised fine-tuning for language models. Perfect for beginne
 {bdg-primary}`Beginner`
 :::
 
-:::{grid-item-card} <span class="octicon" data-icon="graph" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> GRPO Training
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` GRPO Training
 :link: ../guides/algorithms/grpo
 :link-alt: Group Relative Policy Optimization guide
 
@@ -92,7 +92,7 @@ Learn Group Relative Policy Optimization for reinforcement learning with languag
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} <span class="octicon" data-icon="heart" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> DPO Training
+:::{grid-item-card} {octicon}`heart;1.5em;sd-mr-1` DPO Training
 :link: ../guides/algorithms/dpo
 :link-alt: Direct Preference Optimization guide
 
@@ -102,7 +102,7 @@ Explore Direct Preference Optimization for preference learning and alignment. Pr
 {bdg-info}`Intermediate`
 :::
 
-:::{grid-item-card} <span class="octicon" data-icon="server" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Distributed Training
+:::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Distributed Training
 :link: cluster
 :link-alt: Cluster setup and distributed training guide
 
@@ -143,7 +143,7 @@ If you're new to NeMo RL, we recommend following this progression:
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} <span class="octicon" data-icon="book" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Tutorials & Learning
+:::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` Tutorials & Learning
 :link: tutorials
 :link-alt: Comprehensive tutorials and learning resources
 
@@ -153,7 +153,7 @@ Access structured learning paths, tutorial series, and advanced techniques for m
 {bdg-primary}`Learning`
 :::
 
-:::{grid-item-card} <span class="octicon" data-icon="graph" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Evaluation Setup
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Evaluation Setup
 :link: ../guides/algorithms/eval
 :link-alt: Model evaluation and benchmarking
 
@@ -187,7 +187,7 @@ After completing your first training run:
 ```{toctree}
 :caption: Get Started
 :maxdepth: 2
-:expanded:
+
 
 installation
 quickstart

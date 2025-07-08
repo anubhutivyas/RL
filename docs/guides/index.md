@@ -6,13 +6,13 @@ Welcome to the NeMo RL Guides! This comprehensive collection provides everything
 
 Our guides are organized into three main categories to help you navigate from basic concepts to practical implementations:
 
-### 🎯 **Training Algorithms** 
+### **Training Algorithms** 
 Learn the core RL algorithms that power NeMo RL. Start with Supervised Fine-Tuning (SFT) as your foundation, then explore advanced techniques like Group Relative Policy Optimization (GRPO) and Direct Preference Optimization (DPO). Each algorithm guide includes detailed explanations, mathematical foundations, and practical implementation examples.
 
-### 🚀 **Examples & Tutorials**
+### **Examples & Tutorials**
 Jump into complete, working examples that demonstrate real-world applications. These tutorials walk you through entire training workflows, from data preparation to model deployment, using specific datasets and environments.
 
-### 🛠️ **Development & Deployment**
+### **Development & Deployment**
 Extend NeMo RL with custom components and deploy your models to production. Learn to add new models, create custom environments, implement testing strategies, and package your solutions for deployment.
 
 ## Training Algorithms
@@ -77,7 +77,7 @@ DeepScaleR integration for large-scale distributed training.
 {bdg-secondary}`Cloud`
 :::
 
-:::{grid-item-card} {octicon}`calculator;1.5em;sd-mr-1` Fine-tune Models on OpenMathInstruct-2
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Fine-tune Models on OpenMathInstruct-2
 :link: examples/sft-openmathinstruct2
 :link-type: doc
 
@@ -104,7 +104,7 @@ Extend NeMo RL with custom model architectures and backends.
 {bdg-info}`Development`
 :::
 
-:::{grid-item-card} {octicon}`game;1.5em;sd-mr-1` Custom Environments
+:::{grid-item-card} {octicon}`beaker;1.5em;sd-mr-1` Custom Environments
 :link: development/environment-development
 :link-type: doc
 
@@ -139,7 +139,6 @@ Deployment and packaging strategies for production environments.
 ```{toctree}
 :maxdepth: 1
 :caption: Training Algorithms
-:expanded:
 
 algorithms/sft
 algorithms/grpo
@@ -150,7 +149,6 @@ algorithms/eval
 ```{toctree}
 :maxdepth: 1
 :caption: Examples & Tutorials
-:expanded:
 
 examples/grpo-deepscaler
 examples/sft-openmathinstruct2
@@ -159,7 +157,6 @@ examples/sft-openmathinstruct2
 ```{toctree}
 :maxdepth: 1
 :caption: Development & Deployment
-:expanded:
 
 development/adding-new-models
 development/environment-development

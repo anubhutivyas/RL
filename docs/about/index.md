@@ -47,7 +47,7 @@ NeMo RL is built on a robust technology stack designed for performance and scala
 ::::{grid} 1 1 1 2
 :gutter: 1 1 1 2
 
-:::{grid-item-card} <span class="octicon" data-icon="graph" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> RL Algorithms
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` RL Algorithms
 :link: key-features
 
 Explore key RL algorithms including SFT, GRPO, and DPO with mathematical foundations and implementation details.
@@ -56,7 +56,7 @@ Explore key RL algorithms including SFT, GRPO, and DPO with mathematical foundat
 {bdg-primary}`Foundation`
 :::
 
-:::{grid-item-card} <span class="octicon" data-icon="server" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Distributed Training
+:::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Distributed Training
 :link: architecture
 
 Learn about Ray-based virtual clusters, worker groups, and multi-node training strategies for scalable RL.
@@ -65,7 +65,7 @@ Learn about Ray-based virtual clusters, worker groups, and multi-node training s
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} <span class="octicon" data-icon="database" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Model Backends
+:::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Model Backends
 :link: architecture
 
 Understand Hugging Face integration, Megatron-LM support, and DTensor capabilities for different model architectures.
@@ -74,7 +74,7 @@ Understand Hugging Face integration, Megatron-LM support, and DTensor capabiliti
 {bdg-info}`Implementation`
 :::
 
-:::{grid-item-card} <span class="octicon" data-icon="game" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Environments
+:::{grid-item-card} {octicon}`beaker;1.5em;sd-mr-1` Environments
 :link: key-features
 
 Discover built-in environments for math problems, games, and custom environment development for RL tasks.
@@ -88,7 +88,7 @@ Discover built-in environments for math problems, games, and custom environment 
 ```{toctree}
 :caption: About NeMo RL
 :maxdepth: 2
-:expanded:
+
 
 why-nemo-rl
 key-features

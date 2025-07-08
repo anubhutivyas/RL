@@ -39,7 +39,6 @@ This page provides access to the complete NeMo RL API documentation.
 
 The complete API documentation is automatically generated from the source code and available at:
 
-- **[API Documentation](../apidocs/index.html)** - Complete API reference
 - **[Module Index](../genindex.html)** - Alphabetical index of all modules
 - **[Search](../search.html)** - Search across all documentation
 
@@ -235,7 +234,6 @@ Check the [changelog](https://github.com/NVIDIA-NeMo/RL/releases) for detailed v
 
 ## Getting Help
 
-- **API Documentation**: [Complete API Reference](../apidocs/index.html)
-- **Examples**: Check the [examples directory](../../examples/) for usage examples
+- **API Documentation**: [Complete API Reference](../genindex.html)
 - **Issues**: Report bugs on [GitHub](https://github.com/NVIDIA-NeMo/RL/issues)
 - **Community**: Join the [NeMo Discord](https://discord.gg/nvidia-nemo) 

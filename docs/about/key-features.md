@@ -3,7 +3,7 @@
 
 NeMo RL provides a comprehensive suite of features for scalable reinforcement learning and supervised fine-tuning of large language models.
 
-## 🚀 Core Capabilities
+## Core Capabilities
 
 ### Scalable Training
 - **1 GPU to 64+ GPUs**: Scale seamlessly from single GPU to multi-node clusters
@@ -26,7 +26,7 @@ NeMo RL provides a comprehensive suite of features for scalable reinforcement le
 - **Dynamic Weight Updates**: Real-time model updates during training
 - **Efficient Resource Utilization**: Smart worker management and load balancing
 
-## 🏗️ Architecture Features
+## Architecture Features
 
 ### Modular Design
 - **RL Actors**: Composable components for policy, environment, reward, etc.
@@ -43,7 +43,7 @@ NeMo RL provides a comprehensive suite of features for scalable reinforcement le
 - **CLI Overrides**: Flexible parameter overrides via command line
 - **Type-Safe**: Comprehensive type checking and validation
 
-## 🔧 Development Features
+## Development Features
 
 ### Environment Management
 - **Dependency Isolation**: Separate environments for different components
@@ -60,7 +60,7 @@ NeMo RL provides a comprehensive suite of features for scalable reinforcement le
 - **Testing Framework**: Comprehensive unit and integration tests
 - **Documentation**: Auto-generated API documentation
 
-## 📊 Performance Features
+## Performance Features
 
 ### Memory Efficiency
 - **Gradient Checkpointing**: Memory-efficient training for large models
@@ -72,7 +72,7 @@ NeMo RL provides a comprehensive suite of features for scalable reinforcement le
 - **Right Padding**: Consistent padding strategy for LLM compatibility
 - **Dynamic Batching**: Efficient handling of variable sequence lengths
 
-## 🌐 Ecosystem Integration
+## Ecosystem Integration
 
 ### Model Support
 - **Hugging Face Models**: 0.6B-70B parameter models (Qwen, Llama, Gemma, etc.)

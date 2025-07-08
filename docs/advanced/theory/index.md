@@ -12,16 +12,16 @@ This section provides the mathematical foundations and theoretical background fo
 
 Our theoretical documentation covers the mathematical foundations of all NeMo RL algorithms, including:
 
-### 🧮 **Mathematical Foundations**
+### **Mathematical Foundations**
 Core reinforcement learning theory, convergence proofs, and fundamental concepts that underpin all NeMo RL algorithms.
 
-### 📊 **Algorithm Theory**
+### **Algorithm Theory**
 Detailed mathematical formulations for each algorithm:
 - **GRPO**: Group Relative Policy Optimization with dual-clipping and importance sampling
 - **DPO**: Direct Preference Optimization with preference and SFT loss components  
 - **SFT**: Supervised Fine-Tuning with negative log-likelihood loss
 
-### ⚙️ **Loss Functions**
+### **Loss Functions**
 Comprehensive analysis of loss function implementations, including mathematical formulations, gradient computations, and optimization strategies.
 
 ## Mathematical Foundations
@@ -29,7 +29,7 @@ Comprehensive analysis of loss function implementations, including mathematical 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} <span class="octicon" data-icon="function" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Mathematical Foundations
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Mathematical Foundations
 :link: mathematical-foundations
 :link-type: doc
 
@@ -39,7 +39,7 @@ Core RL theory, convergence proofs, and fundamental concepts that underpin NeMo 
 {bdg-primary}`Foundation`
 :::
 
-:::{grid-item-card} <span class="octicon" data-icon="graph" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> GRPO Theory
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` GRPO Theory
 :link: grpo-theory
 :link-type: doc
 
@@ -49,7 +49,7 @@ Mathematical formulation of Group Relative Policy Optimization with dual-clippin
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} <span class="octicon" data-icon="heart" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> DPO Theory
+:::{grid-item-card} {octicon}`heart;1.5em;sd-mr-1` DPO Theory
 :link: dpo-theory
 :link-type: doc
 
@@ -59,7 +59,7 @@ Direct Preference Optimization theory with preference loss and SFT loss componen
 {bdg-info}`Intermediate`
 :::
 
-:::{grid-item-card} <span class="octicon" data-icon="play" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> SFT Theory
+:::{grid-item-card} {octicon}`play;1.5em;sd-mr-1` SFT Theory
 :link: sft-theory
 :link-type: doc
 
@@ -69,7 +69,7 @@ Supervised Fine-Tuning mathematical foundations and negative log-likelihood loss
 {bdg-primary}`Foundation`
 :::
 
-:::{grid-item-card} <span class="octicon" data-icon="gear" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Loss Functions
+:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Loss Functions
 :link: loss-functions
 :link-type: doc
 
@@ -125,7 +125,7 @@ After understanding the mathematical foundations:
 ```{toctree}
 :caption: Theory
 :maxdepth: 2
-:expanded:
+
 
 mathematical-foundations
 grpo-theory

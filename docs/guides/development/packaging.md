@@ -609,7 +609,6 @@ def test_api_endpoint():
 
 ## Getting Help
 
-- [Deployment Examples](../../examples/) - Complete deployment examples
 - [Configuration Reference](../reference/configuration.md) - Configuration options
 - [Troubleshooting Guide](../reference/troubleshooting.md) - Common deployment issues
-- [API Reference](../reference/api.md) - Programmatic deployment 
+- [API Reference](../../reference/api.md) - Programmatic deployment 

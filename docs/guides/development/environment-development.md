@@ -139,7 +139,7 @@ class SimpleMathEnvironment(EnvironmentInterface):
 
 ## Getting Help
 
-- [Environment Interfaces](../reference/api.md#environments) - Complete API documentation
+- For API details, see {ref}`../reference/api.md#environments`.
 - [Training Configuration](../reference/configuration.md) - Environment configuration options
 - [Troubleshooting](../reference/troubleshooting.md) - Common environment issues
 - [Community Support](https://github.com/NVIDIA-NeMo/RL/issues) - GitHub issues and discussions 

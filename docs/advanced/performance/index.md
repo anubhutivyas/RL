@@ -12,16 +12,16 @@ This section provides comprehensive guides for optimizing performance and scalin
 
 Our performance documentation covers all aspects of optimizing NeMo RL for maximum efficiency and scalability:
 
-### ⚡ **Performance Profiling**
+### **Performance Profiling**
 Advanced profiling techniques to identify bottlenecks and optimize training performance across different hardware configurations.
 
-### 🚀 **Scaling Strategies**
+### **Scaling Strategies**
 Distributed training strategies for scaling across multiple GPUs, nodes, and clusters while maintaining training stability.
 
-### 🔧 **Optimization Techniques**
+### **Optimization Techniques**
 Memory optimization, mixed precision training, and other techniques to maximize hardware utilization and training speed.
 
-### 📊 **Benchmarking & Monitoring**
+### **Benchmarking & Monitoring**
 Comprehensive benchmarking frameworks and monitoring tools to track performance metrics and training progress.
 
 ## Performance Optimization
@@ -29,7 +29,7 @@ Comprehensive benchmarking frameworks and monitoring tools to track performance 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} <span class="octicon" data-icon="graph" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Performance Profiling
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Performance Profiling
 :link: profiling
 :link-type: doc
 
@@ -39,55 +39,15 @@ Advanced profiling techniques with NSYS, PyTorch Profiler, and custom profiling 
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} <span class="octicon" data-icon="server" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Distributed Training
-:link: distributed-training
-:link-type: doc
 
-Scaling strategies for multi-GPU and multi-node training with Ray clusters.
 
-+++
-{bdg-warning}`Advanced`
-:::
 
-:::{grid-item-card} <span class="octicon" data-icon="memory" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Memory Optimization
-:link: memory-optimization
-:link-type: doc
 
-Memory management techniques including gradient checkpointing and mixed precision.
 
-+++
-{bdg-info}`Intermediate`
-:::
 
-:::{grid-item-card} <span class="octicon" data-icon="zap" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Mixed Precision
-:link: mixed-precision
-:link-type: doc
 
-Mixed precision training techniques for faster training and reduced memory usage.
 
-+++
-{bdg-info}`Intermediate`
-:::
 
-:::{grid-item-card} <span class="octicon" data-icon="chart" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Benchmarking
-:link: benchmarking
-:link-type: doc
-
-Comprehensive benchmarking frameworks for comparing different configurations and algorithms.
-
-+++
-{bdg-secondary}`Analysis`
-:::
-
-:::{grid-item-card} <span class="octicon" data-icon="monitor" data-size="1.5em" style="font-size: 1.5em; margin-right: 0.25em;"></span> Monitoring
-:link: monitoring
-:link-type: doc
-
-Real-time monitoring and alerting systems for training progress and performance metrics.
-
-+++
-{bdg-info}`Intermediate`
-:::
 
 ::::
 
@@ -246,7 +206,7 @@ After understanding performance optimization:
 ```{toctree}
 :caption: Performance
 :maxdepth: 2
-:expanded:
+
 
 profiling
 distributed-training

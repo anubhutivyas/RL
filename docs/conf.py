@@ -56,9 +56,9 @@ exclude_patterns = [
     "_build",
     "Thumbs.db",
     ".DS_Store",
-    "_extensions/*/README.md",     # Exclude README files in extension directories
-    "_extensions/README.md",       # Exclude main extensions README
-    "_extensions/*/__pycache__",   # Exclude Python cache directories
+    "_extensions/*/README.md",      # Exclude README files in extension directories
+    "_extensions/README.md",        # Exclude main extensions README
+    "_extensions/*/__pycache__",    # Exclude Python cache directories
     "_extensions/*/*/__pycache__", # Exclude nested Python cache directories
 ]
 
@@ -115,8 +115,8 @@ myst_substitutions = {
     "company": "NVIDIA",
     "version": release,
     "current_year": "2025",
-    "github_repo": "https://github.com/NVIDIA/NeMo-RL",
-    "docs_url": "https://docs.nvidia.com/nemo-rl",
+    "github_repo": "[https://github.com/NVIDIA/NeMo-RL](https://github.com/NVIDIA/NeMo-RL)",
+    "docs_url": "[https://docs.nvidia.com/nemo-rl](https://docs.nvidia.com/nemo-rl)",
     "support_email": "nemo-rl-support@nvidia.com",
     "min_python_version": "3.9",
     "recommended_cuda": "12.0+",
@@ -160,20 +160,8 @@ def setup(app):
         
         return [node], []
     
-    # Register the octicon role for both RST and MyST
-    app.add_role('octicon', octicon_role)
-    
-    # Also register as a MyST role
-    try:
-        from myst_parser.roles import MystRole
-        class OcticonMystRole(MystRole):
-            def __call__(self, name, rawtext, text, lineno, inliner, options=None, content=None):
-                return octicon_role(name, rawtext, text, lineno, inliner, options or {}, content or [])
-        
-        app.add_role('octicon', OcticonMystRole())
-    except ImportError:
-        # Fallback to regular role if MyST role not available
-        pass
+    # Register the octicon role
+    # app.add_role('octicon', octicon_role)
     
     # Add custom CSS for enhanced octicon styling
     app.add_css_file('octicons.css')
@@ -213,7 +201,7 @@ if autodoc2_packages:
     autodoc2_output_dir = "apidocs"  # Output directory for autodoc2 (relative to docs/)
     # This is a workaround that uses the parser located in autodoc2_docstrings_parser.py to allow autodoc2 to
     # render google style docstrings.
-    # Related Issue: https://github.com/sphinx-extensions2/sphinx-autodoc2/issues/33
+    # Related Issue: [https://github.com/sphinx-extensions2/sphinx-autodoc2/issues/33](https://github.com/sphinx-extensions2/sphinx-autodoc2/issues/33)
     # autodoc2_docstring_parser_regexes = [
     #     (r".*", "docs.autodoc2_docstrings_parser"),
     # ]
@@ -240,23 +228,19 @@ napoleon_use_rtype = True
 html_theme = "nvidia_sphinx_theme"
 
 html_theme_options = {
+    # This line controls the main navigation sidebar expansion
+    "show_nav_level": 2,
+    # This line controls the in-page table of contents expansion
+    "show_toc_level": 2,
+
     "switcher": {
         "json_url": "./versions1.json",
         "version_match": release,
     },
     # Configure PyData theme search
     "search_bar_text": "Search NVIDIA docs...",
-    "navbar_persistent": ["search-button"],  # Ensure search button is present
-    "extra_head": {
-        """
-    <script src="https://assets.adobedtm.com/5d4962a43b79/c1061d2c5e7b/launch-191c2462b890.min.js" ></script>
-    """
-    },
-    "extra_footer": {
-        """
-    <script type="text/javascript">if (typeof _satellite !== "undefined") {_satellite.pageBottom();}</script>
-    """
-    },
+    "navbar_persistent": ["search-button"],
+
 }
 
 html_static_path = ["_static"]

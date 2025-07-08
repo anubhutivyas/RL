@@ -56,7 +56,7 @@ Now let's try Group Relative Policy Optimization (GRPO) for preference learning.
 ### Step 1: GRPO on Math Dataset
 
 ```bash
-uv run python run_grpo_math.py \
+uv run python examples/run_grpo_math.py \
     cluster.gpus_per_node=1 \
     policy.model_name=Qwen/Qwen2.5-0.5B \
     grpo.max_num_epochs=1 \
@@ -78,7 +78,7 @@ GRPO training shows different metrics:
 After training, evaluate the model:
 
 ```bash
-uv run python run_eval.py \
+uv run python examples/run_eval.py \
     generation.model_name=/path/to/checkpoint \
     data.dataset_name=HuggingFaceH4/MATH-500 \
     data.dataset_key=test \
@@ -92,7 +92,7 @@ Scale up to multiple GPUs for faster training.
 ### Step 1: Multi-GPU SFT
 
 ```bash
-uv run python run_sft.py \
+uv run python examples/run_sft.py \
     cluster.gpus_per_node=4 \
     policy.model_name=Qwen/Qwen2.5-1.5B \
     data.dataset_name=HuggingFaceH4/ultrachat_200k \
@@ -122,7 +122,7 @@ For production training with large models.
 ### Step 1: Large Model SFT
 
 ```bash
-uv run python run_sft.py \
+uv run python examples/run_sft.py \
     cluster.gpus_per_node=8 \
     policy.model_name=Qwen/Qwen2.5-7B \
     data.dataset_name=HuggingFaceH4/ultrachat_200k \
@@ -155,7 +155,7 @@ Watch for:
 Train on your own dataset:
 
 ```bash
-uv run python run_sft.py \
+uv run python examples/run_sft.py \
     cluster.gpus_per_node=1 \
     policy.model_name=Qwen/Qwen2.5-0.5B \
     data.dataset_name=your-username/your-dataset \
@@ -169,7 +169,7 @@ uv run python run_sft.py \
 Use a different model architecture:
 
 ```bash
-uv run python run_sft.py \
+uv run python examples/run_sft.py \
     cluster.gpus_per_node=1 \
     policy.model_name=microsoft/DialoGPT-medium \
     data.dataset_name=HuggingFaceH4/ultrachat_200k \
@@ -183,7 +183,7 @@ uv run python run_sft.py \
 Tune training parameters:
 
 ```bash
-uv run python run_sft.py \
+uv run python examples/run_sft.py \
     cluster.gpus_per_node=1 \
     policy.model_name=Qwen/Qwen2.5-0.5B \
     data.dataset_name=HuggingFaceH4/ultrachat_200k \
@@ -202,14 +202,14 @@ uv run python run_sft.py \
 1. **Out of memory**:
    ```bash
    # Reduce batch size
-   sft.micro_batch_size=1
-   sft.gradient_accumulation_steps=4
+   policy.train_micro_batch_size=1
+   policy.train_global_batch_size=4
    ```
 
 2. **Slow training**:
    ```bash
    # Enable mixed precision
-   policy.mixed_precision=true
+   policy.precision="bfloat16"
    ```
 
 3. **Authentication errors**:
@@ -228,9 +228,9 @@ uv run python run_sft.py \
 After completing the quickstart:
 
 1. **Explore Algorithms**:
-   - [GRPO Guide](../guides/grpo.md) - Advanced preference learning
-   - [DPO Guide](../guides/dpo.md) - Direct preference optimization
-   - [SFT Guide](../guides/sft.md) - Supervised fine-tuning
+   - [GRPO Guide](../guides/algorithms/grpo.md) - Advanced preference learning
+   - [DPO Guide](../guides/algorithms/dpo.md) - Direct preference optimization
+   - [SFT Guide](../guides/algorithms/sft.md) - Supervised fine-tuning
 
 2. **Learn Configuration**:
    - [Configuration Reference](../reference/configuration.md)
@@ -238,8 +238,8 @@ After completing the quickstart:
 
 3. **Scale Up**:
    - [Cluster Setup](cluster.md) - Multi-node training
-   - [Packaging Guide](../guides/packaging.md) - Production deployment
+   - [Packaging Guide](../guides/development/packaging.md) - Production deployment
 
 4. **Evaluate Models**:
-   - [Evaluation Guide](../guides/eval.md) - Model assessment
+   - [Evaluation Guide](../guides/algorithms/eval.md) - Model assessment
    - [Troubleshooting](../reference/troubleshooting.md) - Common issues 

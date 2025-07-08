@@ -13,16 +13,16 @@ Welcome to the NeMo RL Reference section! This comprehensive reference provides 
 
 Our reference documentation is organized into four main categories to help you find the information you need:
 
-### 📚 **API Documentation**
+### **API Documentation**
 Complete API reference for all NeMo RL components, including algorithms, data processing, models, and utilities. Each API is documented with parameters, return values, and usage examples.
 
-### ⚙️ **Configuration Guide**
+### **Configuration Guide**
 Detailed configuration options for all training parameters, model settings, and system configurations. Learn how to customize your training runs and optimize performance.
 
-### 🖥️ **Command Line Interface**
+### **Command Line Interface**
 Complete CLI reference for all NeMo RL commands, including training scripts, evaluation tools, and utility functions. Each command includes examples and parameter descriptions.
 
-### 🔧 **Troubleshooting & Support**
+### **Troubleshooting & Support**
 Common issues, error messages, and solutions for NeMo RL. Find quick answers to frequently encountered problems and learn debugging strategies.
 
 ## API Documentation
@@ -123,7 +123,7 @@ Common issues, error messages, and solutions for NeMo RL.
 ```{toctree}
 :caption: Reference
 :maxdepth: 2
-:expanded:
+
 
 api
 cli

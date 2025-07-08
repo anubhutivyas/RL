@@ -36,7 +36,7 @@ What you can expect:
 - **Flexibility** with a modular design that allows easy integration and customization.
 - **Comprehensive documentation** that is both detailed and user-friendly, with practical examples.
 
-## 📣 News
+## News
 * [5/14/2025] [Reproduce DeepscaleR with NeMo RL!](docs/guides/grpo-deepscaler.md)
 * [5/14/2025] [Release v0.2.1!](https://github.com/NVIDIA-NeMo/RL/releases/tag/v0.2.1)
     * 📊 View the release run metrics on [Google Colab](https://colab.research.google.com/drive/1o14sO0gj_Tl_ZXGsoYip3C0r5ofkU1Ey?usp=sharing) to get a head start on your experimentation.
@@ -377,7 +377,7 @@ uv run python examples/run_eval.py \
 ```
 > **Note:** Evaluation results may vary slightly due to various factors, such as sampling parameters, random seed, inference engine version, and inference engine settings.
 
-Refer to `examples/configs/eval.yaml` for a full list of parameters that can be overridden. For an in-depth explanation of evaluation, refer to the [Evaluation documentation](docs/guides/eval.md).
+Refer to `examples/configs/eval.yaml` for a full list of parameters that can be overridden. For an in-depth explanation of evaluation, refer to the [Evaluation documentation](docs/guides/algorithms/eval.md).
 
 ## Set Up Clusters
 
