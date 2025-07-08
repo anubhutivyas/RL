@@ -363,6 +363,7 @@ class VllmGenerationWorker:
         else:
             self.profiler = None
         self.maybe_profile_refit_times = 0
+        self.vllm_device_ids = self.report_vllm_device_ids()
 
     def init_collective(self, data: int, ip: str, port: int, world_size: int) -> None:
         self.llm.collective_rpc(
@@ -374,6 +375,12 @@ class VllmGenerationWorker:
                 world_size,
             ),
         )
+
+    def report_vllm_device_ids(self):
+        device_id_refs = [
+            worker.execute_method.remote("report_device_id") for worker in self.llm.llm_engine.model_executor.workers
+        ]
+        return ray.get(device_id_refs)
 
     def llm(self):
         return self.llm
@@ -900,9 +907,21 @@ class VllmGenerationWorker:
                 if self.maybe_profile_refit_times == 3:
                     self.profiler.start()
 
-            result_or_coro = self.llm.collective_rpc(
-                "update_weights_from_ipc_handles", args=(data,)
-            )
+            # result_or_coro = self.llm.collective_rpc(
+            #     "update_weights_from_ipc_handles",
+            #     args=(data,),
+            # )
+            # Wait for all device IDs, then update weights in parallel
+            ray_worker_outputs = []
+            for worker, device_id in zip(self.llm.llm_engine.model_executor.workers, self.vllm_device_ids):
+                # print(f"data[device_id]={data[device_id]}")
+                ray_worker_outputs.append(
+                    worker.execute_method.remote("update_weights_from_ipc_handles", data[device_id])
+                )
+
+            # Gather the results
+            result_or_coro = ray.get(ray_worker_outputs)
+
             worker_result = result_or_coro[0]
 
             if os.getenv("NEMO_RL_TORCH_PROFILE_REFIT", "0") == "1" and self.profiler is not None:

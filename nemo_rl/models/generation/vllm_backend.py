@@ -57,8 +57,9 @@ class VllmInternalWorkerExtension:
         """
         try:
             # Get handles for this device
-            device_uuid = self.report_device_id()
-            handles = ipc_handles[device_uuid]
+            # device_uuid = self.report_device_id()
+            # handles = ipc_handles[device_uuid]
+            handles = ipc_handles
             is_tensor_packed = handles[0]
             if is_tensor_packed:
                 _, all_handles, tensor_metadata = handles
