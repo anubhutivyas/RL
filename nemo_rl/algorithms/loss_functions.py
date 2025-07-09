@@ -117,6 +117,7 @@ class ClippedPGLossFn(LossFunction):
             LossType.TOKEN_LEVEL if cfg["token_level_loss"] else LossType.SEQUENCE_LEVEL
         )
         self.use_stable_loss = cfg.get("use_stable_loss", False)
+        self.force_on_policy = cfg.get("force_on_policy", False)
 
     def __call__(
         self,
@@ -196,7 +197,10 @@ class ClippedPGLossFn(LossFunction):
             )
 
         # Calculate clipped loss function if ppo ratio is enabled.
-        if not self.disable_ppo_ratio:
+        if self.disable_ppo_ratio:
+            ratios = (curr_logprobs - curr_logprobs.detach()).exp()
+            ratios_clamped = ratios
+        else:
             if self.use_generation_logprobs_in_ppo_baseline:
                 ratios = (curr_logprobs - generation_logprobs).exp()
             else:
@@ -205,10 +209,6 @@ class ClippedPGLossFn(LossFunction):
             ratios_clamped = ratios.clamp(
                 1.0 - self.ratio_clip_min, 1.0 + self.ratio_clip_max
             )
-
-        else:
-            ratios = curr_logprobs
-            ratios_clamped = curr_logprobs
 
         if self.use_stable_loss:
             loss_stable = -(advantages * ratios_clamped.detach() * curr_logprobs)
