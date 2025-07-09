@@ -877,7 +877,7 @@ class VllmGenerationWorker:
         Returns:
             bool: True if weights were successfully updated, False otherwise.
         """
-        async_update = True
+        async_update = False
         try:
             assert self.llm is not None, (
                 "Attempting to update weights with either an uninitialized vLLM or non-model-owner"

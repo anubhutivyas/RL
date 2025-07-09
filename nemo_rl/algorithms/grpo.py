@@ -714,18 +714,19 @@ def grpo_train(
         # track example with high token mult prob error above 1.05
         print(f"{metrics['token_mult_prob_error']=}")
         if metrics["token_mult_prob_error"] > 1.05:
-            logger.log_plot_token_mult_prob_error(
-                {
-                    "prompt_lengths": repeated_batch["length"],
-                    "full_lengths": input_lengths,
-                    "generation_logprobs": train_data["generation_logprobs"],
-                    "prev_logprobs": train_data["prev_logprobs"],
-                    "token_mask": train_data["token_mask"],
-                    "sample_mask": train_data["sample_mask"],
-                },
-                step + 1,
-                name="train/token_mult_prob_error_plot_sample",
-            )
+            pass
+            # logger.log_plot_token_mult_prob_error(
+            #     {
+            #         "prompt_lengths": repeated_batch["length"],
+            #         "full_lengths": input_lengths,
+            #         "generation_logprobs": train_data["generation_logprobs"],
+            #         "prev_logprobs": train_data["prev_logprobs"],
+            #         "token_mask": train_data["token_mask"],
+            #         "sample_mask": train_data["sample_mask"],
+            #     },
+            #     step + 1,
+            #     name="train/token_mult_prob_error_plot_sample",
+            # )
 
         print("\n📊 Training Results:")
 
