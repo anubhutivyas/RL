@@ -13,7 +13,6 @@
 # limitations under the License.
 
 from .common import (
-    get_all_rank_ids_in_group,
     get_global_expert_num,
     get_global_layer_num,
     get_local_expert_num,
@@ -21,7 +20,6 @@ from .common import (
 )
 
 __all__ = [
-    "get_all_rank_ids_in_group",
     "get_global_expert_num",
     "get_global_layer_num",
     "get_local_expert_num",
