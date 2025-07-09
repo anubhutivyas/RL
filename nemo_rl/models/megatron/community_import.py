@@ -32,7 +32,11 @@ def import_model_from_hf_name(hf_model_name: str, output_path: str):
             hf_model_name,
             output_path=output_path,
         )
-    elif "deepseek" in hf_model_name.lower() or "Moonlight-16B-A3B" in hf_model_name or hf_model_name in ("ByteDance-Seed/academic-ds-9B",):
+    elif (
+        "deepseek" in hf_model_name.lower()
+        or "Moonlight-16B-A3B" in hf_model_name
+        or hf_model_name in ("ByteDance-Seed/academic-ds-9B",)
+    ):
         from nemo.tron.converter.deepseek import HFDeepSeekImporter
 
         print(f"Importing model {hf_model_name} to {output_path}...")

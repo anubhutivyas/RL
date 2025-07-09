@@ -15,7 +15,7 @@
 from typing import Any, Dict
 
 from nemo.lightning import io
-from nemo.lightning.io.state import _ModelState, TransformFns
+from nemo.lightning.io.state import TransformFns, _ModelState
 
 
 def get_export_mapping(source, source_config):
@@ -33,13 +33,10 @@ def get_export_mapping(source, source_config):
         "decoder.layers.*.self_attention.linear_kv_up_proj.layer_norm_weight": "model.layers.*.self_attn.kv_a_layernorm.weight",
         "decoder.layers.*.pre_mlp_layernorm.weight": "model.layers.*.post_attention_layernorm.weight",
         # Dense MLP
-        # decoder.layers.*.mlp.linear_fc1.weight: model.layers.*.mlp.{gate|up}_proj.weight
         "decoder.layers.*.mlp.linear_fc2.weight": "model.layers.*.mlp.down_proj.weight",
         # MoE
         "decoder.layers.*.mlp.router.weight": "model.layers.*.mlp.gate.weight",
-        # decoder.layers.*.mlp.experts.linear_fc1.weight*: model.layers.*.mlp.experts.*.{gate|up}_proj.weight
         "decoder.layers.*.mlp.experts.linear_fc2.weight*": "model.layers.*.mlp.experts.*.down_proj.weight",
-        # decoder.layers.*.mlp.shared_experts.linear_fc1.weight: model.layers.*.mlp.shared_experts.{gate|up}_proj.weight
         "decoder.layers.*.mlp.shared_experts.linear_fc2.weight": "model.layers.*.mlp.shared_experts.down_proj.weight",
         # LM Head
         "decoder.final_layernorm.weight": "model.norm.weight",
@@ -70,7 +67,6 @@ def get_export_mapping(source, source_config):
         mapping.update(
             {
                 "decoder.layers.*.mlp.router.expert_bias": "model.layers.*.mlp.gate.e_score_correction_bias",
-                # "decoder.layers.*.mlp.router.expert_bias": "model.layers.*.mlp.experts.e_score_correction_bias",
             }
         )
     return mapping
@@ -107,8 +103,7 @@ def get_export_transforms():
 
 
 def get_source_fn(source: Dict[str, Any], source_config: Dict[str, Any]) -> _ModelState:
-    """
-    In deepseek, HF weight `model.layers.*.post_attention_layernorm.weight` is mapped to mcore weight
+    """In deepseek, HF weight `model.layers.*.post_attention_layernorm.weight` is mapped to mcore weight
     a) `decoder.layers.*.mlp.linear_fc1.layer_norm_weight`, if the layer is dense
     b) `decoder.layers.*.pre_mlp_layernorm.weight`, if the layer is MoE
 

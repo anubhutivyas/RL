@@ -29,9 +29,9 @@ from nemo.lightning.io.state import (
 from transformers import AutoConfig, AutoModelForCausalLM
 from transformers.integrations.accelerate import init_empty_weights
 
+import nemo_rl.models.megatron.converters.deepseek as deepseek_converter
 import nemo_rl.models.megatron.converters.llama as llama_converter
 import nemo_rl.models.megatron.converters.qwen2 as qwen2_converter
-import nemo_rl.models.megatron.converters.deepseek as deepseek_converter
 
 _GROUP_TO_RANKS_CACHE = {}
 
