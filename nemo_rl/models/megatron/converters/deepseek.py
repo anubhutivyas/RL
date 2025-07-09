@@ -103,7 +103,9 @@ def get_export_transforms():
 
 
 def get_source_fn(source: Dict[str, Any], source_config: Dict[str, Any]) -> _ModelState:
-    """In deepseek, HF weight `model.layers.*.post_attention_layernorm.weight` is mapped to mcore weight
+    """Modify source state_dict before conversion.
+
+    In deepseek, HF weight `model.layers.*.post_attention_layernorm.weight` is mapped to mcore weight
     a) `decoder.layers.*.mlp.linear_fc1.layer_norm_weight`, if the layer is dense
     b) `decoder.layers.*.pre_mlp_layernorm.weight`, if the layer is MoE
 
