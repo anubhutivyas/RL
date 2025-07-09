@@ -90,7 +90,6 @@ from nemo_rl.algorithms.interfaces import LossFunction, LossType
 from nemo_rl.distributed.batched_data_dict import BatchedDataDict
 from nemo_rl.distributed.model_utils import from_parallel_logits_to_logprobs
 from nemo_rl.distributed.named_sharding import NamedSharding
-from nemo_rl.distributed.worker_group_utils import get_nsight_config_if_pattern_matches
 from nemo_rl.models.generation.interfaces import (
     GenerationDatumSpec,
     GenerationOutputSpec,
@@ -103,7 +102,6 @@ from nemo_rl.models.megatron.common import (
 from nemo_rl.models.megatron.community_import import import_model_from_hf_name
 from nemo_rl.models.megatron.converters.common import (
     MegatronToHFConverter,
-    get_all_rank_ids_in_group,
     get_global_key_from_local_key,
 )
 from nemo_rl.models.megatron.refit_utils import (
@@ -115,7 +113,7 @@ from nemo_rl.models.policy.interfaces import (
     LogprobOutputSpec,
     ReferenceLogprobOutputSpec,
 )
-from nemo_rl.models.policy.utils import get_gpu_info
+from nemo_rl.models.policy.utils import get_gpu_info, get_runtime_env_for_policy_worker
 
 TokenizerType = TypeVar("TokenizerType", bound=PreTrainedTokenizerBase)
 
@@ -329,11 +327,7 @@ def destroy_parallel_state():
         pass
 
 
-@ray.remote(
-    runtime_env={
-        **get_nsight_config_if_pattern_matches("megatron_policy_worker"),
-    }
-)
+@ray.remote(runtime_env=get_runtime_env_for_policy_worker("megatron_policy_worker"))
 class MegatronPolicyWorker:
     def __repr__(self):
         """Customizes the actor's prefix in the Ray logs.
@@ -501,6 +495,7 @@ class MegatronPolicyWorker:
                 "a lambda and couldn't be serialized). This is based on this check "
                 "https://github.com/NVIDIA/Megatron-LM/blob/1ab876ddc4c1893c76f26d775226a8d1dcdfb3d2/megatron/core/transformer/mlp.py#L174."
             )
+        model_cfg.apply_rope_fusion = self.cfg["megatron_cfg"]["apply_rope_fusion"]
 
         checkpoint_config = CheckpointConfig(
             save_interval=100,
@@ -990,7 +985,7 @@ class MegatronPolicyWorker:
                     target=input_ids,
                     vocab_start_index=tp_rank * output_tensor.shape[-1],
                     vocab_end_index=(tp_rank + 1) * output_tensor.shape[-1],
-                    group=tp_grp,
+                    tp_group=tp_grp,
                     inference_only=True,
                 )
 
@@ -1333,7 +1328,7 @@ class MegatronPolicyWorker:
 
         etp_group = parallel_state.get_expert_tensor_parallel_group()
         etp_world_size = torch.distributed.get_world_size(etp_group)
-        etp_group_rank_ids = get_all_rank_ids_in_group(etp_group)
+        etp_group_rank_ids = get_process_group_ranks(etp_group)
 
         pp_group = parallel_state.get_pipeline_model_parallel_group()
         pp_world_size = torch.distributed.get_world_size(pp_group)
@@ -1342,7 +1337,7 @@ class MegatronPolicyWorker:
 
         ep_group = parallel_state.get_expert_model_parallel_group()
         ep_world_size = torch.distributed.get_world_size(ep_group)
-        ep_group_rank_ids = get_all_rank_ids_in_group(ep_group)
+        ep_group_rank_ids = get_process_group_ranks(ep_group)
 
         # Collect parameter info
         param_info = []
@@ -1481,18 +1476,68 @@ class MegatronPolicyWorker:
         from torch.multiprocessing.reductions import reduce_tensor
 
         # Create IPC handles for each parameter
-        all_handles = []
-        for key, tensor in gathered_hf_params.items():
-            handle = reduce_tensor(tensor.detach())
-            all_handles.append((key, handle))
+        tensor_number_threshold = os.getenv(
+            "NEMO_RL_MEGATRON_IPC_TENSOR_PACKING_THRESHOLD", "32"
+        )  # an arbitrary threshold
+        if len(gathered_hf_params) >= int(tensor_number_threshold):
+            pack_tensor_for_ipc = True
+        else:
+            pack_tensor_for_ipc = False
 
-        # Store references to avoid premature garbage collection
-        self._held_gather_buffer = gathered_hf_params
-        shapes = {}
-        for key, tensor in gathered_hf_params.items():
-            shapes[key] = tensor.shape
+        if pack_tensor_for_ipc:
+            # Pack tensors in gathered_hf_params into consolidated tensors by dtype
+            # First calculate total size needed for each dtype
+            type_to_total_size = defaultdict(lambda: 0)
+            tensor_metadata = dict()
 
-        return {device_uuid: all_handles}
+            for key, tensor in gathered_hf_params.items():
+                tensor_metadata[key] = (
+                    tensor.shape,  # shape of the tensor
+                    tensor.dtype,  # dtype of the tensor
+                    type_to_total_size[tensor.dtype],  # offset of the tensor
+                    # in packed buffer
+                    tensor.numel(),  # size of the tensor
+                )
+                type_to_total_size[tensor.dtype] += tensor.numel()
+
+            # Allocate consolidated tensors for each dtype
+            packed_tensors = {
+                dtype: torch.empty(
+                    total_size,
+                    device=next(iter(gathered_hf_params.values())).device,
+                    dtype=dtype,
+                    requires_grad=False,
+                )
+                for dtype, total_size in type_to_total_size.items()
+            }
+
+            # Copy tensors into consolidated buffers
+            for key, tensor in gathered_hf_params.items():
+                metadata = tensor_metadata[key]
+                _, dtype, offset, size = metadata
+                packed_tensors[dtype][offset : offset + size].copy_(
+                    tensor.detach().view(-1)
+                )
+
+            # Create IPC handles for consolidated tensors
+            all_handles = [
+                (dtype, reduce_tensor(tensor.detach()))
+                for dtype, tensor in packed_tensors.items()
+            ]
+
+            # Store reference to prevent garbage collection
+            self._held_gather_buffer = packed_tensors
+
+            serialized = (pack_tensor_for_ipc, all_handles, tensor_metadata)
+        else:
+            all_handles = []
+            for key, tensor in gathered_hf_params.items():
+                handle = reduce_tensor(tensor.detach())
+                all_handles.append((key, handle))
+            self._held_gather_buffer = gathered_hf_params
+            serialized = (False, all_handles)
+
+        return {device_uuid: serialized}
 
     def prepare_for_lp_inference(self):
         self.model = self.move_model(self.model, "cuda", move_grads=False)
