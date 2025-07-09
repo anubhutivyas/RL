@@ -1491,6 +1491,60 @@ class MegatronPolicyWorker:
             tensor_metadata = dict()
             
             for key, tensor in gathered_hf_params.items():
+                if key in self.ep_key_to_shared_key:
+                    continue
+                # check if key matches the pattern model.layers.N.mlp.experts.M.K.weight and extract values of N and K
+                match = ep_pattern.match(key)
+                if match:
+                    X = int(match.group(1))
+                    Y = int(match.group(2))
+                    Z = match.group(3)
+                    expert_param_pattern_to_keys[(X, Z)].append((Y, key))
+            
+            # create a map from original key to the shared key of this group
+            for (X, Z), keys in expert_param_pattern_to_keys.items():
+                # sort the keys
+                keys.sort(key=lambda x: x[0])
+                expert_ids = f'[{",".join(str(y[0]) for y in keys)}]'
+                shared_key = f"model.layers.{X}.mlp.experts.{expert_ids}.{Z}.weight"
+                for _, original_key in keys:
+                    self.ep_key_to_shared_key[original_key] = shared_key
+                    self.shared_key_to_original_keys[shared_key].append(original_key)
+            
+            # reorder the keys in gathered_hf_params, make sure all the ep keys in the same group are contiguous in the list
+            reordered_keys = list()
+            for key in gathered_hf_params.keys():
+                if key in reordered_keys:
+                    continue
+                if ep_pattern.match(key):
+                    shared_key = self.ep_key_to_shared_key[key]
+                    original_keys = self.shared_key_to_original_keys[shared_key]
+                    reordered_keys.extend(original_keys)
+                else:
+                    reordered_keys.append(key)
+            
+            for key in reordered_keys:
+                tensor = gathered_hf_params[key]
+
+                if ep_pattern.match(key):
+                    shared_key = self.ep_key_to_shared_key[key]
+                    key_group = self.shared_key_to_original_keys[shared_key]
+                    if key_group.index(key) == 0:
+                        # the first key, create a stacked tensor
+                        ep_size = len(key_group)
+                        new_tensor_shape = (ep_size, *tensor.shape)
+                        tensor_metadata[shared_key] = (
+                            new_tensor_shape,
+                            tensor.dtype,
+                            type_to_total_size[tensor.dtype],
+                            ep_size * tensor.numel()
+                        )
+                        # if get_rank_safe() == 0:
+                        #     print(f"created a stacked tensor for {shared_key} at offset {type_to_total_size[tensor.dtype]}")
+                        type_to_total_size[tensor.dtype] += ep_size * tensor.numel()
+                    else:
+                        pass
+                else:
                 tensor_metadata[key] = (
                     tensor.shape,                       # shape of the tensor
                     tensor.dtype,                       # dtype of the tensor
@@ -1512,12 +1566,27 @@ class MegatronPolicyWorker:
             }
 
             # Copy tensors into consolidated buffers
-            for key, tensor in gathered_hf_params.items():
-                metadata = tensor_metadata[key]
-                _, dtype, offset, size = metadata
-                packed_tensors[dtype][offset:offset + size].copy_(
-                    tensor.detach().view(-1)
-                )
+            for key in reordered_keys:
+                tensor = gathered_hf_params[key]
+                if ep_pattern.match(key):
+                    shared_key = self.ep_key_to_shared_key[key]
+                    key_group = self.shared_key_to_original_keys[shared_key]
+                    id_in_key_group = key_group.index(key)
+                    _, dtype, offset, total_size = tensor_metadata[shared_key]
+                    size_per_tensor = total_size // len(key_group)
+                    this_offset = offset + id_in_key_group * size_per_tensor
+                    this_size = size_per_tensor
+                    # if get_rank_safe() == 0:
+                    #     print(f"packing {key} to shared key {shared_key} it is {id_in_key_group}-th in the group of size {len(key_group)} at offset {offset} this_offset {this_offset} with size {this_size}")
+                    packed_tensors[dtype][this_offset:this_offset + this_size].copy_(
+                        tensor.detach().view(-1)
+                    )
+                else:
+                    metadata = tensor_metadata[key]
+                    _, dtype, offset, size = metadata
+                    packed_tensors[dtype][offset:offset + size].copy_(
+                        tensor.detach().view(-1)
+                    )
 
             # Create IPC handles for consolidated tensors
             all_handles = [

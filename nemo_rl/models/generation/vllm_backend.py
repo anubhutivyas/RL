@@ -14,6 +14,7 @@
 from typing import Any
 
 import torch
+import re
 
 try:
     import vllm  # noqa: F401
@@ -81,9 +82,29 @@ class VllmInternalWorkerExtension:
 
                 # Unpack tensor to weights. Here we only return a view of the tensor to avoid 
                 # using extra memory.
+                ep_pattern = re.compile(r"model\.layers\.(\d+)\.mlp\.experts\.([^\.]+)\.([^\.]+)\.weight$")
                 for key, (shape, dtype, offset, size) in tensor_metadata.items():
-                    tensor = dtype_to_packed_tensor[dtype][offset:offset+size].view(*shape)
-                    weights.append((key, tensor))
+                    match = ep_pattern.match(key)
+                    if match:
+                        # the key is a ep group, we need to unpack it
+                        layer_id = int(match.group(1))
+                        ep_ids = match.group(2)
+                        weight_name = match.group(3)
+                        ep_ids = [int(id) for id in ep_ids.strip('[]').split(',')]
+                        recovered_keys = [
+                            f"model.layers.{layer_id}.mlp.experts.{ep_id}.{weight_name}.weight"
+                            for ep_id in ep_ids
+                        ]
+                        for i, k in enumerate(recovered_keys):
+                            this_size = size // len(recovered_keys)
+                            this_offset = offset + i * this_size
+                            this_shape = shape[1:]
+                            tensor = dtype_to_packed_tensor[dtype][this_offset:this_offset+this_size].view(*this_shape)
+                            # print(f"recovered {k} from shared key {key} at offset {offset} this_offset {this_offset} id {i} with size {this_size}")
+                            weights.append((k, tensor))
+                    else:
+                        tensor = dtype_to_packed_tensor[dtype][offset:offset+size].view(*shape)
+                        weights.append((key, tensor))
             else:
                 # Process each handle to get the tensor
                 for name, handle in name_and_handle_list:
