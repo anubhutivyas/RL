@@ -311,6 +311,8 @@ class ClippedPGLossFn(LossFunction):
             if self.disable_ppo_ratio:
                 clipped_min = 0
                 clipped_max = 0
+                clipped_min_ratios = 0
+                clamped_max_ratios = 0
             else:
                 advantages_neg = advantages < 0
                 advantages_pos = advantages > 0
