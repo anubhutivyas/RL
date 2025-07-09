@@ -877,6 +877,7 @@ class VllmGenerationWorker:
         Returns:
             bool: True if weights were successfully updated, False otherwise.
         """
+        async_update = True
         try:
             assert self.llm is not None, (
                 "Attempting to update weights with either an uninitialized vLLM or non-model-owner"
@@ -887,22 +888,60 @@ class VllmGenerationWorker:
                     "update_weights_from_ipc_handles cannot be used with async_engine=True. Use update_weights_from_ipc_handles_async instead."
                 )
 
-            # result_or_coro = self.llm.collective_rpc(
-            #     "update_weights_from_ipc_handles",
-            #     args=(data,),
-            # )
-            # Wait for all device IDs, then update weights in parallel
-            ray_worker_outputs = []
-            for worker, device_id in zip(self.llm.llm_engine.model_executor.workers, self.vllm_device_ids):
-                # print(f"data[device_id]={data[device_id]}")
-                ray_worker_outputs.append(
-                    worker.execute_method.remote("update_weights_from_ipc_handles", data[device_id])
-                )
+            if async_update:
+                # Wait for all device IDs, then update weights in parallel using asyncio
+                import asyncio
 
-            # Gather the results
-            result_or_coro = ray.get(ray_worker_outputs)
+                async def submit_job(worker, device_id, data):
+                    return worker.execute_method.remote("update_weights_from_ipc_handles", data[device_id])
 
-            worker_result = result_or_coro[0]
+                async def submit_jobs_parallel(workers, device_ids, data):
+                    # Don't create_task here - just return the coroutines directly
+                    tasks = [
+                        submit_job(worker, device_id, data)  # These are already coroutines
+                        for worker, device_id in zip(workers, device_ids)
+                    ]
+                    ray_object_refs = await asyncio.gather(*tasks, return_exceptions=True)
+                    return ray_object_refs
+
+                # And change the execution to handle the running event loop properly:
+                try:
+                    loop = asyncio.get_event_loop()
+                    if loop.is_running():
+                        # If loop is running, we need to use a different approach
+                        import concurrent.futures
+                        with concurrent.futures.ThreadPoolExecutor() as executor:
+                            future = executor.submit(asyncio.run, submit_jobs_parallel(self.llm.llm_engine.model_executor.workers, self.vllm_device_ids, data))
+                            ray_object_refs = future.result()
+                        print("running in thread pool")
+                    else:
+                        # If loop is not running, use run_until_complete
+                        ray_object_refs = loop.run_until_complete(submit_jobs_parallel(self.llm.llm_engine.model_executor.workers, self.vllm_device_ids, data))
+                        print("no running in loop")
+                except RuntimeError:
+                    # This should rarely happen now
+                    print("RuntimeError: No event loop found")
+                    ray_object_refs = asyncio.run(submit_jobs_parallel(self.llm.llm_engine.model_executor.workers, self.vllm_device_ids, data))
+                
+                result_or_coro = ray.get(ray_object_refs)
+
+                worker_result = result_or_coro[0]
+            else:
+                # result_or_coro = self.llm.collective_rpc(
+                #     "update_weights_from_ipc_handles",
+                #     args=(data,),
+                # )
+                # Wait for all device IDs, then update weights in parallel
+                ray_worker_outputs = []
+                for worker, device_id in zip(self.llm.llm_engine.model_executor.workers, self.vllm_device_ids):
+                    # print(f"data[device_id]={data[device_id]}")
+                    ray_worker_outputs.append(
+                        worker.execute_method.remote("update_weights_from_ipc_handles", data[device_id])
+                    )
+
+                # Gather the results
+                result_or_coro = ray.get(ray_worker_outputs)
+                worker_result = result_or_coro[0]
 
             if not worker_result:
                 print(

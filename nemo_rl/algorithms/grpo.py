@@ -712,6 +712,7 @@ def grpo_train(
 
         timing_metrics: dict[str, float] = timer.get_timing_metrics(reduction_op="sum")  # type: ignore
         # track example with high token mult prob error above 1.05
+        print(f"{metrics['token_mult_prob_error']=}")
         if metrics["token_mult_prob_error"] > 1.05:
             logger.log_plot_token_mult_prob_error(
                 {
