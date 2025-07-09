@@ -1490,9 +1490,17 @@ class MegatronPolicyWorker:
             type_to_total_size = defaultdict(lambda: 0)
             tensor_metadata = dict()
             
+            # pre-process the gathered_hf_params, group keys for the symmetric weight in EP ranks
+            # Expert params have the keys with patter model.layers.X.mlp.experts.Y.Z.weight, where X, Y, Z are integers. For every key with such pattern, we want to find other keys with the same X, Z but different Y via regex.
+            # if get_rank_safe() == 0:
+            #     print(f"pre-processing the gathered_hf_params: {gathered_hf_params.keys()}")
+            
+            ep_key_to_shared_key = {}
+            shared_key_to_original_keys = defaultdict(list)
+
+            expert_param_pattern_to_keys = defaultdict(list)
+            ep_pattern = re.compile(r"model\.layers\.(\d+)\.mlp\.experts\.(\d+)\.([^\.]+)\.weight$")
             for key, tensor in gathered_hf_params.items():
-                if key in self.ep_key_to_shared_key:
-                    continue
                 # check if key matches the pattern model.layers.N.mlp.experts.M.K.weight and extract values of N and K
                 match = ep_pattern.match(key)
                 if match:
@@ -1508,8 +1516,8 @@ class MegatronPolicyWorker:
                 expert_ids = f'[{",".join(str(y[0]) for y in keys)}]'
                 shared_key = f"model.layers.{X}.mlp.experts.{expert_ids}.{Z}.weight"
                 for _, original_key in keys:
-                    self.ep_key_to_shared_key[original_key] = shared_key
-                    self.shared_key_to_original_keys[shared_key].append(original_key)
+                    ep_key_to_shared_key[original_key] = shared_key
+                    shared_key_to_original_keys[shared_key].append(original_key)
             
             # reorder the keys in gathered_hf_params, make sure all the ep keys in the same group are contiguous in the list
             reordered_keys = list()
@@ -1517,8 +1525,8 @@ class MegatronPolicyWorker:
                 if key in reordered_keys:
                     continue
                 if ep_pattern.match(key):
-                    shared_key = self.ep_key_to_shared_key[key]
-                    original_keys = self.shared_key_to_original_keys[shared_key]
+                    shared_key = ep_key_to_shared_key[key]
+                    original_keys = shared_key_to_original_keys[shared_key]
                     reordered_keys.extend(original_keys)
                 else:
                     reordered_keys.append(key)
@@ -1527,8 +1535,8 @@ class MegatronPolicyWorker:
                 tensor = gathered_hf_params[key]
 
                 if ep_pattern.match(key):
-                    shared_key = self.ep_key_to_shared_key[key]
-                    key_group = self.shared_key_to_original_keys[shared_key]
+                    shared_key = ep_key_to_shared_key[key]
+                    key_group = shared_key_to_original_keys[shared_key]
                     if key_group.index(key) == 0:
                         # the first key, create a stacked tensor
                         ep_size = len(key_group)
@@ -1545,14 +1553,14 @@ class MegatronPolicyWorker:
                     else:
                         pass
                 else:
-                tensor_metadata[key] = (
-                    tensor.shape,                       # shape of the tensor
-                    tensor.dtype,                       # dtype of the tensor
-                    type_to_total_size[tensor.dtype],   # offset of the tensor 
-                                                        # in packed buffer
-                    tensor.numel()                      # size of the tensor
-                )
-                type_to_total_size[tensor.dtype] += tensor.numel()
+                    tensor_metadata[key] = (
+                        tensor.shape,                       # shape of the tensor
+                        tensor.dtype,                       # dtype of the tensor
+                        type_to_total_size[tensor.dtype],   # offset of the tensor 
+                                                            # in packed buffer
+                        tensor.numel()                      # size of the tensor
+                    )
+                    type_to_total_size[tensor.dtype] += tensor.numel()
 
             # Allocate consolidated tensors for each dtype
             packed_tensors = {
@@ -1569,8 +1577,8 @@ class MegatronPolicyWorker:
             for key in reordered_keys:
                 tensor = gathered_hf_params[key]
                 if ep_pattern.match(key):
-                    shared_key = self.ep_key_to_shared_key[key]
-                    key_group = self.shared_key_to_original_keys[shared_key]
+                    shared_key = ep_key_to_shared_key[key]
+                    key_group = shared_key_to_original_keys[shared_key]
                     id_in_key_group = key_group.index(key)
                     _, dtype, offset, total_size = tensor_metadata[shared_key]
                     size_per_tensor = total_size // len(key_group)
