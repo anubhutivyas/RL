@@ -16,6 +16,7 @@ import os
 from contextlib import contextmanager
 from tempfile import TemporaryDirectory
 
+import pytest
 import torch
 import torch.distributed as dist
 from nemo.collections.llm.gpt.model.qwen3 import Qwen3Config, Qwen3Model, Qwen3MoEConfig
@@ -198,6 +199,7 @@ def assert_attention_tensors_match(
     )
 
 
+@pytest.mark.mcore
 def test_conversion_to_hf_moe():
     """Test conversion of Qwen3 MoE model to HF format."""
     with setup_distributed_environment("6000"):
@@ -241,6 +243,7 @@ def test_conversion_to_hf_moe():
         )
 
 
+@pytest.mark.mcore
 def test_conversion_to_hf_dense():
     """Test conversion of Qwen3 dense model to HF format."""
     with setup_distributed_environment("6001"):
