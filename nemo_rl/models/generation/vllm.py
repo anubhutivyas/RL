@@ -1273,6 +1273,16 @@ class VllmGenerationWorker:
     def stop_gpu_profiling(self) -> None:
         """Stop GPU profiling."""
         torch.cuda.profiler.stop()
+    
+    def update_weight_update_metadata_for_refit(self, refit_buffer_ipc_handles, weight_update_metadata):
+        self.refit_buffer_ipc_handles = refit_buffer_ipc_handles
+        if weight_update_metadata is not None:
+            self.weight_update_metadata = weight_update_metadata
+    
+    def consume_refit_bucket(self, bucket_id):
+        pass # todo implement this
+    
+    
 
 
 class VllmGeneration(GenerationInterface):
@@ -1941,3 +1951,29 @@ class VllmGeneration(GenerationInterface):
         user calls shutdown().
         """
         self.shutdown()
+    
+    def update_weight_update_metadata_for_refit(
+        self,
+        refit_buffer_ipc_handles: list[dict[str, Any]],
+        weight_update_metadata: dict[str, Any],
+    ) -> None:
+        """Update the weight update metadata for refit."""
+        futures = self.worker_group.run_all_workers_single_data(
+            "update_weight_update_metadata_for_refit",
+            refit_buffer_ipc_handles=refit_buffer_ipc_handles,
+            weight_update_metadata=weight_update_metadata,
+            run_rank_0_only_axes=["tensor_parallel", "pipeline_parallel"],
+        )
+        ray.get(futures)
+
+    def consume_refit_bucket(
+        self,
+        bucket_id: int,
+    ) -> None:
+        """Consume the refit bucket."""
+        futures = self.worker_group.run_all_workers_single_data(
+            "consume_refit_bucket",
+            bucket_id=bucket_id,
+            run_rank_0_only_axes=["tensor_parallel", "pipeline_parallel"],
+        )
+        ray.get(futures)
