@@ -45,6 +45,8 @@ from megatron.core.parallel_state import (
     get_pipeline_model_parallel_world_size,
     get_tensor_model_parallel_group,
     get_tensor_model_parallel_rank,
+    get_context_parallel_rank,
+    get_context_parallel_group,
     is_pipeline_last_stage,
 )
 from megatron.core.pipeline_parallel import get_forward_backward_func
@@ -443,10 +445,7 @@ class MegatronPolicyWorker:
         model_cfg.sequence_parallel = self.cfg["megatron_cfg"]["sequence_parallel"]
         model_cfg.context_parallel_size = self.cfg["megatron_cfg"][
             "context_parallel_size"
-        ]  # not supported right now
-        assert model_cfg.context_parallel_size == 1, (
-            "Context parallel is not supported right now"
-        )
+        ]
         model_cfg.bf16 = self.dtype == torch.bfloat16
         model_cfg.fp16 = self.dtype == torch.float16
         if model_cfg.fp16:
@@ -778,10 +777,10 @@ class MegatronPolicyWorker:
                     tp_size = self.cfg["megatron_cfg"]["tensor_model_parallel_size"]
                     cp_size = self.cfg["megatron_cfg"]["context_parallel_size"]
                     pad_factor = cp_size * 2 * tp_size if cp_size > 1 else tp_size
-                    if self.cfg["megatron_cfg"]["pipeline_model_parallel_size"] > 1:
-                        _, pad_full_seq_to = (
-                            batch.get_microbatch_iterator_for_packable_sequences_len()
-                        )
+                    # if self.cfg["megatron_cfg"]["pipeline_model_parallel_size"] > 1:
+                    # _, pad_full_seq_to = (
+                        # batch.get_microbatch_iterator_for_packable_sequences_len()
+                    # )
                 else:
                     data_iterator = batch.make_microbatch_iterator(mbs)
                     data_iterator_len = local_gbs // mbs
@@ -866,6 +865,7 @@ class MegatronPolicyWorker:
                         loss_metrics["global_valid_toks"] = global_valid_toks.item()
                         mb_losses.append(loss_metrics["loss"])
 
+                    print(f"gb_loss {gb_loss_metrics}")
                     torch.distributed.broadcast_object_list(
                         [gb_loss_metrics],
                         src=get_pipeline_model_parallel_last_rank(),
@@ -908,7 +908,6 @@ class MegatronPolicyWorker:
         }
         return metrics
 
-    # Temporary fix, 'data' is a kwarg due to some sort of ray bug
     def get_logprobs(
         self, *, data: BatchedDataDict[Any], micro_batch_size: Optional[int] = None
     ) -> BatchedDataDict[LogprobOutputSpec]:
@@ -948,7 +947,7 @@ class MegatronPolicyWorker:
         pp_rank = get_pipeline_model_parallel_rank()
         pp_grp = get_pipeline_model_parallel_group()
         pp_size = get_pipeline_model_parallel_world_size()
-
+        cp_size = self.cfg["megatron_cfg"]["context_parallel_size"]
         # if pp_size > 1, we need to pad the full sequence to the max sequence length to maintain a static PP buffer
         if (
             self.cfg["sequence_packing"]["enabled"]
@@ -958,6 +957,12 @@ class MegatronPolicyWorker:
                 data.get_microbatch_iterator_for_packable_sequences_len()
             )
             pp_seq_dim_size = pad_full_seq_to
+#         elif self.cfg["sequence_packing"]["enabled"]:
+            # _, pad_full_seq_to = (
+                # data.get_microbatch_iterator_for_packable_sequences_len()
+            # )
+            # pp_seq_dim_size = pad_full_seq_to
+
         else:
             pad_full_seq_to = None
 
@@ -971,20 +976,24 @@ class MegatronPolicyWorker:
                 tp_size = self.cfg["megatron_cfg"]["tensor_model_parallel_size"]
                 pp_size = self.cfg["megatron_cfg"]["pipeline_model_parallel_size"]
                 cp_size = self.cfg["megatron_cfg"]["context_parallel_size"]
+                cp_rank = get_context_parallel_rank()
                 pad_factor = cp_size * 2 * tp_size if cp_size > 1 else tp_size
-                input_ids, packed_seq_params, cu_seqlens, cu_seqlens_padded = (
+                input_ids, input_ids_cp_sharded, packed_seq_params, cu_seqlens, cu_seqlens_padded = (
                     _pack_sequences_for_megatron(
                         data_dict["input_ids"].clone(),
                         data_dict["input_lengths"],
                         pad_individual_seqs_to_multiple_of=pad_factor,
                         pad_packed_seq_to=pad_full_seq_to,
+                        cp_rank=cp_rank,
+                        cp_size=cp_size,
                     )
                 )
-                input_ids = input_ids
+                print(f"cu_seqlens_padded {cu_seqlens_padded}")
                 attention_mask, position_ids = None, None
                 unpacked_input_ids = data_dict["input_ids"]
             else:
                 input_ids = data_dict["input_ids"]
+                input_ids_cp_sharded = input_ids
                 attention_mask, _, position_ids = get_ltor_masks_and_position_ids(
                     input_ids, 0, False, False, False
                 )
@@ -992,7 +1001,7 @@ class MegatronPolicyWorker:
                 unpacked_input_ids = input_ids
 
             output_tensor = model(
-                input_ids,
+                input_ids_cp_sharded,
                 position_ids,
                 attention_mask,
                 packed_seq_params=packed_seq_params,
@@ -1002,16 +1011,18 @@ class MegatronPolicyWorker:
                 stc = time.time()
                 tp_grp = get_tensor_model_parallel_group()
                 tp_rank = get_tensor_model_parallel_rank()
+                print(f"output_tensor {output_tensor[0,:,0]}, rank {get_context_parallel_rank()}")
                 if self.cfg["sequence_packing"]["enabled"]:
                     token_logprobs = from_parallel_logits_to_logprobs_packed_sequences(
                         output_tensor,
                         target=input_ids,
-                        cu_seqlens=cu_seqlens_padded,
+                        cu_seqlens_padded=cu_seqlens_padded,
                         unpacked_seqlen=original_seq_length,
                         vocab_start_index=tp_rank * output_tensor.shape[-1],
                         vocab_end_index=(tp_rank + 1) * output_tensor.shape[-1],
                         group=tp_grp,
                         inference_only=True,
+                        cp_group=get_context_parallel_group(),
                     )
                 else:
                     token_logprobs = from_parallel_logits_to_logprobs(

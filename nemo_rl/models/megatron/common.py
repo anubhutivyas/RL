@@ -22,19 +22,23 @@ from megatron.core.parallel_state import (
     get_context_parallel_world_size,
     get_tensor_model_parallel_group,
     get_tensor_model_parallel_rank,
+    get_context_parallel_rank,
+    get_context_parallel_group,
 )
 from megatron.training.utils import get_ltor_masks_and_position_ids
 from nemo.tron.state import GlobalState
 
 from nemo_rl.algorithms.loss_functions import LossFunction, SequencePackingLossWrapper
 from nemo_rl.distributed.batched_data_dict import BatchedDataDict
-
+from nemo_rl.distributed.model_utils import _get_tokens_on_this_cp_rank
 
 def _pack_sequences_for_megatron(
     input_ids: torch.Tensor,
     seq_lengths: torch.Tensor,
     pad_individual_seqs_to_multiple_of: int = 1,
     pad_packed_seq_to: Optional[int] = None,
+    cp_rank: int = 0,
+    cp_size: int = 1,
 ) -> tuple[torch.Tensor, PackedSeqParams, torch.Tensor, Optional[torch.Tensor]]:
     """Pack sequences for Megatron model processing with optional context parallelism.
 
@@ -42,14 +46,16 @@ def _pack_sequences_for_megatron(
         input_ids: Input token IDs [batch_size, seq_length]
         seq_lengths: Actual sequence lengths for each sample [batch_size]
         pad_individual_seqs_to_multiple_of: Pad individual sequences to a multiple of this value
-        pad_packed_seq_to: Pad packed sequences to this value
+        pad_packed_seq_to: Pad packed sequences to this value (before CP)
+        cp_size: Context parallelism size
 
     Returns:
         Tuple of:
         - packed_input_ids: Packed input tensor [1, T]
+        - input_ids_cp_sharded: Sharded input tensor [cp_size, T // cp_size]
         - packed_seq_params: PackedSeqParams object
         - cu_seqlens: Cumulative sequence lengths
-        - cu_seqlens_padded: Padded cumulative sequence lengths (if CP > 1)
+        - cu_seqlens_padded: Padded cumulative sequence lengths
     """
     batch_size = input_ids.shape[0]
 
@@ -100,7 +106,10 @@ def _pack_sequences_for_megatron(
 
     # Concatenate all valid tokens
     # If using individual padding, we need to pad individual sequences
+    # CP will always need padding (of at least cp_size * 2)
+    running_seq_len = 0
     if pad_factor > 1:
+        all_input_ids = []
         padded_tokens = []
         for b in range(batch_size):
             seq_len = (
@@ -108,42 +117,47 @@ def _pack_sequences_for_megatron(
                 if torch.is_tensor(seq_lengths[b])
                 else seq_lengths[b]
             )
-            padded_seq_len = ((seq_len + pad_factor - 1) // pad_factor) * pad_factor
+            # if last element, pad to the max sequence length
+            if b == batch_size - 1 and pad_packed_seq_to is not None:
+                padded_seq_len = pad_packed_seq_to - running_seq_len
+                running_seq_len += padded_seq_len
+            else:
+                padded_seq_len = ((seq_len + pad_factor - 1) // pad_factor) * pad_factor
+
+            running_seq_len += padded_seq_len
 
             # Pad this sequence to the required length
             seq_tokens = input_ids[b, :seq_len]
             if padded_seq_len > seq_len:
                 # Pad with zeros (or use a padding token if available)
-                padding = torch.zeros(
-                    padded_seq_len - seq_len,
-                    dtype=seq_tokens.dtype,
-                    device=seq_tokens.device,
+                seq_tokens = torch.nn.functional.pad(
+                    seq_tokens, (0, padded_seq_len - seq_len), value=0
                 )
-                seq_tokens = torch.cat([seq_tokens, padding])
+            all_input_ids.append(seq_tokens)
+            
+            if cp_size > 1:
+               seq_tokens = _get_tokens_on_this_cp_rank(seq_tokens, cp_rank, cp_size, seq_dim=0)
 
             padded_tokens.append(seq_tokens)
 
         # Concatenate all padded tokens
         # For 'thd' format, the shape should be [1, T] where T is total tokens
         packed_input_ids = torch.cat(padded_tokens, dim=0).unsqueeze(0)
+        all_input_ids = torch.cat(all_input_ids, dim=0).unsqueeze(0)
     else:
         # No individual padding, just concatenate valid tokens
         # For 'thd' format, the shape should be [1, T] where T is total tokens
         packed_input_ids = torch.cat(valid_tokens, dim=0).unsqueeze(0)
-
-    if pad_packed_seq_to is not None:
-        packed_input_ids = torch.cat(
-            [
-                packed_input_ids,
-                torch.zeros(
-                    1,
-                    pad_packed_seq_to - packed_input_ids.shape[1],
-                    dtype=packed_input_ids.dtype,
-                    device=packed_input_ids.device,
-                ),
-            ],
-            dim=1,
-        )
+        all_input_ids = packed_input_ids
+        if pad_packed_seq_to is not None:
+            pad_len = pad_packed_seq_to - packed_input_ids.shape[1]
+            if pad_len > 0:
+                packed_input_ids = torch.nn.functional.pad(
+                    packed_input_ids, (0, pad_len), value=0
+                )
+                all_input_ids = torch.nn.functional.pad(
+                    all_input_ids, (0, pad_len), value=0
+                )
 
     if cu_seqlens_padded is None:
         cu_seqlens_padded = cu_seqlens.clone()
@@ -157,8 +171,9 @@ def _pack_sequences_for_megatron(
         max_seqlen_kv=int(max_seqlen),
         qkv_format="thd",
     )
-
+    
     return (
+        all_input_ids.contiguous(),
         packed_input_ids.contiguous(),
         packed_seq_params,
         cu_seqlens,
@@ -241,6 +256,7 @@ def forward_step_arbitrary_loss(
     seq_length_key: Optional[str] = None,
     pad_individual_seqs_to_multiple_of: int = 1,
     pad_full_seq_to: Optional[int] = None,
+    cp_normalize: bool = True,
 ):
     """Forward training step with support for packed sequences and context parallelism.
 
@@ -253,13 +269,13 @@ def forward_step_arbitrary_loss(
         loss_fn (LossFunction): Loss function to apply
         pack_sequences (bool): Whether to pack sequences for efficiency
         seq_length_key (Optional[str]): Key in data_dict containing actual sequence lengths
+        cp_normalize (bool): Whether to normalize the loss by the cp_size
 
     Notes on packed sequences with context parallelism (CP):
         - When CP > 1, each sequence is padded to a multiple of (cp_size * 2)
         - The factor of 2 ensures load balancing for causal attention
         - cu_seqlens tracks actual sequence boundaries
         - cu_seqlens_padded tracks padded sequence boundaries for CP
-        - TransformerEngine automatically distributes tokens across CP ranks
         - Requires TransformerEngine >= 1.10 for CP support
     """
     straggler_timer = state.straggler_timer
@@ -290,12 +306,14 @@ def forward_step_arbitrary_loss(
             seq_lengths = data_dict[seq_length_key]
 
             # Pack sequences
-            input_ids, packed_seq_params, cu_seqlens, cu_seqlens_padded = (
+            input_ids, input_ids_cp_sharded, packed_seq_params, cu_seqlens, cu_seqlens_padded = (
                 _pack_sequences_for_megatron(
                     input_ids,
                     seq_lengths,
                     pad_individual_seqs_to_multiple_of,
                     pad_full_seq_to,
+                    cp_rank=get_context_parallel_rank(),
+                    cp_size=get_context_parallel_world_size(),
                 )
             )
 
@@ -304,13 +322,14 @@ def forward_step_arbitrary_loss(
             position_ids = None
             attention_mask = None
         else:
+            input_ids_cp_sharded = input_ids
             attention_mask, _, position_ids = get_ltor_masks_and_position_ids(
                 input_ids, 0, False, False, False
             )
 
     with straggler_timer:
         output_tensor = model(
-            input_ids, position_ids, attention_mask, packed_seq_params=packed_seq_params
+            input_ids_cp_sharded, position_ids, attention_mask, packed_seq_params=packed_seq_params
         )
 
         # Unpack the output tensor if we did packed sequences
@@ -323,16 +342,26 @@ def forward_step_arbitrary_loss(
             )
 
         loss_data = data_dict
-
-    return output_tensor, partial(
+        
+    loss_fn_wrapped = partial(
         loss_fn,
         data=loss_data,
         global_valid_seqs=global_valid_seqs,
         global_valid_toks=global_valid_toks,
         vocab_parallel_rank=get_tensor_model_parallel_rank(),
         vocab_parallel_group=get_tensor_model_parallel_group(),
+        context_parallel_group=get_context_parallel_group(),
     )
 
+    if cp_normalize:
+        cp_size = get_context_parallel_world_size()
+        orig_loss_fn_wrapped = loss_fn_wrapped
+        def _div_by_cp_size(*args, **kwargs):
+            loss, metrics = orig_loss_fn_wrapped(*args, **kwargs)
+            return loss / cp_size, metrics
+        loss_fn_wrapped = _div_by_cp_size
+
+    return output_tensor, loss_fn_wrapped
 
 def broadcast_tensor(
     tensor: torch.Tensor | None, src_rank: int, group: dist.ProcessGroup

@@ -14,6 +14,7 @@
 from typing import Any, Optional, TypedDict, TypeVar
 
 import torch
+import torch.nn.functional as F
 
 from nemo_rl.algorithms.interfaces import LossFunction, LossType
 from nemo_rl.algorithms.utils import (
@@ -114,6 +115,7 @@ class ClippedPGLossFn(LossFunction):
         global_valid_toks: torch.Tensor,
         vocab_parallel_rank: Optional[int] = None,
         vocab_parallel_group: Optional[torch.distributed.ProcessGroup] = None,
+        context_parallel_group: Optional[torch.distributed.ProcessGroup] = None,
     ) -> tuple[torch.Tensor, dict]:
         """Clipped Policy Gradient RL loss function."""
         token_mask = data["token_mask"][:, 1:]
@@ -138,6 +140,9 @@ class ClippedPGLossFn(LossFunction):
 
         next_token_logits = next_token_logits.to(torch.float32)
 
+        print(f"data['input_ids'].shape: {data['input_ids'].shape}")
+        print(f"next_token_logits.shape: {next_token_logits.shape}")
+        print(f"lp_error: {torch.sum(torch.abs((generation_logprobs - prev_logprobs) * mask)) / torch.sum(mask)}")
         if vocab_parallel_group is not None:
             assert vocab_parallel_rank is not None, (
                 "vocab_parallel_rank must be provided when vocab_parallel_group is provided"
@@ -149,7 +154,9 @@ class ClippedPGLossFn(LossFunction):
                 vocab_end_index=(vocab_parallel_rank + 1) * next_token_logits.shape[-1],
                 tp_group=vocab_parallel_group,
                 inference_only=False,
+                cp_group=context_parallel_group,
             )
+            curr_logprobs = curr_logprobs[:, :data["input_ids"].shape[1] - 1]
         elif isinstance(next_token_logits, torch.distributed.tensor.DTensor):
             curr_logprobs = get_logprobs_from_vocab_parallel_logits(
                 next_token_logits, data["input_ids"], seq_index=seq_index
@@ -165,6 +172,10 @@ class ClippedPGLossFn(LossFunction):
             curr_logprobs = next_token_logprobs.gather(
                 dim=-1, index=next_tokens.unsqueeze(-1)
             ).squeeze(-1)
+
+
+        print(f"c shape {curr_logprobs.shape}, p shape {prev_logprobs.shape}, m shape {mask.shape}, i shape {data['input_ids'].shape}", flush=True)
+        print(f"curr_lp_diff: {torch.sum(torch.abs((curr_logprobs - prev_logprobs) * mask)) / torch.sum(mask)}", flush=True)
 
         # Calculate KL regularization.
         if self.reference_policy_kl_penalty != 0:
@@ -199,6 +210,7 @@ class ClippedPGLossFn(LossFunction):
         else:
             kl = torch.tensor(0.0)
 
+        print(f"kl: {kl * global_valid_toks / torch.sum(mask)}")
         # Calculate clipped loss function if ppo ratio is enabled.
         if not self.disable_ppo_ratio:
             ratios = (curr_logprobs - prev_logprobs).exp()
@@ -214,6 +226,7 @@ class ClippedPGLossFn(LossFunction):
 
         # Determine which value to use for clipping (max for pessimistic estimate)
         clip_loss = torch.max(loss1, loss2)
+        print(f"clip_loss: {torch.sum(clip_loss * mask) / torch.sum(mask)}")
 
         # Dual-clipping see https://arxiv.org/pdf/1912.09729
         if self.ratio_clip_c is not None:
@@ -269,6 +282,7 @@ class ClippedPGLossFn(LossFunction):
             )
 
         loss = actor_loss + kl
+        print(f"loss: {loss * global_valid_toks / torch.sum(mask)}, global_valid_toks: {global_valid_toks}, torch.sum(mask): {torch.sum(mask)}")
         with torch.no_grad():
             probs_ratio = masked_mean(
                 ratios.detach(),
@@ -312,6 +326,7 @@ class NLLLoss(LossFunction):
         global_valid_toks: Tensor,
         vocab_parallel_rank: Optional[int] = None,
         vocab_parallel_group: Optional[torch.distributed.ProcessGroup] = None,
+        context_parallel_group: Optional[torch.distributed.ProcessGroup] = None,
         dpo_loss: bool = False,
         dpo_average_log_probs: bool = False,
     ) -> tuple[torch.Tensor, dict[str, Any]]:
@@ -336,6 +351,7 @@ class NLLLoss(LossFunction):
                 tp_group=vocab_parallel_group,
                 inference_only=False,
             )
+            token_logprobs = token_logprobs[:, :data["input_ids"].shape[1] - 1]
         elif isinstance(next_token_logits, torch.distributed.tensor.DTensor):
             token_logprobs = get_logprobs_from_vocab_parallel_logits(
                 next_token_logits, data["input_ids"]
@@ -466,6 +482,7 @@ class DPOLossFn(LossFunction):
         global_valid_seqs: Tensor,
         vocab_parallel_rank: Optional[int] = None,
         vocab_parallel_group: Optional[torch.distributed.ProcessGroup] = None,
+        context_parallel_group: Optional[torch.distributed.ProcessGroup] = None,
     ) -> tuple[Tensor, Tensor, Tensor, Tensor]:
         ## TODO(@ashors): there's some duplicate code here with the NLLLoss function. We should refactor
         token_mask = data["token_mask"][:, 1:]
@@ -548,6 +565,7 @@ class DPOLossFn(LossFunction):
         global_valid_toks: Tensor | None,
         vocab_parallel_rank: Optional[int] = None,
         vocab_parallel_group: Optional[torch.distributed.ProcessGroup] = None,
+        context_parallel_group: Optional[torch.distributed.ProcessGroup] = None,
     ) -> tuple[torch.Tensor, dict[str, Any]]:
         sft_loss_chosen = torch.tensor(0.0)
         if self.sft_loss_weight > 0:
@@ -561,6 +579,7 @@ class DPOLossFn(LossFunction):
                 global_valid_toks=global_valid_toks,  ## unused because sft loss returned is at the sample level
                 vocab_parallel_rank=vocab_parallel_rank,
                 vocab_parallel_group=vocab_parallel_group,
+                context_parallel_group=context_parallel_group,
                 dpo_loss=True,
                 dpo_average_log_probs=self.sft_average_log_probs,
             )
@@ -582,6 +601,7 @@ class DPOLossFn(LossFunction):
             global_valid_seqs,
             vocab_parallel_rank=vocab_parallel_rank,
             vocab_parallel_group=vocab_parallel_group,
+            context_parallel_group=context_parallel_group,
         )
 
         dpo_loss = (
@@ -622,8 +642,9 @@ class SequencePackingLossWrapper:
         global_valid_toks: Tensor | None,
         vocab_parallel_rank: Optional[int] = None,
         vocab_parallel_group: Optional[torch.distributed.ProcessGroup] = None,
+        context_parallel_group: Optional[torch.distributed.ProcessGroup] = None,
     ) -> tuple[Tensor, dict[str, Any]]:
-        """Wraps a loss function to handle sequence packing by doing one sequence at a time to avoid padding."""
+        """Wraps a loss function to handle sequence packing by doing one sequence at a time to avoid excessive padding."""
         unpadded_cu_seqlens = self.cu_seqlens_q
         unpadded_seq_lengths = self.cu_seqlens_q[1:] - self.cu_seqlens_q[:-1]
         if self.cu_seqlens_q_padded is not None:
@@ -650,13 +671,26 @@ class SequencePackingLossWrapper:
                 # print(f"k: {k}, v: {v.shape}")
                 if isinstance(v, torch.Tensor) and v.ndim > 1 and v.shape[1] > 1:
                     unpadded_seq_data[k] = v[:, : unpadded_seq_lengths[seq_idx]]
+                    # seq_data[k] = v[:, :unpadded_seq_lengths[seq_idx]]
+                    # tensor_to_pad = v[:, :padded_seq_lengths[seq_idx]]
+                    # pad_amount = padded_seq_lengths[seq_idx] - tensor_to_pad.shape[1]
+                    # # The pad tuple is for (left, right) padding starting from the last dimension.
+                    # # We want to pad the second dimension (dim=1) on the right.
+                    # padding = (0, 0) * (tensor_to_pad.ndim - 2) + (0, pad_amount)
+                    # padded_seq_data[k] = F.pad(tensor_to_pad, padding)
                 else:
+                    # padded_seq_data[k] = v
                     unpadded_seq_data[k] = v
 
             # get next_token_logits
-            next_token_logits_slice = next_token_logits[
-                :, seq_start : seq_start + unpadded_seq_lengths[seq_idx], :
-            ]
+            cp_size = 1 if context_parallel_group is None else torch.distributed.get_world_size(context_parallel_group)
+            logit_slice_idxs = slice(seq_start // cp_size, (seq_start + padded_seq_lengths[seq_idx]) // cp_size)
+            print(f"rank {torch.distributed.get_rank()}: seqidx {seq_idx}, next_token_logits: {next_token_logits.shape}")
+            print(f"rank {torch.distributed.get_rank()}: seqidx {seq_idx}, cu_seqlens_q: {self.cu_seqlens_q}")
+            print(f"rank {torch.distributed.get_rank()}: seqidx {seq_idx}, unpadded_seq_data: {unpadded_seq_data[list(unpadded_seq_data.keys())[0]].shape}")
+            print(f"rank {torch.distributed.get_rank()}: seqidx {seq_idx}, seq_start: {seq_start}, seq_end: {seq_end}, cp_size: {cp_size}")
+            print(f"rank {torch.distributed.get_rank()}: seqidx {seq_idx}, logit_slice_idxs: {logit_slice_idxs}")
+            next_token_logits_slice = next_token_logits[:, logit_slice_idxs, :]
             # print(f"seq_start: {seq_start}, seq_end: {seq_end}, next_token_logits: {next_token_logits_slice.shape}")
 
             loss, metrics = self.loss_fn(
@@ -666,6 +700,7 @@ class SequencePackingLossWrapper:
                 global_valid_toks,
                 vocab_parallel_rank=vocab_parallel_rank,
                 vocab_parallel_group=vocab_parallel_group,
+                context_parallel_group=context_parallel_group,
             )
             loss_accum += loss
             for k, v in metrics.items():
