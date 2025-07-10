@@ -44,6 +44,7 @@ def parse_args():
     parser.add_argument("--jobname", type=str, default=None, help="Base name for the job")
     parser.add_argument("--dry", action="store_true", help="Print commands without executing them")
     parser.add_argument("--sleep", type=int, default=0, help="Sleep time in seconds between jobs")
+    parser.add_argument("--chain", type=int, default=1, help="Number of jobs per sweep configuration to chain together")
     args, extra_args = parser.parse_known_args()
     return args, extra_args
 
@@ -208,6 +209,8 @@ def launch_experiment(
     job_name: str,
     dry_run: bool = False,
     extra_args: List[str] = None,
+    dependency: Optional[str] = None,
+    log_dir_name: Optional[str] = None,
 ) -> Tuple[str, Optional[str]]:
     """Launch a single experiment using Slurm."""
     # Construct the command
@@ -215,7 +218,8 @@ def launch_experiment(
     if config:
         command += f" --config {config}"
     
-    log_dir = os.path.join(LOG_DIR, job_name)
+    # Use log_dir_name if provided, otherwise fall back to job_name
+    log_dir = os.path.join(LOG_DIR, log_dir_name or job_name)
     checkpoint_dir = os.path.join(log_dir, "checkpoints")
     
     # Parse extra arguments into overrides
@@ -263,8 +267,13 @@ def launch_experiment(
         f"--partition={partition}",
         f"--time={time}",
         "--gres=gpu:8",
-        "ray.sub",
     ]
+    
+    # Add dependency if specified
+    if dependency:
+        sbatch_cmd.append(f"--dependency={dependency}")
+    
+    sbatch_cmd.append("ray.sub")
     
     # Join the command
     full_cmd = " \\\n".join(sbatch_cmd)
@@ -283,12 +292,15 @@ def print_experiment_info(
     cmd: str,
     job_id: Optional[str] = None,
     dry_run: bool = False,
+    dependency: Optional[str] = None,
 ) -> None:
     """Print information about an experiment in a consistent format."""
     print(f"\n[{job_name}]")
     print("Parameters:")
     for key, value in params.items():
         print(f"  {key}: {value}")
+    if dependency:
+        print(f"Dependency: {dependency}")
     print("\nCommand:")
     print(cmd)
     if not dry_run and job_id:
@@ -316,57 +328,102 @@ def main():
     
     # Print header
     mode = "DRY RUN" if args.dry else "SUBMITTING"
-    print(f"\n=== {mode} - Experiments ===\n")
+    total_jobs = len(param_combinations) * args.chain
+    print(f"\n=== {mode} - Experiments ===")
+    print(f"Parameter combinations: {len(param_combinations)}")
+    print(f"Jobs per chain: {args.chain}")
+    print(f"Total jobs: {total_jobs}\n")
     
     # Launch experiments
+    job_counter = 0
     for i, params in enumerate(param_combinations):
         # Format parameter overrides
         param_overrides = format_parameter_override(params)
         
-        # Generate job name if not provided
-        job_name = args.jobname or (
+        # Generate base job name if not provided
+        base_job_name = args.jobname or (
             os.path.splitext(os.path.basename(args.sweep))[0] if args.sweep 
             else os.path.splitext(os.path.basename(script_path))[0]
         )
-        if len(param_combinations) > 1:
-            job_name = f"{job_name}_{i+1}"
         
-        # Launch experiment
-        cmd, job_id = launch_experiment(
-            script=script_path,
-            config=config_path,
-            param_overrides=param_overrides,
-            nodes=num_nodes,
-            time=args.time,
-            account=args.account,
-            partition=args.partition,
-            container=args.container,
-            mounts=args.mounts,
-            job_name=job_name,
-            dry_run=args.dry,
-            extra_args=extra_args,
-        )
+        # Track job IDs for this chain
+        chain_job_ids = []
         
-        # Print experiment info
-        print_experiment_info(
-            job_name=job_name,
-            params=params,
-            cmd=cmd,
-            job_id=job_id,
-            dry_run=args.dry,
-        )
-
-        if args.sleep and i < len(param_combinations) - 1: # Don't sleep after the last job
-            print(f"Sumbitted {i+1} of {len(param_combinations)} jobs")
-            print(f"Sleeping for {args.sleep} seconds before the next job...")
+        # Launch chain of jobs for this parameter combination
+        for chain_idx in range(args.chain):
+            # Create job name with sweep and chain information
+            if len(param_combinations) > 1 and args.chain > 1:
+                job_name = f"{base_job_name}_sweep{i+1}_chain{chain_idx+1}"
+                # Shared log directory for all jobs in this chain
+                log_dir_name = f"{base_job_name}_sweep{i+1}"
+            elif len(param_combinations) > 1:
+                job_name = f"{base_job_name}_sweep{i+1}"
+                log_dir_name = job_name  # Single job, use job name as log dir
+            elif args.chain > 1:
+                job_name = f"{base_job_name}_chain{chain_idx+1}"
+                # Shared log directory for all jobs in this chain
+                log_dir_name = base_job_name
+            else:
+                job_name = base_job_name
+                log_dir_name = job_name  # Single job, use job name as log dir
+            
+            # Set up dependency for jobs after the first in the chain
+            dependency = None
+            if chain_idx > 0:
+                if not args.dry:
+                    # Previous job in the chain must complete (regardless of success/failure/timeout)
+                    prev_job_id = chain_job_ids[chain_idx - 1]
+                    if prev_job_id:
+                        dependency = f"afterany:{prev_job_id}"
+                else:
+                    # For dry run, show dependency structure even without real job IDs
+                    dependency = f"afterany:<prev_job_id>"
+            
+            # Launch experiment
+            cmd, job_id = launch_experiment(
+                script=script_path,
+                config=config_path,
+                param_overrides=param_overrides,
+                nodes=num_nodes,
+                time=args.time,
+                account=args.account,
+                partition=args.partition,
+                container=args.container,
+                mounts=args.mounts,
+                job_name=job_name,
+                dry_run=args.dry,
+                extra_args=extra_args,
+                dependency=dependency,
+                log_dir_name=log_dir_name, # Pass log_dir_name for all jobs in the chain
+            )
+            
+            # Store job ID for dependency tracking
+            chain_job_ids.append(job_id)
+            
+            # Print experiment info
+            print_experiment_info(
+                job_name=job_name,
+                params=params,
+                cmd=cmd,
+                job_id=job_id,
+                dry_run=args.dry,
+                dependency=dependency,
+            )
+            
+            job_counter += 1
+            
+        # Sleep between sweeps if specified (but not between chain jobs or after the last job)
+        if args.sleep and job_counter < total_jobs and chain_idx == args.chain - 1:
+            print(f"Submitted {job_counter} of {total_jobs} jobs")
+            print(f"Sleeping for {args.sleep} seconds before the next sweep...")
             for remaining in range(args.sleep, 0, -1):
                 sys.stdout.write(f"\rTime remaining: {remaining:2d} seconds")
                 sys.stdout.flush()
                 time.sleep(1)
             sys.stdout.write("\rDone sleeping.                           \n") # Clear the countdown line
             sys.stdout.flush()
-        
-        print(f"All {len(param_combinations)} jobs submitted")
+    
+    print(f"{total_jobs} jobs submitted: {len(param_combinations)} sweeps, with chain size {args.chain}.")
 
 
 if __name__ == "__main__":
