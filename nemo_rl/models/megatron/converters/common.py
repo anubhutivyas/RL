@@ -522,3 +522,33 @@ class MegatronToHFConverter:
                     converted_state_dict[k] = v
 
         return converted_state_dict
+
+    def convert_keys(self, keys, megatron_config):
+        state_dict = {}
+        for key in keys:
+            state_dict[key] = ""
+        state_dict = self.get_source_fn(
+            state_dict, megatron_config.__dict__
+        ).state_dict()
+
+        dummy_source = _ModelState({k: k for k in state_dict.keys()})
+
+        ctx = TransformCTX(
+            source=dummy_source,
+            source_state=dummy_source.state_dict(),
+            target=self.target_model,
+            target_state=self._get_empty_state_dict(),
+        )
+        for key, val in self.export_mapping.items():
+            ctx = StateDictTransform(key, val)(ctx)
+
+        for transform in self.export_transforms:
+            if type(transform.target_key) == tuple:
+                for t in transform.target_key:
+                    ctx = StateDictTransform(transform.source_key, t)(ctx)
+            else:
+                ctx = StateDictTransform(transform.source_key, transform.target_key)(
+                    ctx
+                )
+
+        return list(ctx.target_state.keys())

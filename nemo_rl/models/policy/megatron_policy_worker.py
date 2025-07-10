@@ -665,8 +665,16 @@ class MegatronPolicyWorker:
 
         # Create a map that maps any local parameter name to a list of global parameter names.
         # This map is repeatedly used by parameter gatherring phase during refit of every step.
+        self.global_hf_keys = None
         self.local_key_to_global_keys = self.get_local_key_to_global_keys(
             state_dict_info=self.prepare_weights_for_ipc()[0]
+        )
+        # flatten list of lists
+        global_megatron_keys = [
+            g for gs in self.local_key_to_global_keys.values() for g in gs
+        ]
+        self.global_hf_keys, self.global_hf_key_to_idx = self.get_global_hf_keys(
+            global_megatron_keys
         )
 
     def configure_worker(self, num_gpus: int, bundle_indices: Optional[tuple] = None):
@@ -1227,6 +1235,27 @@ class MegatronPolicyWorker:
         return get_device_uuid(device_idx)
 
     @torch.no_grad()
+    def get_global_hf_keys(self, global_megatron_keys: list[str]) -> list[str]:
+        global_hf_keys = self.megatron_to_hf_converter.convert_keys(
+            global_megatron_keys, self.model.config
+        )
+        global_hf_keys = sorted(global_hf_keys)
+        global_hf_key_to_idx = {
+            global_hf_keys[i]: i for i in range(len(global_hf_keys))
+        }
+        return global_hf_keys, global_hf_key_to_idx
+        # for global_megatron_key in global_megatron_keys:
+        #     global_hf_keys = self.megatron_to_hf_converter.megatron_keys_to_hf_keys.convert(global_megatron_key, self.model.config)
+        #     if global_megatron_key not in self.megatron_to_hf_converter.megatron_keys_to_hf_keys:
+        #         if torch.distributed.get_rank() == 0:
+        #             import pdb; pdb.set_trace()
+        #         torch.distributed.barrier()
+        #         convert
+        #     global_keys.extend(self.megatron_to_hf_converter.megatron_keys_to_hf_keys[global_megatron_key])
+        # global_keys = sorted(global_keys)
+        # return global_keys
+
+    @torch.no_grad()
     def get_local_key_to_global_keys(self, state_dict_info: List[Tuple[Any, int]]):
         """Get the local key to global keys mapping."""
         # Get parallel info
@@ -1260,11 +1289,15 @@ class MegatronPolicyWorker:
             # else: not sharded (like embedding)
             pp_gathered_objs = [None]
             if local_key in state_dict and owner_pp_local_rank_id == pp_local_rank_id:
-                pp_gathered_objs[0] = get_global_key_from_local_key(local_key, self.model.config)
-            
+                pp_gathered_objs[0] = get_global_key_from_local_key(
+                    local_key, self.model.config
+                )
+
             # Step 2: gather global keys from ranks in PP group
             src_global_rank = pp_global_ranks[owner_pp_local_rank_id]
-            torch.distributed.broadcast_object_list(pp_gathered_objs, src=src_global_rank, group=pp_group)
+            torch.distributed.broadcast_object_list(
+                pp_gathered_objs, src=src_global_rank, group=pp_group
+            )
 
             # Step 3: gather global keys from ranks in EP group
             if ep_pattern.search(local_key):
@@ -1275,8 +1308,10 @@ class MegatronPolicyWorker:
                 flat_gathered_objs = [x for y in ep_gathered_objs for x in y]
             else:
                 flat_gathered_objs = pp_gathered_objs
-            
-            final_key_to_global_keys[(local_key, owner_pp_local_rank_id)] = flat_gathered_objs
+
+            final_key_to_global_keys[(local_key, owner_pp_local_rank_id)] = (
+                flat_gathered_objs
+            )
 
         et = time.time()
         if (
@@ -1425,7 +1460,7 @@ class MegatronPolicyWorker:
         # more buckets seems to have better perf
         total_available_bytes *= 0.1
 
-        return param_info, total_available_bytes
+        return param_info, total_available_bytes, self.global_hf_keys
 
     # Temporary fix, 'keys' is a kwarg due to some sort of ray bug
     def get_weights_ipc_handles(self, *, keys: list[str]) -> dict[str, Any]:
@@ -1450,6 +1485,12 @@ class MegatronPolicyWorker:
             gathered_megatron_params, self.model.config
         )
 
+        use_idx_gathered_hf_params = False
+        if use_idx_gathered_hf_params:
+            gathered_hf_params = {
+                self.global_hf_key_to_idx[key]: value for key, value in gathered_hf_params.items()
+            }
+
         # Get device UUID for IPC handles
         device_uuid = self.report_device_id()
         from torch.multiprocessing.reductions import reduce_tensor
@@ -1457,7 +1498,7 @@ class MegatronPolicyWorker:
         # Create IPC handles for each parameter
         tensor_number_threshold = os.getenv(
             "NEMO_RL_MEGATRON_IPC_TENSOR_PACKING_THRESHOLD", "32"
-        ) # an arbitrary threshold
+        )  # an arbitrary threshold
         if len(gathered_hf_params) >= int(tensor_number_threshold):
             pack_tensor_for_ipc = True
         else:
@@ -1468,24 +1509,28 @@ class MegatronPolicyWorker:
             # First calculate total size needed for each dtype
             type_to_total_size = defaultdict(lambda: 0)
             tensor_metadata = dict()
-            
+
             for key, tensor in gathered_hf_params.items():
                 tensor_metadata[key] = (
-                    tensor.shape,                       # shape of the tensor
-                    tensor.dtype,                       # dtype of the tensor
-                    type_to_total_size[tensor.dtype],   # offset of the tensor 
-                                                        # in packed buffer
-                    tensor.numel()                      # size of the tensor
+                    tuple(tensor.shape),  # shape of the tensor
+                    # tensor.dtype,  # dtype of the tensor
+                    0,  # dtype of the tensor
+                    # type_to_total_size[tensor.dtype],  # offset of the tensor
+                    type_to_total_size[0],  # offset of the tensor
+                    # in packed buffer
+                    tensor.numel(),  # size of the tensor
                 )
-                type_to_total_size[tensor.dtype] += tensor.numel()
+                # type_to_total_size[tensor.dtype] += tensor.numel()
+                type_to_total_size[0] += tensor.numel()
 
             # Allocate consolidated tensors for each dtype
             packed_tensors = {
                 dtype: torch.empty(
                     total_size,
                     device=next(iter(gathered_hf_params.values())).device,
-                    dtype=dtype,
-                    requires_grad=False
+                    # dtype=dtype,
+                    dtype=torch.bfloat16,
+                    requires_grad=False,
                 )
                 for dtype, total_size in type_to_total_size.items()
             }
@@ -1494,28 +1539,39 @@ class MegatronPolicyWorker:
             for key, tensor in gathered_hf_params.items():
                 metadata = tensor_metadata[key]
                 _, dtype, offset, size = metadata
-                packed_tensors[dtype][offset:offset + size].copy_(
+                packed_tensors[dtype][offset : offset + size].copy_(
                     tensor.detach().view(-1)
                 )
 
             # Create IPC handles for consolidated tensors
             all_handles = [
-                (dtype, reduce_tensor(tensor.detach()))
+                # (dtype, reduce_tensor(tensor.detach()))
+                (dtype, (None, reduce_tensor(tensor.detach())[1]))
                 for dtype, tensor in packed_tensors.items()
             ]
 
             # Store reference to prevent garbage collection
             self._held_gather_buffer = packed_tensors
 
-            serialized = (pack_tensor_for_ipc, all_handles, tensor_metadata)
+            flag = 0
+            if pack_tensor_for_ipc:
+                flag |= (1 << 0)
+            if use_idx_gathered_hf_params:
+                flag |= (1 << 1)
+
+            serialized = (flag, all_handles, tensor_metadata)
         else:
             all_handles = []
             for key, tensor in gathered_hf_params.items():
-                handle = reduce_tensor(tensor.detach())
+                # handle = reduce_tensor(tensor.detach())
+                handle = (None, reduce_tensor(tensor.detach())[1])
                 all_handles.append((key, handle))
             self._held_gather_buffer = gathered_hf_params
-            serialized = (False, all_handles)
+            serialized = (0, all_handles)
 
+        if torch.distributed.get_rank() == 0:
+            import pdb; pdb.set_trace()
+        torch.distributed.barrier()
         return {device_uuid: serialized}
 
     def prepare_for_lp_inference(self):

@@ -860,6 +860,18 @@ class VllmGenerationWorker:
 
         return cast(list[str], list_of_worker_results)
 
+    def send_refit_info(self, global_hf_keys: list[str]) -> None:
+        """Send refit info to vllm workers."""
+        result_or_coro = self.llm.collective_rpc("send_refit_info", args=(global_hf_keys,))
+        worker_result = result_or_coro[0]
+
+        if not worker_result:
+            print(
+                f"Error: Worker failed to send refit info. Result: {worker_result}"
+            )
+            return False
+        return True
+
     def update_weights_from_ipc_handles(self, data: dict[str, Any]) -> bool:
         """Update weights from IPC handles by delegating to the vLLM Worker implementation.
 
@@ -1485,6 +1497,16 @@ class VllmGeneration(GenerationInterface):
         except Exception as e:
             print(f"Error during policy shutdown: {e}")
             return False
+
+    def send_refit_info(self, global_hf_keys: list[str]) -> None:
+        """Send refit info to vllm workers."""
+        futures = self.worker_group.run_all_workers_single_data(
+            "send_refit_info",
+            global_hf_keys=global_hf_keys,
+            run_rank_0_only_axes=["tensor_parallel", "pipeline_parallel"],
+        )
+
+        return futures
 
     def update_weights(self, ipc_handles: dict[str, Any]) -> bool:
         """Update weights of the policy using IPC handles, considering tensor parallelism.

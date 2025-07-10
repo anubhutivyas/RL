@@ -434,6 +434,7 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
 
         # Only get the first worker's state_dict_info since all workers will have the same result
         state_dict_info = results[0][0]
+        global_hf_keys = results[0][2]
 
         if _refit_buffer_size_gb is not None:
             total_available_bytes = _refit_buffer_size_gb * (1024**3)
@@ -459,7 +460,7 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
         if keys:
             grouped_param_keys.append(keys)
 
-        return grouped_param_keys
+        return grouped_param_keys, global_hf_keys
 
     def get_weights_ipc_handles(self, keys: list[str]) -> dict[str, Any]:
         """Fetch weight IPC handles from all workers.

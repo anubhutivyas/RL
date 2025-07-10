@@ -399,21 +399,37 @@ def refit_policy_generation(
     if colocated_inference:
         policy.offload_before_refit()
         policy_generation.prepare_for_generation(tags=["weights"])
-
+    import time
+    from collections import defaultdict
+    timers = defaultdict(list)
     # update weights
     update_success = False
     if colocated_inference:
         # get model param keys, which is grouped by size
-        grouped_param_keys = policy.prepare_weights_for_ipc(
+        grouped_param_keys, global_hf_keys = policy.prepare_weights_for_ipc(
             _refit_buffer_size_gb=_refit_buffer_size_gb
         )
+        policy_generation.send_refit_info(global_hf_keys)
         print(f"[Refit] Number of splits: {len(grouped_param_keys)}")
         # do update
         for keys in grouped_param_keys:
+            start_time = time.time()
+
+            start_ipc_handle = time.time()
             ipc_handles = policy.get_weights_ipc_handles(keys)
+            end_ipc_handle = time.time()
+            timers["get_weights_ipc_handles"].append(end_ipc_handle - start_ipc_handle)
+
+            start_update = time.time()
             update_success = policy_generation.update_weights(ipc_handles)
+            end_update = time.time()
+            timers["update_weights"].append(end_update - start_update)
             if not update_success:
                 break
+            end_time = time.time()
+            timers["refit"].append(end_time - start_time)
+        for k, v in timers.items():
+            print(f"TOTAL {k}: {sum(v)}")
     else:
         # prepare info for update weights
         state_dict_info = policy.prepare_info_for_collective()
@@ -752,6 +768,7 @@ def grpo_train(
                 percent = (v / total_time * 100) if total_time > 0 else 0
                 print(f"  • {k}: {v:.2f}s ({percent:.1f}%)")
 
+        import pprint; pprint.pprint(metrics)
         logger.log_metrics(metrics, step + 1, prefix="train")
         logger.log_metrics(timing_metrics, step + 1, prefix="timing/train")
 

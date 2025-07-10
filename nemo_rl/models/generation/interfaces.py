@@ -228,6 +228,9 @@ class GenerationInterface(ABC):
     def finish_generation(self, *args: Any, **kwargs: Any) -> bool:
         pass
 
+    def send_refit_info(self, keys: list[str]) -> None:
+        raise NotImplementedError
+
     def update_weights(self, ipc_handles: dict[str, Any]) -> bool:
         """Update the model weights from the given IPC handles."""
         raise NotImplementedError

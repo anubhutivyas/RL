@@ -14,6 +14,7 @@
 from typing import Any
 
 import torch
+from torch.multiprocessing.reductions import rebuild_cuda_tensor
 
 try:
     import vllm  # noqa: F401
@@ -45,6 +46,11 @@ class VllmInternalWorkerExtension:
         from nemo_rl.utils.nvml import get_device_uuid
 
         return get_device_uuid(self.device.index)
+    
+    def send_refit_info(self, global_hf_keys: list[str]) -> None:
+        """Send refit info to vllm workers."""
+        self.global_hf_keys = global_hf_keys
+        return True
 
     def update_weights_from_ipc_handles(self, ipc_handles):
         """Update weights from IPC handles.
@@ -59,7 +65,10 @@ class VllmInternalWorkerExtension:
             # Get handles for this device
             device_uuid = self.report_device_id()
             handles = ipc_handles[device_uuid]
-            is_tensor_packed = handles[0]
+            flag = handles[0]
+            is_tensor_packed = flag & (1 << 0)
+            use_idx_gathered_hf_params = flag & (1 << 1)
+
             if is_tensor_packed:
                 _, all_handles, tensor_metadata = handles
             else:
@@ -73,6 +82,8 @@ class VllmInternalWorkerExtension:
                 dtype_to_packed_tensor = {}
                 for dtype, tensor_handle in all_handles:
                     func, args = tensor_handle
+                    if func is None:
+                        func = rebuild_cuda_tensor
                     list_args = list(args)
                     list_args[6] = device_id
                     tensor = func(*list_args)
@@ -81,12 +92,16 @@ class VllmInternalWorkerExtension:
                 # Unpack tensor to weights. Here we only return a view of the tensor to avoid 
                 # using extra memory.
                 for key, (shape, dtype, offset, size) in tensor_metadata.items():
+                    if use_idx_gathered_hf_params:
+                        key = self.global_hf_keys[key]
                     tensor = dtype_to_packed_tensor[dtype][offset:offset+size].view(*shape)
                     weights.append((key, tensor))
             else:
                 # Process each handle to get the tensor
                 for name, handle in name_and_handle_list:
                     func, args = handle
+                    if func is None:
+                        func = rebuild_cuda_tensor
                     list_args = list(args)
                     list_args[6] = device_id
                     tensor = func(*list_args)
@@ -112,6 +127,8 @@ class VllmInternalWorkerExtension:
             print(
                 f"Error in VllmInternalWorkerExtension.update_weights_from_collective: {e}"
             )
+            import traceback
+            traceback.print_exc()
             return False
 
         return True
