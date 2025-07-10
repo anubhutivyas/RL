@@ -952,13 +952,12 @@ class VllmGenerationWorker:
                 
                 return True
             else:
-                self.wait_for_update_completion()
                 ray_worker_outputs = []
                 for worker, device_id in zip(self.llm.llm_engine.model_executor.workers, self.vllm_device_ids):
                     ray_worker_outputs.append(
                         worker.execute_method.remote("update_weights_from_ipc_handles", data[device_id])
                     )
-                self.add_weight_update_refs(ray_worker_outputs)
+                ray.get(ray_worker_outputs)
                 return True
 
         except Exception as e:
