@@ -32,7 +32,7 @@ export PYTHONPATH=$(realpath ${SCRIPT_DIR}/..):${PYTHONPATH:-}
 
 # Run unit tests
 echo "Running unit tests..."
-if ! pytest unit/models/policy/ "$@"; then
+if ! pytest unit/ "$@"; then
     echo "[ERROR]: Unit tests failed."
     exit 1
 fi
