@@ -263,24 +263,25 @@ def destroy_parallel_state():
 
     # Reset async calls queue to prevent call_idx mismatches after distributed context recreation
     try:
-        import nemo.tron.utils.async_utils as nemo_async_utils
-        from nemo.tron.utils.async_utils import AsyncCallsQueue
+        from megatron.hub.training.state import GlobalState
+        from megatron.core.dist_checkpointing.strategies.async_utils import AsyncCallsQueue
 
+        state = GlobalState()
         # Clean up any existing async callers first
-        old_call_idx = getattr(nemo_async_utils._async_calls_queue, "call_idx", None)
+        old_call_idx = getattr(state._async_calls_queue, "call_idx", None)
         num_unfinalized = (
-            nemo_async_utils._async_calls_queue.get_num_unfinalized_calls()
+            state._async_calls_queue.get_num_unfinalized_calls()
         )
         if num_unfinalized > 0:
             print(
                 f"[WARNING] Resetting async calls queue with {num_unfinalized} unfinalized calls"
             )
         try:
-            nemo_async_utils._async_calls_queue.close()
+            state._async_calls_queue.close()
         except:
             pass  # Ignore errors during cleanup
         # Reset the global async calls queue by creating a new instance
-        nemo_async_utils._async_calls_queue = AsyncCallsQueue()
+        state._async_calls_queue = AsyncCallsQueue()
         print(f"[DEBUG] Reset NeMo async calls queue (old call_idx: {old_call_idx})")
     except ImportError:
         pass
@@ -669,7 +670,7 @@ class MegatronPolicyWorker:
             align_grad_reduce=self.megatron_cfg.dist_config.align_grad_reduce,
         )
 
-        from nemo.tron.tokenizers.tokenizer import build_tokenizer
+        from megatron.hub.training.tokenizers.tokenizer import build_tokenizer
 
         tokenizer_config = TokenizerConfig(
             tokenizer_type="HuggingFaceTokenizer",
