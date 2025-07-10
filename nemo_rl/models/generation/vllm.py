@@ -194,7 +194,6 @@ class VllmGenerationWorker:
         # vLLM handles the parallelism internally through Ray
         self.rank = 0
         self.world_size = 1
-        self.previous_weight_update_tasks = []
 
         # Monkey patch for vLLM to ensure RAY_ADDRESS is set in Ray actors.
         try:
@@ -1017,26 +1016,6 @@ class VllmGenerationWorker:
 
         return cast(list[str], list_of_worker_results)
 
-    def wait_for_weight_updates(self) -> bool:
-        """Wait for pending weight update tasks to complete."""
-        if self.previous_weight_update_tasks:
-            result_or_coro = ray.get(self.previous_weight_update_tasks)
-            worker_result = result_or_coro[0]
-
-            if not worker_result:
-                raise RuntimeError(
-                    f"Error: Worker failed to update weights. Result: {worker_result}"
-                )
-            self.previous_weight_update_tasks = []
-        return True
-
-    def set_weight_update_tasks(self, tasks: list[ray.ObjectRef]) -> bool:
-        assert not self.previous_weight_update_tasks, (
-            "previous_weight_update_tasks already exists"
-        )
-        self.previous_weight_update_tasks = tasks
-        return True
-
     def update_weights_from_ipc_handles(self, ipc_handles: dict[str, Any]) -> bool:
         """Update weights from IPC handles by delegating to the vLLM Worker implementation.
 
@@ -1064,7 +1043,6 @@ class VllmGenerationWorker:
                 "update_weights_from_ipc_handles", args=(ipc_handles,)
             )
             """
-            self.wait_for_weight_updates()
             ray_worker_outputs = []
             for worker, device_id in zip(
                 self.llm.llm_engine.model_executor.workers, self.vllm_device_ids
@@ -1074,7 +1052,16 @@ class VllmGenerationWorker:
                         "update_weights_from_ipc_handles", ipc_handles[device_id]
                     )
                 )
-            self.set_weight_update_tasks(ray_worker_outputs)
+
+            # Gather the results
+            result_or_coro = ray.get(ray_worker_outputs)
+            worker_result = result_or_coro[0]
+
+            if not worker_result:
+                print(
+                    f"Error: Worker failed to update weights. Result: {worker_result}"
+                )
+                return False
             return True
         except Exception as e:
             print(f"Exception during collective_rpc for weight update: {e}")
@@ -1270,8 +1257,6 @@ class VllmGenerationWorker:
             raise RuntimeError(
                 "wake_up cannot be used with async_engine=True. Use wake_up_async instead."
             )
-
-        self.wait_for_weight_updates()
 
         tags = kwargs.get("tags")
 
