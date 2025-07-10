@@ -24,6 +24,7 @@ from transformers import AutoTokenizer
 
 from nemo_rl.algorithms.grpo import MasterConfig, setup
 from nemo_rl.algorithms.majority_at_k import majority_at_k_train
+from nemo_rl.algorithms.maj_at_k_dapo import majority_at_k_train_dapo
 from nemo_rl.algorithms.utils import get_tokenizer
 from nemo_rl.data import DataConfig
 from nemo_rl.data.interfaces import DatumSpec
@@ -245,21 +246,36 @@ def main():
     print("This algorithm optimizes majority@K by computing advantages as:")
     print("  advantage(response) = maj@k(all responses) - maj@k(all responses except current)")
     
-    majority_at_k_train(
-        policy,
-        policy_generation,
-        dataloader,
-        val_dataloader,
-        tokenizer,
-        loss_fn,
-        task_to_env,
-        val_task_to_env,
-        logger,
-        checkpointer,
-        grpo_state,
-        master_config,
-    )
-
+    if config["policy"]["majority_at_k"]["use_dapo"]:
+        majority_at_k_train_dapo(
+            policy,
+            policy_generation,
+            dataloader,
+            val_dataloader,
+            tokenizer,
+            loss_fn,
+            task_to_env,
+            val_task_to_env,
+            logger,
+            checkpointer,
+            grpo_state,
+            master_config,
+        )
+    else:
+        majority_at_k_train(
+            policy,
+            policy_generation,
+            dataloader,
+            val_dataloader,
+            tokenizer,
+            loss_fn,
+            task_to_env,
+            val_task_to_env,
+            logger,
+            checkpointer,
+            grpo_state,
+            master_config,
+        )
 
 if __name__ == "__main__":
     main() 
