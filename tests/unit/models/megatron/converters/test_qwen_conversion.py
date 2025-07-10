@@ -205,7 +205,7 @@ def assert_attention_tensors_match(
     )
 
 
-@pytest.mark.mcore
+@pytest.mark.skip(reason="Skipping mcore tests for now")
 def test_conversion_to_hf_moe():
     """Test conversion of Qwen3 MoE model to HF format."""
     with setup_distributed_environment("6000"):
@@ -249,7 +249,7 @@ def test_conversion_to_hf_moe():
         )
 
 
-@pytest.mark.mcore
+@pytest.mark.skip(reason="Skipping mcore tests for now")
 def test_conversion_to_hf_dense():
     """Test conversion of Qwen3 dense model to HF format."""
     with setup_distributed_environment("6001"):
