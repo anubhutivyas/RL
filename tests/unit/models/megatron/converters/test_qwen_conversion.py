@@ -19,13 +19,12 @@ from tempfile import TemporaryDirectory
 import pytest
 import torch
 import torch.distributed as dist
-from nemo.collections.llm.gpt.model.qwen3 import Qwen3Config, Qwen3Model, Qwen3MoEConfig
 from transformers import AutoConfig, AutoModelForCausalLM
-
-from nemo_rl.models.megatron.converters.common import MegatronToHFConverter
 
 
 def dummy_qwen3_megatron_moe_config():
+    from nemo.collections.llm.gpt.model.qwen3 import Qwen3MoEConfig
+
     return Qwen3MoEConfig(
         num_layers=2,
         hidden_size=64,
@@ -40,6 +39,8 @@ def dummy_qwen3_megatron_moe_config():
 
 
 def dummy_qwen3_megatron_dense_config():
+    from nemo.collections.llm.gpt.model.qwen3 import Qwen3Config
+
     return Qwen3Config(
         num_layers=2,
         hidden_size=64,
@@ -129,6 +130,11 @@ def setup_distributed_environment(port="6000"):
 
 def create_model_and_converter(megatron_config, hf_config, model_name):
     """Create megatron model and converter for testing."""
+
+    from nemo.collections.llm.gpt.model.qwen3 import Qwen3Model
+
+    from nemo_rl.models.megatron.converters.common import MegatronToHFConverter
+
     # Create megatron model
     model = Qwen3Model(megatron_config)
     model.configure_model()
