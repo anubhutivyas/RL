@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from typing import Any
+from torch.multiprocessing.reductions import rebuild_cuda_tensor
 
 import torch
 
@@ -45,6 +46,15 @@ class VllmInternalWorkerExtension:
         from nemo_rl.utils.nvml import get_device_uuid
 
         return get_device_uuid(self.device.index)
+    
+    def update_weights_ipc_metadata(self, data: dict[str, Any]) -> bool:
+        """Update weights IPC metadata.
+        """
+        try:
+            self.metadata = data
+            return True
+        except Exception as e:
+            print(f"Error in VllmInternalWorkerExtension.update_weights_ipc_metadata: {e}")
 
     def update_weights_from_ipc_handles(self, ipc_handles):
         """Update weights from IPC handles.
@@ -56,6 +66,9 @@ class VllmInternalWorkerExtension:
             bool: True if weights were successfully updated.
         """
         try:
+            if not hasattr(self, "metadata"):
+                self.metadata = {}
+
             # Get handles for this device
             # device_uuid = self.report_device_id()
             # handles = ipc_handles[device_uuid]
@@ -63,6 +76,9 @@ class VllmInternalWorkerExtension:
             is_tensor_packed = handles[0]
             if is_tensor_packed:
                 _, all_handles, tensor_metadata = handles
+                if isinstance(tensor_metadata, dict):
+                    self.metadata.update(tensor_metadata)
+                print(f"type(tensor_metadata): {type(tensor_metadata)}")
             else:
                 _, name_and_handle_list = handles
 
@@ -73,7 +89,8 @@ class VllmInternalWorkerExtension:
                 # Extract packed tensor from IPC handle
                 dtype_to_packed_tensor = {}
                 for dtype, tensor_handle in all_handles:
-                    func, args = tensor_handle
+                    args = tensor_handle[0]
+                    func = rebuild_cuda_tensor
                     list_args = list(args)
                     list_args[6] = device_id
                     tensor = func(*list_args)
@@ -81,9 +98,18 @@ class VllmInternalWorkerExtension:
 
                 # Unpack tensor to weights. Here we only return a view of the tensor to avoid 
                 # using extra memory.
-                for key, (shape, dtype, offset, size) in tensor_metadata.items():
-                    tensor = dtype_to_packed_tensor[dtype][offset:offset+size].view(*shape)
-                    weights.append((key, tensor))
+                if isinstance(tensor_metadata, dict):
+                    for key, (shape, dtype, offset, size) in tensor_metadata.items():
+                        tensor = dtype_to_packed_tensor[dtype][offset:offset+size].view(*shape)
+                        weights.append((key, tensor))
+                else:
+                    assert isinstance(tensor_metadata, list), "tensor_metadata should be a list"
+                    offset = 0
+                    for key in tensor_metadata:
+                        shape, dtype, _, size = self.metadata[key]
+                        tensor = dtype_to_packed_tensor[dtype][offset:offset+size].view(*shape)
+                        weights.append((key, tensor))
+                        offset += size
             else:
                 # Process each handle to get the tensor
                 for name, handle in name_and_handle_list:

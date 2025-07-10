@@ -1430,9 +1430,12 @@ class MegatronPolicyWorker:
         total_available_bytes *= 0.1
 
         return param_info, total_available_bytes
+    
+    def prepare_weights_ipc_metadata(self) -> dict[str, Any]:
+        return self.prepare_weights_for_ipc()[0]
 
     # Temporary fix, 'keys' is a kwarg due to some sort of ray bug
-    def get_weights_ipc_handles(self, *, keys: list[str]) -> dict[str, Any]:
+    def get_weights_ipc_handles(self, *, keys: list[str], pass_weights_metadata: bool = False) -> dict[str, Any]:
         """Get IPC handles for the requested Megatron model weights.
 
         Args:
@@ -1502,12 +1505,14 @@ class MegatronPolicyWorker:
 
             # Create IPC handles for consolidated tensors
             all_handles = [
-                (dtype, reduce_tensor(tensor.detach()))
+                [dtype, reduce_tensor(tensor.detach())[1:]]
                 for dtype, tensor in packed_tensors.items()
             ]
 
             # Store reference to prevent garbage collection
             self._held_gather_buffer = packed_tensors
+            if not pass_weights_metadata:
+                tensor_metadata = list(tensor_metadata.keys())
 
             serialized = (pack_tensor_for_ipc, all_handles, tensor_metadata)
         else:

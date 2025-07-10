@@ -387,6 +387,7 @@ def refit_policy_generation(
     colocated_inference: bool,
     _refit_buffer_size_gb: Optional[int] = None,
     timer: Optional[Timer] = None,
+    pass_weights_metadata: bool = False,
 ) -> None:
     """Refit the policy generation interface with the latest policy weights.
 
@@ -400,7 +401,7 @@ def refit_policy_generation(
     if colocated_inference:
         policy.offload_before_refit()
         policy_generation.prepare_for_generation(tags=["weights"])
-
+    
     with timer.time("prepare_for_generation/resharding"):
         # update weights
         update_success = False
@@ -410,7 +411,7 @@ def refit_policy_generation(
             print(f"[Refit] Number of splits: {len(grouped_param_keys)}")
             # do update
             for keys in grouped_param_keys:
-                ipc_handles = policy.get_weights_ipc_handles(keys)
+                ipc_handles = policy.get_weights_ipc_handles(keys, pass_weights_metadata=pass_weights_metadata)
                 update_success = policy_generation.update_weights(ipc_handles)
                 if not update_success:
                     break
@@ -480,7 +481,7 @@ def grpo_train(
     if val_at_start and step == 0:
         print("\n🔍 Running initial validation...")
         if NEED_REFIT and POLICY_GENERATION_STALE:
-            refit_policy_generation(policy, policy_generation, colocated_inference, timer=timer)
+            refit_policy_generation(policy, policy_generation, colocated_inference, timer=timer, pass_weights_metadata=True)
             POLICY_GENERATION_STALE = False
         else:
             policy_generation.prepare_for_generation()
@@ -526,7 +527,7 @@ def grpo_train(
             print(f"▶ Generating responses for batch of size {repeated_batch.size}...")
             with timer.time("prepare_for_generation"):
                 if NEED_REFIT and POLICY_GENERATION_STALE:
-                    refit_policy_generation(policy, policy_generation, colocated_inference, timer=timer)
+                    refit_policy_generation(policy, policy_generation, colocated_inference, timer=timer, pass_weights_metadata=step == 0)
                     POLICY_GENERATION_STALE = False
                 else:
                     policy_generation.prepare_for_generation()

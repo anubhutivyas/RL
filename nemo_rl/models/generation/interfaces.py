@@ -237,3 +237,7 @@ class GenerationInterface(ABC):
     ) -> list[ray.ObjectRef]:
         """Update the model weights from collective communication."""
         raise NotImplementedError
+
+    def ensure_weight_updates_completed(self) -> bool:
+        """Ensure that any pending weight updates have been completed."""
+        raise NotImplementedError

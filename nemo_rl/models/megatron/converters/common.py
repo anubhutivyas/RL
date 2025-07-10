@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import re
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 from typing import Any
 
 import einops
@@ -487,7 +487,7 @@ class MegatronToHFConverter:
 
         mapping_groups, transform_groups = self._get_groups(state_dict)
 
-        converted_state_dict = {}
+        converted_state_dict = OrderedDict()
         for mapping, state_dict_keys in mapping_groups:
             source = _ModelState({k: state_dict[k] for k in state_dict_keys})
             source.config = megatron_config

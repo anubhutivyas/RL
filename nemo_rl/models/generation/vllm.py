@@ -431,6 +431,7 @@ class VllmGenerationWorker:
                 - unpadded_sequence_lengths: Lengths of each input + generated sequence
         """
         # Handle empty input case
+        self.wait_for_update_completion()
         if len(data["input_ids"]) == 0:
             # Return empty BatchedDataDict with all required fields
             return BatchedDataDict[GenerationOutputSpec](
@@ -867,6 +868,32 @@ class VllmGenerationWorker:
             list_of_worker_results = result_or_coro
 
         return cast(list[str], list_of_worker_results)
+    
+    def update_weights_ipc_metadata(self, data: dict[str, Any]) -> bool:
+        """Update weights IPC metadata by delegating to the vLLM Worker implementation.
+        """
+        try:
+            assert self.llm is not None, (
+                "Attempting to update weights IPC metadata with either an uninitialized vLLM or non-model-owner"
+            )
+            results = self.llm.collective_rpc("update_weights_ipc_metadata", args=(data,))
+            results = ray.get(results)
+            return True
+        except Exception as e:
+            print(f"Exception during collective_rpc for weight update: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+    
+    def wait_for_update_completion(self) -> bool:
+        if hasattr(self, 'previous_weight_update_refs') and self.previous_weight_update_refs:
+            ray.get(self.previous_weight_update_refs)
+        return True
+    
+    def add_weight_update_refs(self, refs: list[ray.ObjectRef]) -> bool:
+        assert not hasattr(self, 'previous_weight_update_refs') or self.previous_weight_update_refs is None, "previous_weight_update_refs already exists"
+        self.previous_weight_update_refs = refs
+        return True
 
     def update_weights_from_ipc_handles(self, data: dict[str, Any]) -> bool:
         """Update weights from IPC handles by delegating to the vLLM Worker implementation.
@@ -877,7 +904,7 @@ class VllmGenerationWorker:
         Returns:
             bool: True if weights were successfully updated, False otherwise.
         """
-        async_update = False
+        async_update = True
         try:
             assert self.llm is not None, (
                 "Attempting to update weights with either an uninitialized vLLM or non-model-owner"
@@ -923,36 +950,20 @@ class VllmGenerationWorker:
                     print("RuntimeError: No event loop found")
                     ray_object_refs = asyncio.run(submit_jobs_parallel(self.llm.llm_engine.model_executor.workers, self.vllm_device_ids, data))
                 
-                result_or_coro = ray.get(ray_object_refs)
-
-                worker_result = result_or_coro[0]
+                return True
             else:
-                # result_or_coro = self.llm.collective_rpc(
-                #     "update_weights_from_ipc_handles",
-                #     args=(data,),
-                # )
-                # Wait for all device IDs, then update weights in parallel
+                self.wait_for_update_completion()
                 ray_worker_outputs = []
                 for worker, device_id in zip(self.llm.llm_engine.model_executor.workers, self.vllm_device_ids):
-                    # print(f"data[device_id]={data[device_id]}")
                     ray_worker_outputs.append(
                         worker.execute_method.remote("update_weights_from_ipc_handles", data[device_id])
                     )
+                self.add_weight_update_refs(ray_worker_outputs)
+                return True
 
-                # Gather the results
-                result_or_coro = ray.get(ray_worker_outputs)
-                worker_result = result_or_coro[0]
-
-            if not worker_result:
-                print(
-                    f"Error: Worker failed to update weights. Result: {worker_result}"
-                )
-                return False
-            return True
         except Exception as e:
-            print(f"Exception during collective_rpc for weight update: {e}")
+            print(f"Exception during weight update: {e}")
             import traceback
-
             traceback.print_exc()
             return False
 

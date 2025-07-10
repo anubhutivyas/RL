@@ -418,6 +418,16 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
         # Placeholder implementation
         pass
 
+    def prepare_weights_ipc_metadata(self) -> dict[str, Any]:
+        futures = self.worker_group.run_all_workers_single_data(
+            "prepare_weights_for_ipc"
+        )
+        results = ray.get(futures)
+
+        # Only get the first worker's state_dict_info since all workers will have the same result
+        state_dict_info = results[0][0]
+        return state_dict_info
+
     def prepare_weights_for_ipc(
         self, _refit_buffer_size_gb: Optional[int] = None
     ) -> list[list[str]]:
@@ -461,7 +471,7 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
 
         return grouped_param_keys
 
-    def get_weights_ipc_handles(self, keys: list[str]) -> dict[str, Any]:
+    def get_weights_ipc_handles(self, keys: list[str], pass_weights_metadata: bool = False) -> dict[str, Any]:
         """Fetch weight IPC handles from all workers.
 
         Returns:
@@ -470,7 +480,7 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
         # Collect IPC handles from all workers
         worker_handles: list[dict[str, Any]] = ray.get(
             [
-                worker.get_weights_ipc_handles.remote(keys=keys)
+                worker.get_weights_ipc_handles.remote(keys=keys, pass_weights_metadata=pass_weights_metadata)
                 for worker in self.worker_group.workers
             ]
         )
