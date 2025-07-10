@@ -75,11 +75,13 @@ def export_model_from_megatron(
             f"HF checkpoint already exists at {output_path}. Delete it to run or set overwrite=True."
         )
 
-    if "llama" in hf_model_name.lower():
+    hf_config = AutoConfig.from_pretrained(hf_model_name, trust_remote_code=True)
+
+    if hf_config.model_type == "llama":
         from nemo.tron.converter.llama import HFLlamaExporter
 
         exporter_cls = HFLlamaExporter
-    elif "qwen" in hf_model_name.lower():
+    elif hf_config.model_type == "qwen2":
         from nemo.tron.converter.qwen import HFQwen2Exporter
 
         exporter_cls = HFQwen2Exporter
