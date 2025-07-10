@@ -735,6 +735,10 @@ def grpo_train(
 
         # Logging
         # Log training data
+        # print logprob error
+        lp_error = torch.sum(torch.abs(train_data["generation_logprobs"] - train_data["prev_logprobs"]) * train_data["token_mask"]) / torch.sum(train_data["token_mask"])
+        print(f"lp_error: {lp_error.item()}")
+        
         log_data = {"content": flat_messages["content"]}
         log_data["rewards"] = rewards.tolist()
         log_data["generation_logprobs"] = train_data["generation_logprobs"].tolist()
