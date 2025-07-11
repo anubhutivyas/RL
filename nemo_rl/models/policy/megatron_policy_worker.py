@@ -1518,8 +1518,8 @@ class MegatronPolicyWorker:
                     tuple(tensor.shape),  # shape of the tensor
                     tensor.dtype,  # dtype of the tensor
                     # 0,  # dtype of the tensor
-                    # type_to_total_size[tensor.dtype],  # offset of the tensor
-                    type_to_total_size[0],  # offset of the tensor
+                    type_to_total_size[tensor.dtype],  # offset of the tensor
+                    # type_to_total_size[0],  # offset of the tensor
                     # in packed buffer
                     tensor.numel(),  # size of the tensor
                 )
