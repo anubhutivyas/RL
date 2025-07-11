@@ -447,7 +447,29 @@ class BradleyTerryAggregator(PairwiseRewardAggregator):
 
 
 class SimpleTiebreakerAggregator(PairwiseRewardAggregator):
-    """Use individual scores primarily, with simple ranking-based tiebreaking when scores are equal."""
+    """Use individual scores primarily, with simple ranking-based tiebreaking when scores are equal.
+    
+    GenRM Scoring System:
+    - Individual scores: 1-5 (where 5 is most helpful)
+    - Ranking scores: 1-6 (where 1 = Response 1 much better, 6 = Response 2 much better)
+    - Neutral ranking = 3.5 (no preference between responses)
+    
+    Tiebreaker Logic:
+    When individual scores are equal, we use the ranking to break ties:
+    - score1 = score1 + (3.5 - ranking_score)
+    - score2 = score2 + (ranking_score - 3.5)
+    
+    Why this works:
+    - When ranking < 3.5: Response 1 is preferred, so score1 gets positive adjustment, score2 gets negative
+    - When ranking > 3.5: Response 2 is preferred, so score2 gets positive adjustment, score1 gets negative
+    - When ranking = 3.5: No preference, so no adjustments (both get 0)
+    - The further from 3.5, the larger the adjustment magnitude
+    
+    Examples:
+    - ranking = 1 (Response 1 much better): score1 += 2.5, score2 -= 2.5
+    - ranking = 3 (Response 1 slightly better): score1 += 0.5, score2 -= 0.5
+    - ranking = 6 (Response 2 much better): score1 -= 2.5, score2 += 2.5
+    """
     
     def __init__(self, score_range: Tuple[float, float] = (1.0, 5.0)):
         """
