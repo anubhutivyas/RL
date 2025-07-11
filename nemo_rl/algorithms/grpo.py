@@ -84,6 +84,10 @@ class GRPOConfig(TypedDict):
     val_at_start: bool
     max_val_samples: int
     checkpoint_dir: str
+    top_p_std: float  # filtering samples by standard deviation
+    top_p_ent: float  # filtering tokens by entropy
+    reverse_entropy_mask: bool  # whether to reverse the entropy mask
+    use_random_entropy_mask: bool  # whether to use random baseline instead of entropy-based selection
 
 
 class GRPOSaveState(TypedDict):
@@ -676,32 +680,59 @@ def grpo_train(
                 train_data["reference_policy_logprobs"] = reference_logprobs
             
             if master_config["grpo"]["top_p_ent"] < 1.0:
-                print(f"▶ Taking top {master_config['grpo']['top_p_ent'] * 100}% tokens with most entropy...")
-                # Flatten token entropies and filter out zeros (from padding)
-                flat_token_entropy = fprop_token_entropy.flatten()
-                non_zero_entropy = flat_token_entropy[flat_token_entropy > 0]
+                use_random_baseline = master_config["grpo"].get("use_random_entropy_mask", False)
+                
+                if use_random_baseline:
+                    print(f"▶ Randomly selecting {master_config['grpo']['top_p_ent'] * 100}% tokens for training...")
+                    # Create a random mask for non-zero tokens
+                    token_mask = train_data["token_mask"]
+                    non_zero_mask = token_mask > 0
+                    
+                    if non_zero_mask.sum() > 0:
+                        # Get indices of non-zero tokens
+                        non_zero_indices = torch.nonzero(non_zero_mask, as_tuple=False).squeeze()
+                        
+                        # Calculate number of tokens to keep
+                        num_non_zero_tokens = non_zero_indices.numel()
+                        num_tokens_to_keep = int(num_non_zero_tokens * master_config["grpo"]["top_p_ent"])
+                        num_tokens_to_keep = max(1, num_tokens_to_keep)  # Keep at least 1 token
+                        
+                        # Randomly select tokens to keep
+                        if num_non_zero_tokens > 0:
+                            random_indices = torch.randperm(num_non_zero_tokens)[:num_tokens_to_keep]
+                            selected_indices = non_zero_indices[random_indices]
+                            
+                            # Create new mask with only selected tokens
+                            random_mask = torch.zeros_like(token_mask, dtype=torch.bool)
+                            random_mask.view(-1)[selected_indices] = True
+                            train_data["token_mask"] = random_mask.to(token_mask.dtype)
+                else:
+                    print(f"▶ Taking top {master_config['grpo']['top_p_ent'] * 100}% tokens with most entropy...")
+                    # Flatten token entropies and filter out zeros (from padding)
+                    flat_token_entropy = fprop_token_entropy.flatten()
+                    non_zero_entropy = flat_token_entropy[flat_token_entropy > 0]
 
-                if non_zero_entropy.numel() > 0:
-                    sorted_token_entropy, _ = torch.sort(
-                        non_zero_entropy, descending=True
-                    )
+                    if non_zero_entropy.numel() > 0:
+                        sorted_token_entropy, _ = torch.sort(
+                            non_zero_entropy, descending=True
+                        )
 
-                    # Calculate threshold index for top-p tokens
-                    num_non_zero_tokens = non_zero_entropy.numel()
-                    entropy_threshold_idx = int(
-                        num_non_zero_tokens * master_config["grpo"]["top_p_ent"]
-                    )
-                    entropy_threshold_idx = min(
-                        entropy_threshold_idx, num_non_zero_tokens - 1
-                    )
-                    entropy_threshold = sorted_token_entropy[entropy_threshold_idx]
+                        # Calculate threshold index for top-p tokens
+                        num_non_zero_tokens = non_zero_entropy.numel()
+                        entropy_threshold_idx = int(
+                            num_non_zero_tokens * master_config["grpo"]["top_p_ent"]
+                        )
+                        entropy_threshold_idx = min(
+                            entropy_threshold_idx, num_non_zero_tokens - 1
+                        )
+                        entropy_threshold = sorted_token_entropy[entropy_threshold_idx]
 
-                    # Create mask for tokens with entropy >= threshold
-                    if master_config["grpo"]["reverse_entropy_mask"]:
-                        entropy_mask = fprop_token_entropy <= entropy_threshold
-                    else:
-                        entropy_mask = fprop_token_entropy >= entropy_threshold
-                    train_data["token_mask"] *= entropy_mask
+                        # Create mask for tokens with entropy >= threshold
+                        if master_config["grpo"]["reverse_entropy_mask"]:
+                            entropy_mask = fprop_token_entropy <= entropy_threshold
+                        else:
+                            entropy_mask = fprop_token_entropy >= entropy_threshold
+                        train_data["token_mask"] *= entropy_mask
             
             print("▶ Preparing for training...")
             with timer.time("training_prep"):

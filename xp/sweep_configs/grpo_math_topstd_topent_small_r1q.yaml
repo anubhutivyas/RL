@@ -22,6 +22,9 @@ grpo.top_p_std: [0.2, 1.0]
 # Top P Entropy
 grpo.top_p_ent: [0.2, 1.0]
 
+# Random Mask Prob
+grpo.use_random_entropy_mask: [false, true]
+
 # Training and Validation Dataset
 data.dataset_name: ["DAPOMath"]
 grpo.val_batch_size: [32]
