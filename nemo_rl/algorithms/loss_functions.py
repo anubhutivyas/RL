@@ -140,9 +140,9 @@ class ClippedPGLossFn(LossFunction):
 
         next_token_logits = next_token_logits.to(torch.float32)
 
-        print(f"data['input_ids'].shape: {data['input_ids'].shape}")
-        print(f"next_token_logits.shape: {next_token_logits.shape}")
-        print(f"lp_error: {torch.sum(torch.abs((generation_logprobs - prev_logprobs) * mask)) / torch.sum(mask)}")
+        # print(f"data['input_ids'].shape: {data['input_ids'].shape}")
+        # print(f"next_token_logits.shape: {next_token_logits.shape}")
+        # print(f"lp_error: {torch.sum(torch.abs((generation_logprobs - prev_logprobs) * mask)) / torch.sum(mask)}")
         if vocab_parallel_group is not None:
             assert vocab_parallel_rank is not None, (
                 "vocab_parallel_rank must be provided when vocab_parallel_group is provided"
@@ -174,8 +174,8 @@ class ClippedPGLossFn(LossFunction):
             ).squeeze(-1)
 
 
-        print(f"c shape {curr_logprobs.shape}, p shape {prev_logprobs.shape}, m shape {mask.shape}, i shape {data['input_ids'].shape}", flush=True)
-        print(f"curr_lp_diff: {torch.sum(torch.abs((curr_logprobs - prev_logprobs) * mask)) / torch.sum(mask)}", flush=True)
+        # print(f"c shape {curr_logprobs.shape}, p shape {prev_logprobs.shape}, m shape {mask.shape}, i shape {data['input_ids'].shape}", flush=True)
+        # print(f"curr_lp_diff: {torch.sum(torch.abs((curr_logprobs - prev_logprobs) * mask)) / torch.sum(mask)}", flush=True)
 
         # Calculate KL regularization.
         if self.reference_policy_kl_penalty != 0:
@@ -685,11 +685,11 @@ class SequencePackingLossWrapper:
             # get next_token_logits
             cp_size = 1 if context_parallel_group is None else torch.distributed.get_world_size(context_parallel_group)
             logit_slice_idxs = slice(seq_start // cp_size, (seq_start + padded_seq_lengths[seq_idx]) // cp_size)
-            print(f"rank {torch.distributed.get_rank()}: seqidx {seq_idx}, next_token_logits: {next_token_logits.shape}")
-            print(f"rank {torch.distributed.get_rank()}: seqidx {seq_idx}, cu_seqlens_q: {self.cu_seqlens_q}")
-            print(f"rank {torch.distributed.get_rank()}: seqidx {seq_idx}, unpadded_seq_data: {unpadded_seq_data[list(unpadded_seq_data.keys())[0]].shape}")
-            print(f"rank {torch.distributed.get_rank()}: seqidx {seq_idx}, seq_start: {seq_start}, seq_end: {seq_end}, cp_size: {cp_size}")
-            print(f"rank {torch.distributed.get_rank()}: seqidx {seq_idx}, logit_slice_idxs: {logit_slice_idxs}")
+            # print(f"rank {torch.distributed.get_rank()}: seqidx {seq_idx}, next_token_logits: {next_token_logits.shape}")
+            # print(f"rank {torch.distributed.get_rank()}: seqidx {seq_idx}, cu_seqlens_q: {self.cu_seqlens_q}")
+            # print(f"rank {torch.distributed.get_rank()}: seqidx {seq_idx}, unpadded_seq_data: {unpadded_seq_data[list(unpadded_seq_data.keys())[0]].shape}")
+            # print(f"rank {torch.distributed.get_rank()}: seqidx {seq_idx}, seq_start: {seq_start}, seq_end: {seq_end}, cp_size: {cp_size}")
+            # print(f"rank {torch.distributed.get_rank()}: seqidx {seq_idx}, logit_slice_idxs: {logit_slice_idxs}")
             next_token_logits_slice = next_token_logits[:, logit_slice_idxs, :]
             # print(f"seq_start: {seq_start}, seq_end: {seq_end}, next_token_logits: {next_token_logits_slice.shape}")
 
