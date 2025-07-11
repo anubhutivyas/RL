@@ -133,7 +133,7 @@ If you're new to NeMo RL, we recommend following this progression:
 :gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` Tutorials & Learning
-:link: tutorials
+:link: ../guides/examples-tutorials/index
 :link-alt: Comprehensive tutorials and learning resources
 
 Access structured learning paths, tutorial series, and advanced techniques for mastering NeMo RL.
@@ -184,7 +184,6 @@ quickstart
 local-workstation
 docker
 cluster
-tutorials
 ```
 
 

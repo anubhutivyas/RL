@@ -101,7 +101,7 @@ OSError: We couldn't connect to 'https://huggingface.co/...'
    model:
      name: "/path/to/local/model"
    ```
-3. **Set HuggingFace token:**
+3. **Set Hugging Face token:**
    ```bash
    export HF_TOKEN="your_token"
    ```

@@ -215,10 +215,10 @@ python -m nemo_rl convert <source> <target> [options]
 
 **Examples:**
 ```bash
-# Convert HuggingFace to Megatron
+# Convert Hugging Face to Megatron
 python -m nemo_rl convert huggingface megatron --source model_path --target output_path
 
-# Convert Megatron to HuggingFace
+# Convert Megatron to Hugging Face
 python -m nemo_rl convert megatron huggingface --source model_path --target output_path
 ```
 
@@ -426,13 +426,13 @@ ray stop
 ### Model Conversion Workflow
 
 ```bash
-# 1. Convert HuggingFace to Megatron
+# 1. Convert Hugging Face to Megatron
 python -m nemo_rl convert huggingface megatron --source model_path --target megatron_path
 
 # 2. Train with Megatron backend
 python -m nemo_rl train configs/dpo_megatron.yaml
 
-# 3. Convert back to HuggingFace
+# 3. Convert back to Hugging Face
 python -m nemo_rl convert megatron huggingface --source megatron_path --target hf_path
 ```
 

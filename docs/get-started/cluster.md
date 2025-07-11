@@ -108,7 +108,7 @@ sbatch ray.sub \
 * - `HF_TOKEN`
   - Setting the token used by huggingface-hub. Avoids having to run the `huggingface-cli login`
 * - `HF_DATASETS_CACHE`
-  - Sets the cache dir for downloaded Huggingface datasets.
+  - Sets the cache dir for downloaded Hugging Face datasets.
 ``````
 
 :::{tip}

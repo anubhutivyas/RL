@@ -1,79 +1,128 @@
----
-description: "Explore comprehensive tutorials and learning resources for NeMo RL, from beginner-friendly guides to advanced reinforcement learning techniques."
-tags: ["tutorials", "learning", "examples", "beginner", "advanced", "reinforcement learning"]
-categories: ["getting-started"]
----
+# Tutorials & Examples
 
-# Tutorials & Learning Resources
+Welcome to the NeMo RL Tutorials & Examples! This comprehensive collection provides everything you need to learn and master reinforcement learning with large language models using NeMo RL.
 
-Welcome to the NeMo RL tutorials! This comprehensive guide will help you learn NeMo RL from the ground up, whether you're a beginner or an advanced user looking to master complex reinforcement learning techniques.
+## What You'll Find Here
+
+Our tutorials and examples are organized into three main categories to help you progress from basic concepts to real-world applications:
+
+### **Tutorials** 
+Step-by-step learning guides that teach you NeMo RL concepts and techniques. Start with beginner tutorials to build your foundation, then progress to advanced topics like distributed training and performance optimization.
+
+### **Examples**
+Complete, working examples that demonstrate real-world applications. These examples walk you through entire training workflows using specific datasets and configurations, providing hands-on experience with NeMo RL.
+
+### **Use Cases**
+Real-world applications and production patterns for NeMo RL. Learn how to apply reinforcement learning to solve practical problems across different domains including code generation, mathematical reasoning, and conversational AI.
 
 ## Learning Path
 
 Follow this structured learning path to master NeMo RL:
 
 ### **Beginner Path** (0-2 weeks)
-1. **Installation & Setup** → [Installation Guide](installation)
-2. **First Training Run** → [Quickstart Guide](quickstart)
-3. **Basic Concepts** → [About NeMo RL](../about/index)
-4. **SFT Training** → [SFT Tutorial](../guides/training-algorithms/sft)
+1. **Installation & Setup** → [Installation Guide](../get-started/installation)
+2. **First Training Run** → [Quickstart Guide](../get-started/quickstart)
+3. **SFT Tutorial** → [Supervised Fine-Tuning Tutorial](tutorials/sft-tutorial)
+4. **Basic Examples** → [SFT on OpenMathInstruct-2](examples/sft-openmathinstruct2)
 
 ### **Intermediate Path** (2-4 weeks)
-1. **DPO Training** → [DPO Tutorial](../guides/training-algorithms/dpo)
-2. **Model Evaluation** → [Evaluation Guide](../guides/training-algorithms/eval)
-3. **Custom Environments** → [Environment Development](../guides/environment-data/environment-development)
-4. **Distributed Training** → [Distributed Training Guide](../guides/environment-data/distributed-training)
+1. **DPO Tutorial** → [Direct Preference Optimization Tutorial](tutorials/dpo-tutorial)
+2. **Evaluation Tutorial** → [Model Evaluation Tutorial](tutorials/evaluation-tutorial)
+3. **Advanced Examples** → [GRPO on DeepScaleR](examples/grpo-deepscaler)
+4. **Use Cases** → [Code Generation](use-cases/code-generation) and [Mathematical Reasoning](use-cases/mathematical-reasoning)
 
 ### **Advanced Path** (4+ weeks)
-1. **GRPO Training** → [GRPO Tutorial](../guides/training-algorithms/grpo)
-2. **Performance Optimization** → [NSYS Profiling](../guides/environment-data/nsys-profiling)
-3. **Custom Model Integration** → [Adding New Models](../guides/model-development/adding-new-models)
-4. **Production Deployment** → [Packaging Guide](../guides/production-support/packaging)
+1. **GRPO Tutorial** → [Group Relative Policy Optimization Tutorial](tutorials/grpo-tutorial)
+2. **Advanced Performance** → [Performance & Optimization](../advanced/performance/index)
+3. **Distributed Training** → [Distributed Training Guide](../guides/environment-data/distributed-training)
+4. **Production Deployment** → [Production & Support](../guides/production-support/index)
 
-## Tutorial Series
-
-Our comprehensive tutorial series provides hands-on experience with real-world examples and best practices.
-
-### **Complete Tutorial Series**
+## Tutorials
 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` GitHub Repository
-:link: https://github.com/NVIDIA/NeMo-RL
-:link-type: url
+:::{grid-item-card} {octicon}`play;1.5em;sd-mr-1` SFT Tutorial
+:link: tutorials/sft-tutorial
+:link-type: doc
 
-Access the complete NeMo RL codebase, examples, and tutorial notebooks in our GitHub repository.
-
-+++
-{bdg-primary}`Source Code`
-:::
-
-:::{grid-item-card} {octicon}`play;1.5em;sd-mr-1` Example Configurations
-:link: https://github.com/NVIDIA/NeMo-RL/tree/main/examples/configs
-:link-type: url
-
-Explore ready-to-use configuration files for different training scenarios and model sizes.
+Learn supervised fine-tuning fundamentals with step-by-step guidance.
 
 +++
-{bdg-secondary}`Configs`
+{bdg-primary}`Beginner`
 :::
 
-:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Training Scripts
-:link: https://github.com/NVIDIA/NeMo-RL/tree/main/examples
-:link-type: url
+:::{grid-item-card} {octicon}`heart;1.5em;sd-mr-1` DPO Tutorial
+:link: tutorials/dpo-tutorial
+:link-type: doc
 
-Find complete training scripts for SFT, DPO, and GRPO with detailed comments and explanations.
+Master Direct Preference Optimization for preference learning and alignment.
 
 +++
-{bdg-info}`Scripts`
+{bdg-info}`Intermediate`
 :::
 
-:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Performance Benchmarks
-:link: https://github.com/NVIDIA/NeMo-RL/tree/main/tests
-:link-type: url
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` GRPO Tutorial
+:link: tutorials/grpo-tutorial
+:link-type: doc
 
-Review performance benchmarks and test suites to understand training efficiency and scalability.
+Advanced reinforcement learning with Group Relative Policy Optimization.
+
++++
+{bdg-warning}`Advanced`
+:::
+
+
+
+::::
+
+## Examples
+
+::::{grid} 1 1 1 2
+:gutter: 2 2 2 2
+
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` SFT on OpenMathInstruct-2
+:link: examples/sft-openmathinstruct2
+:link-type: doc
+
+Complete example of supervised fine-tuning on math instruction dataset.
+
++++
+{bdg-primary}`Example`
+:::
+
+:::{grid-item-card} {octicon}`cloud;1.5em;sd-mr-1` GRPO on DeepScaleR
+:link: examples/grpo-deepscaler
+:link-type: doc
+
+Large-scale distributed training example with DeepScaleR integration.
+
++++
+{bdg-secondary}`Cloud`
+:::
+
+::::
+
+## Use Cases
+
+::::{grid} 1 1 1 2
+:gutter: 2 2 2 2
+
+:::{grid-item-card} {octicon}`code;1.5em;sd-mr-1` Code Generation
+:link: use-cases/code-generation
+:link-type: doc
+
+Train models to generate, debug, and optimize code across multiple programming languages.
+
++++
+{bdg-primary}`Development`
+:::
+
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Mathematical Reasoning
+:link: use-cases/mathematical-reasoning
+:link-type: doc
+
+Build models that can solve complex mathematical problems with step-by-step reasoning.
 
 +++
 {bdg-warning}`Advanced`
@@ -81,31 +130,27 @@ Review performance benchmarks and test suites to understand training efficiency 
 
 ::::
 
-### **Tutorial Descriptions**
+## Tutorial Descriptions
 
-#### **SFT (Supervised Fine-Tuning) Series**
+### **SFT (Supervised Fine-Tuning) Tutorial**
 - **Beginner-Friendly**: Start with basic supervised fine-tuning concepts
 - **Domain Adaptation**: Learn to adapt pre-trained models to specific domains
 - **Best Practices**: Understand data preparation, training configuration, and evaluation
 - **Real Examples**: Work with actual datasets and model configurations
 
-#### **DPO (Direct Preference Optimization) Series**
+### **DPO (Direct Preference Optimization) Tutorial**
 - **Preference Learning**: Master the fundamentals of preference-based training
 - **Human Feedback**: Learn to incorporate human feedback into model training
 - **Alignment Techniques**: Understand how to align models with human preferences
 - **Advanced Configurations**: Explore sophisticated DPO setups and optimizations
 
-#### **GRPO (Group Relative Policy Optimization) Series**
+### **GRPO (Group Relative Policy Optimization) Tutorial**
 - **Advanced RL**: Dive deep into group-based reinforcement learning
 - **Multi-Agent Scenarios**: Learn to handle complex multi-agent training
 - **Performance Optimization**: Master techniques for large-scale GRPO training
 - **Production Deployment**: Understand how to deploy GRPO models in production
 
-#### **Distributed Training Series**
-- **Ray Integration**: Learn to use Ray for distributed computing
-- **Multi-GPU Training**: Master training across multiple GPUs efficiently
-- **Cluster Management**: Understand cluster setup and resource management
-- **Scaling Strategies**: Learn to scale training to multiple nodes and GPUs
+
 
 ## Advanced Tutorials
 
@@ -248,4 +293,14 @@ For additional learning resources and community support, visit the NeMo RL GitHu
 **Note**: The tutorial files referenced in this guide are available in the NeMo RL examples repository. Clone the repository to access the complete tutorial notebooks and scripts.
 ```
 
-Start with the learning path that matches your experience level, and gradually work your way through the tutorial series. The advanced tutorials will help you master complex scenarios and production deployments. 
+Start with the learning path that matches your experience level, and gradually work your way through the tutorial series. The advanced tutorials will help you master complex scenarios and production deployments.
+
+```{toctree}
+:maxdepth: 2
+:caption: Tutorials & Examples
+:hidden:
+
+tutorials/index
+examples/index
+use-cases/index
+``` 

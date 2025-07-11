@@ -7,7 +7,7 @@ This guide provides three methods for building Docker images:
 * **base**: A minimal image with CUDA, `ray`, and `uv` installed, ideal for specifying Python dependencies at runtime.
 
 Use the:
-* **release** (recommended): if you want to pre-fetch the NeMo RL [worker virtual environments](../design-docs/computational-systems/uv.md#worker-configuration) and copy in the project source code.
+* **release** (recommended): if you want to pre-fetch the NeMo RL [worker virtual environments](../../design-docs/computational-systems/uv.md#worker-configuration) and copy in the project source code.
 * **hermetic**: if you want to pre-fetch NeMo RL python packages into the `uv` cache to eliminate the initial overhead of program start.
 * **base**: if you just need a minimal image with CUDA, `ray`, and `uv` installed and are okay with dynamically downloading your requirements at runtime. This option trades off fast container download/startup with slower initial overhead to download python packages.
 

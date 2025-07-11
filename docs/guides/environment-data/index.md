@@ -1,6 +1,6 @@
 # Environment & Data
 
-Guides for debugging and profiling RL training pipelines.
+Guides for debugging, profiling, and optimizing RL training pipelines.
 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
@@ -9,20 +9,30 @@ Guides for debugging and profiling RL training pipelines.
 :link: debugging
 :link-type: doc
 
-Techniques and tools for RL training pipelines.
+Techniques and tools for debugging RL training pipelines.
 
 +++
 {bdg-success}`Quality`
 :::
 
-:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Performance Profiling
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` NSYS Profiling
 :link: nsys-profiling
 :link-type: doc
 
-Profiling and optimizing training performance.
+NSYS-specific profiling for RL training performance.
 
 +++
 {bdg-secondary}`Performance`
+:::
+
+:::{grid-item-card} {octicon}`zap;1.5em;sd-mr-1` Advanced Performance
+:link: ../../advanced/performance/index
+:link-type: doc
+
+Comprehensive performance optimization and profiling techniques.
+
++++
+{bdg-warning}`Advanced`
 :::
 
 ::::

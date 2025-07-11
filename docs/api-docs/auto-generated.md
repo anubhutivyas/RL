@@ -26,7 +26,7 @@ The NeMo RL package is organized into the following modules:
 
 ### Models & Policies
 - **Policy Interfaces**: Abstract policy implementations
-- **Generation Backends**: Text generation with VLLM, HuggingFace, Megatron
+- **Generation Backends**: Text generation with VLLM, Hugging Face, Megatron
 - **Model Converters**: Model format conversions
 
 ### Data & Environments

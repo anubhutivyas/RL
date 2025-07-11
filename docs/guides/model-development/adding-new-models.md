@@ -99,7 +99,7 @@ When validating Hugging Face-based models, perform the following checks:
   Ensure the Megatron forward pass aligns with Hugging Face and the generation log probabilities from inference backends like **vLLM**.
 
 - **Parallel settings**  
-  Match the same parallelism configurations used for the HuggingFace-based tests.  
+  Match the same parallelism configurations used for the Hugging Face-based tests.  
   Confirm outputs remain consistent across repeated runs.
 
 ---

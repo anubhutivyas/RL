@@ -21,15 +21,26 @@ Set up your environment and run your first reinforcement learning training job w
 {bdg-success}`Beginner` {bdg-secondary}`Setup`
 :::
 
+:::{grid-item-card} {octicon}`play;1.5em;sd-mr-1` Tutorials & Examples
+:link: tutorials-examples/index
+:link-type: doc
+:class-body: text-center
+
+Learn NeMo RL with step-by-step tutorials, working examples, and real-world use cases for reinforcement learning with language models.
+
++++
+{bdg-primary}`Learning` {bdg-secondary}`Hands-on`
+:::
+
 :::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` Guides
 :link: guides/index
 :link-type: doc
 :class-body: text-center
 
-Master NeMo RL with organized guides covering training algorithms, examples, model development, infrastructure, and production workflows.
+Master NeMo RL with organized guides covering training algorithms, model development, infrastructure, and production workflows.
 
 +++
-{bdg-warning}`Advanced` {bdg-secondary}`Tutorials`
+{bdg-warning}`Advanced` {bdg-secondary}`Reference`
 :::
 
 :::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Core Design & Architecture
@@ -78,79 +89,9 @@ Access comprehensive reference documentation including configuration options and
 
 ::::
 
-## Popular Guides
 
-::::{grid} 1 2 2 2
-:gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`play;1.5em;sd-mr-1` SFT Training
-:link: guides/training-algorithms/sft
-:link-type: doc
 
-Supervised Fine-Tuning for language models - the foundation of RL training.
-
-+++
-{bdg-primary}`Beginner`
-:::
-
-:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` GRPO Training
-:link: guides/training-algorithms/grpo
-:link-type: doc
-
-Group Relative Policy Optimization for advanced reinforcement learning training.
-
-+++
-{bdg-warning}`Advanced`
-:::
-
-:::{grid-item-card} {octicon}`heart;1.5em;sd-mr-1` DPO Training
-:link: guides/training-algorithms/dpo
-:link-type: doc
-
-Direct Preference Optimization for preference learning and model alignment.
-
-+++
-{bdg-info}`Intermediate`
-:::
-
-:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Evaluation
-:link: guides/training-algorithms/eval
-:link-type: doc
-
-Model evaluation and benchmarking strategies for RL-trained models.
-
-+++
-{bdg-secondary}`Analysis`
-:::
-
-::::
-
-## Training Examples
-
-::::{grid} 1 1 1 2
-:gutter: 2 2 2 2
-
-:::{grid-item-card} {octicon}`cloud;1.5em;sd-mr-1` Train GRPO Models on DeepScaleR
-:link: guides/examples-tutorials/grpo-deepscaler
-:link-type: doc
-
-DeepScaleR integration for large-scale distributed training.
-
-+++
-{bdg-secondary}`Cloud`
-:::
-
-:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Fine-tune Models on OpenMathInstruct-2
-:link: guides/examples-tutorials/sft-openmathinstruct2
-:link-type: doc
-
-Math instruction fine-tuning example with OpenMathInstruct-2 dataset.
-
-+++
-{bdg-primary}`Example`
-:::
-
-::::
 
 ## Performance & Development
 
@@ -177,26 +118,6 @@ Extend NeMo RL with custom model architectures and backends.
 {bdg-info}`Development`
 :::
 
-:::{grid-item-card} {octicon}`checklist;1.5em;sd-mr-1` Testing & Debugging
-:link: guides/production-support/testing
-:link-type: doc
-
-Testing strategies and debugging techniques for RL training pipelines.
-
-+++
-{bdg-success}`Quality`
-:::
-
-:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Packaging
-:link: guides/production-support/packaging
-:link-type: doc
-
-Deployment and packaging strategies for production environments.
-
-+++
-{bdg-secondary}`Production`
-:::
-
 :::{grid-item-card} {octicon}`zap;1.5em;sd-mr-1` Performance & Optimization
 :link: advanced/performance/index
 :link-type: doc
@@ -205,6 +126,16 @@ Optimize training performance, benchmarking, and profiling techniques.
 
 +++
 {bdg-warning}`Advanced`
+:::
+
+:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Production & Support
+:link: guides/production-support/index
+:link-type: doc
+
+Testing, debugging, packaging, and deployment strategies.
+
++++
+{bdg-secondary}`Production`
 :::
 
 ::::
@@ -220,6 +151,7 @@ Optimize training performance, benchmarking, and profiling techniques.
 :hidden:
 about/index
 get-started/index
+tutorials-examples/index
 guides/index
 design-docs/index
 advanced/index

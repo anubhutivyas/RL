@@ -80,7 +80,7 @@ The model layer provides interfaces for different model backends and policy impl
 
 - **PolicyInterface**: Abstract interface for RL policies
 - **GenerationInterface**: Unified interface for text generation backends
-- **Model Backends**: Support for HuggingFace, Megatron, and custom backends
+- **Model Backends**: Support for Hugging Face, Megatron, and custom backends
 
 ### Algorithms
 

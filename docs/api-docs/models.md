@@ -4,7 +4,7 @@ This section documents the model interfaces, policy implementations, and generat
 
 ## Overview
 
-NeMo RL provides a unified interface for different model backends and policy implementations. The framework supports multiple backends (HuggingFace, Megatron) while maintaining consistent APIs for training and inference.
+NeMo RL provides a unified interface for different model backends and policy implementations. The framework supports multiple backends (Hugging Face, Megatron) while maintaining consistent APIs for training and inference.
 
 ## Core Interfaces
 
@@ -118,34 +118,34 @@ class GenerationConfig(TypedDict):
 
 ## Model Backends
 
-### HuggingFace Backend
+### Hugging Face Backend
 
-The HuggingFace backend provides support for HuggingFace models:
+The Hugging Face backend provides support for Hugging Face models:
 
 ```python
 class HuggingFacePolicy(PolicyInterface):
-    """HuggingFace-based policy implementation."""
+    """Hugging Face-based policy implementation."""
     
     def __init__(self, model_name: str, **kwargs):
         """
-        Initialize HuggingFace policy.
+        Initialize Hugging Face policy.
         
         Args:
-            model_name: Name or path of the HuggingFace model
+            model_name: Name or path of the Hugging Face model
             **kwargs: Additional configuration parameters
         """
         pass
     
     def generate(self, data: BatchedDataDict["GenerationDatumSpec"], greedy: bool):
-        """Generate text using HuggingFace model."""
+        """Generate text using Hugging Face model."""
         pass
     
     def get_logprobs(self, data: BatchedDataDict["GenerationDatumSpec"]):
-        """Get log probabilities using HuggingFace model."""
+        """Get log probabilities using Hugging Face model."""
         pass
     
     def train(self, data: BatchedDataDict["TrainingDatumSpec"], loss_fn: LossFunction):
-        """Train the HuggingFace model."""
+        """Train the Hugging Face model."""
         pass
 ```
 
@@ -322,34 +322,34 @@ output = generator.generate(input_data, greedy=False)
 generator.finish_generation()
 ```
 
-### HuggingFace Generation Backend
+### Hugging Face Generation Backend
 
-The HuggingFace generation backend provides generation using HuggingFace models:
+The Hugging Face generation backend provides generation using Hugging Face models:
 
 ```python
 class HuggingFaceGeneration(GenerationInterface):
-    """HuggingFace-based generation implementation."""
+    """Hugging Face-based generation implementation."""
     
     def __init__(self, model_name: str, **kwargs):
         """
-        Initialize HuggingFace generation backend.
+        Initialize Hugging Face generation backend.
         
         Args:
-            model_name: Name or path of the HuggingFace model
+            model_name: Name or path of the Hugging Face model
             **kwargs: Additional configuration parameters
         """
         pass
     
     def generate(self, data: BatchedDataDict["GenerationDatumSpec"], greedy: bool):
-        """Generate text using HuggingFace model."""
+        """Generate text using Hugging Face model."""
         pass
     
     def prepare_for_generation(self):
-        """Prepare HuggingFace model for generation."""
+        """Prepare Hugging Face model for generation."""
         pass
     
     def finish_generation(self):
-        """Clean up HuggingFace model after generation."""
+        """Clean up Hugging Face model after generation."""
         pass
 ```
 
@@ -370,7 +370,7 @@ def validate_log_probability_consistency(
     Validate log probability consistency between training and inference backends.
     
     Args:
-        training_backend: Training backend (e.g., HuggingFace)
+        training_backend: Training backend (e.g., Hugging Face)
         inference_backend: Inference backend (e.g., VLLM)
         test_data: Test data for validation
         threshold: Acceptable error threshold (default: 1.05)
@@ -481,7 +481,7 @@ class CustomGeneration(GenerationInterface):
 Configure models with various parameters:
 
 ```python
-# HuggingFace configuration
+# Hugging Face configuration
 hf_config = {
     "model_name": "meta-llama/Llama-2-7b-hf",
     "torch_dtype": "bfloat16",
@@ -535,7 +535,7 @@ gen_config = {
 
 ### Model Selection
 
-1. **Choose appropriate backend**: Use HuggingFace for prototyping, Megatron for large-scale training
+1. **Choose appropriate backend**: Use Hugging Face for prototyping, Megatron for large-scale training
 2. **Consider memory constraints**: Use quantization and model parallelism for large models
 3. **Validate consistency**: Always validate log probability consistency between backends
 

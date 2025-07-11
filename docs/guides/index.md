@@ -4,13 +4,10 @@ Welcome to the NeMo RL Guides! This comprehensive collection provides everything
 
 ## What You'll Find Here
 
-Our guides are organized into five main categories to help you navigate from basic concepts to practical implementations:
+Our guides are organized into four main categories to help you navigate from basic concepts to practical implementations:
 
 ### **Training Algorithms** 
 Learn the core RL algorithms that power NeMo RL. Start with Supervised Fine-Tuning (SFT) as your foundation, then explore advanced techniques like Group Relative Policy Optimization (GRPO) and Direct Preference Optimization (DPO). Each algorithm guide includes detailed explanations, mathematical foundations, and practical implementation examples.
-
-### **Examples & Tutorials**
-Jump into complete, working examples that demonstrate real-world applications. These tutorials walk you through entire training workflows, from data preparation to model deployment, using specific datasets and environments.
 
 ### **Model Development**
 Extend NeMo RL with custom model architectures and backends. Learn to add new models, handle model-specific quirks, and implement custom model diagnostics for specialized use cases.
@@ -68,32 +65,7 @@ Model evaluation and benchmarking strategies for RL-trained models.
 
 ::::
 
-## Examples & Tutorials
 
-::::{grid} 1 1 1 2
-:gutter: 2 2 2 2
-
-:::{grid-item-card} {octicon}`cloud;1.5em;sd-mr-1` Train GRPO Models on DeepScaleR
-:link: examples-tutorials/grpo-deepscaler
-:link-type: doc
-
-DeepScaleR integration for large-scale distributed training.
-
-+++
-{bdg-secondary}`Cloud`
-:::
-
-:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Fine-tune Models on OpenMathInstruct-2
-:link: examples-tutorials/sft-openmathinstruct2
-:link-type: doc
-
-Math instruction fine-tuning example with OpenMathInstruct-2 dataset.
-
-+++
-{bdg-primary}`Example`
-:::
-
-::::
 
 ## Model Development
 
@@ -124,7 +96,7 @@ Handle model-specific behaviors and special cases in NeMo RL.
 
 ## Environment & Data
 
-::::{grid} 1 2 2 2
+::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`bug;1.5em;sd-mr-1` Debugging
@@ -137,51 +109,41 @@ Debugging techniques and tools for RL training pipelines.
 {bdg-success}`Quality`
 :::
 
-:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Performance Profiling
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` NSYS Profiling
 :link: environment-data/nsys-profiling
 :link-type: doc
 
-Profile and optimize training performance with NVIDIA Nsight Systems.
+NSYS-specific profiling for RL training performance.
 
 +++
 {bdg-secondary}`Performance`
+:::
+
+:::{grid-item-card} {octicon}`zap;1.5em;sd-mr-1` Advanced Performance
+:link: ../advanced/performance/index
+:link-type: doc
+
+Comprehensive performance optimization and profiling techniques.
+
++++
+{bdg-warning}`Advanced`
 :::
 
 ::::
 
 ## Production & Support
 
-::::{grid} 1 2 2 2
+::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`checklist;1.5em;sd-mr-1` Testing & Debugging
-:link: production-support/testing
+:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Production & Support
+:link: production-support/index
 :link-type: doc
 
-Testing strategies and debugging techniques for RL training pipelines.
-
-+++
-{bdg-success}`Quality`
-:::
-
-:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Packaging
-:link: production-support/packaging
-:link-type: doc
-
-Deployment and packaging strategies for production environments.
+Testing, debugging, packaging, and deployment strategies.
 
 +++
 {bdg-secondary}`Production`
-:::
-
-:::{grid-item-card} {octicon}`bug;1.5em;sd-mr-1` Troubleshooting
-:link: production-support/troubleshooting
-:link-type: doc
-
-Common issues, error messages, and solutions for NeMo RL.
-
-+++
-{bdg-warning}`Support`
 :::
 
 :::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` Documentation
@@ -202,7 +164,6 @@ Build and maintain NeMo RL documentation.
 :hidden:
 
 training-algorithms/index
-examples-tutorials/index
 model-development/index
 environment-data/index
 production-support/index

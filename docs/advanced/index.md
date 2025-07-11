@@ -18,6 +18,9 @@ Deep dive into the mathematical foundations that underpin all NeMo RL algorithms
 ### **Research & Experimentation**
 Comprehensive guides for AI scientists and researchers conducting research with NeMo RL. Learn experimental design, reproducibility best practices, and advanced research methodologies.
 
+### **Advanced Training Techniques**
+Learn sophisticated training strategies beyond basic algorithms. Master multi-objective training, curriculum learning, custom loss functions, and training stability techniques for optimal model performance.
+
 ### **Performance & Optimization**
 Master the performance optimization and scaling aspects of NeMo RL. Learn distributed training strategies, performance profiling techniques, and how to handle model-specific considerations for optimal results.
 
@@ -145,6 +148,53 @@ Deep analysis of training dynamics, convergence properties, and performance benc
 
 ::::
 
+## Advanced Training Techniques
+
+::::{grid} 1 1 1 2
+:gutter: 2 2 2 2
+
+:::{grid-item-card} {octicon}`target;1.5em;sd-mr-1` Multi-Objective Training
+:link: training/multi-objective-training
+:link-type: doc
+
+Combine multiple loss functions and objectives in a single training pipeline with dynamic weight balancing.
+
++++
+{bdg-warning}`Advanced`
+:::
+
+:::{grid-item-card} {octicon}`mortar-board;1.5em;sd-mr-1` Curriculum Learning
+:link: training/curriculum-learning
+:link-type: doc
+
+Implement progressive difficulty scheduling to improve training efficiency and model performance.
+
++++
+{bdg-info}`Strategy`
+:::
+
+:::{grid-item-card} {octicon}`plus;1.5em;sd-mr-1` Custom Loss Functions
+:link: training/custom-loss-functions
+:link-type: doc
+
+Design and implement custom reward functions for specialized tasks and objectives.
+
++++
+{bdg-info}`Development`
+:::
+
+:::{grid-item-card} {octicon}`shield;1.5em;sd-mr-1` Training Stability
+:link: training/training-stability
+:link-type: doc
+
+Implement gradient clipping and other techniques to maintain training stability.
+
++++
+{bdg-success}`Stability`
+:::
+
+::::
+
 ## Performance & Optimization
 
 ::::{grid} 1 1 1 2
@@ -220,5 +270,6 @@ Real-time performance monitoring, alerting, and analysis tools.
 
 theory/index
 research/index
+training/index
 performance/index
 ```
