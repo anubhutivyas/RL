@@ -1531,8 +1531,8 @@ class MegatronPolicyWorker:
                 dtype: torch.empty(
                     total_size,
                     device=next(iter(gathered_hf_params.values())).device,
-                    # dtype=dtype,
-                    dtype=torch.bfloat16,
+                    dtype=dtype,
+                    # dtype=torch.bfloat16,
                     requires_grad=False,
                 )
                 for dtype, total_size in type_to_total_size.items()
