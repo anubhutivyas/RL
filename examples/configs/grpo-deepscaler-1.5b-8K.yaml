@@ -2,7 +2,7 @@
 grpo:
   reverse_entropy_mask: false
   use_random_entropy_mask: false
-  random_mask_prob: 0.20
+  random_mask_prob: 1.0
   top_p_std: 0.20   # train on responses with top p variance
   top_p_ent: 0.20   # train on tokens with top p entropy
   num_prompts_per_step: 64
