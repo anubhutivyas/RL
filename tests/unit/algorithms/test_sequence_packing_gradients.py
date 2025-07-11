@@ -1,16 +1,16 @@
 """Test script to debug high gradients with sequence packing + context parallelism."""
 
 import os
-import pytest
-import torch
-import ray
-import numpy as np
-from functools import partial
 
-from nemo_rl.algorithms.loss_functions import ClippedPGLossFn, SequencePackingLossWrapper
+import pytest
+import ray
+import torch
+
+from nemo_rl.algorithms.loss_functions import (
+    ClippedPGLossFn,
+    SequencePackingLossWrapper,
+)
 from nemo_rl.distributed.batched_data_dict import BatchedDataDict
-from nemo_rl.distributed.model_utils import from_parallel_logits_to_logprobs
-from nemo_rl.distributed.named_sharding import NamedSharding
 from nemo_rl.distributed.named_sharding import NamedSharding
 from nemo_rl.distributed.ray_actor_environment_registry import (
     ACTOR_ENVIRONMENT_REGISTRY,
@@ -25,11 +25,13 @@ class SequencePackingGradientTestActor:
     def __init__(self, cp_size):
         self.cp_size = cp_size
         self.env_vars = dict(os.environ)
-        
+
     def test_sequence_packing_gradients(self):
-        from nemo_rl.models.megatron.common import _pack_sequences_for_megatron
         from nemo_rl.distributed.model_utils import _get_tokens_on_this_cp_rank
-        from nemo_rl.models.megatron.common import forward_step_arbitrary_loss
+        from nemo_rl.models.megatron.common import (
+            _pack_sequences_for_megatron,
+            forward_step_arbitrary_loss,
+        )
 
         # Initialize process group
         torch.distributed.init_process_group(backend="nccl")
@@ -43,8 +45,11 @@ class SequencePackingGradientTestActor:
         # Patch get_context_parallel_group to always return cp_group
         # (Assume it's imported from nemo_rl.models.megatron.common)
         import megatron.core.parallel_state as parallel_state
+
         parallel_state._CONTEXT_PARALLEL_GROUP = cp_group
-        parallel_state._TENSOR_MODEL_PARALLEL_GROUP = torch.distributed.new_group(ranks=[rank])
+        parallel_state._TENSOR_MODEL_PARALLEL_GROUP = torch.distributed.new_group(
+            ranks=[rank]
+        )
 
         # Test parameters
         batch_size = 4
@@ -58,16 +63,29 @@ class SequencePackingGradientTestActor:
 
         # Create test data with varying sequence lengths
         torch.manual_seed(42)  # For reproducibility
-        seq_lengths = torch.tensor([max_seq_len // 4, max_seq_len * 1 // 4, max_seq_len // 4, max_seq_len * 3 // 4])
+        seq_lengths = torch.tensor(
+            [
+                max_seq_len // 4,
+                max_seq_len * 1 // 4,
+                max_seq_len // 4,
+                max_seq_len * 3 // 4,
+            ]
+        )
 
         # Create input data
-        input_ids = torch.zeros(batch_size, max_seq_len, dtype=torch.long, device="cuda")
-        token_mask = torch.zeros(batch_size, max_seq_len, dtype=torch.float, device="cuda")
+        input_ids = torch.zeros(
+            batch_size, max_seq_len, dtype=torch.long, device="cuda"
+        )
+        token_mask = torch.zeros(
+            batch_size, max_seq_len, dtype=torch.float, device="cuda"
+        )
 
         # Fill with random tokens up to seq_length
         for i in range(batch_size):
             length = seq_lengths[i]
-            input_ids[i, :length] = torch.randint(0, vocab_size, (length,), device="cuda")
+            input_ids[i, :length] = torch.randint(
+                0, vocab_size, (length,), device="cuda"
+            )
             token_mask[i, :length] = 1.0
 
         # Create other required tensors
@@ -108,7 +126,9 @@ class SequencePackingGradientTestActor:
         base_loss_fn = ClippedPGLossFn(loss_config)
         data_dict = BatchedDataDict(original_data)
 
-        global_valid_toks = torch.tensor(sum(seq_lengths).item(), dtype=torch.float, device="cuda")
+        global_valid_toks = torch.tensor(
+            sum(seq_lengths).item(), dtype=torch.float, device="cuda"
+        )
         global_valid_seqs = torch.tensor(batch_size, dtype=torch.float, device="cuda")
 
         # Forward pass
@@ -129,18 +149,26 @@ class SequencePackingGradientTestActor:
         baseline_grad_store = baseline_logits.grad.clone()
         baseline_logits.grad.zero_()
 
-        print(f"Rank {rank}: Baseline gradient stats - norm: {baseline_grad_norm:.4f}, max: {baseline_grad_max:.4f}, mean: {baseline_grad_mean:.4f}")
+        print(
+            f"Rank {rank}: Baseline gradient stats - norm: {baseline_grad_norm:.4f}, max: {baseline_grad_max:.4f}, mean: {baseline_grad_mean:.4f}"
+        )
 
         # ===== TEST 2: Sequence packing with context parallelism =====
         print(f"Rank {rank}: Testing with sequence packing + CP")
 
         # Pack sequences
         pad_to_multiple = cp_size * 2  # Common requirement for CP
-        packed_input_ids, packed_input_ids_cp, packed_seq_params, cu_seqlens, cu_seqlens_padded = _pack_sequences_for_megatron(
+        (
+            packed_input_ids,
+            packed_input_ids_cp,
+            packed_seq_params,
+            cu_seqlens,
+            cu_seqlens_padded,
+        ) = _pack_sequences_for_megatron(
             input_ids,
             seq_lengths,
             pad_individual_seqs_to_multiple_of=pad_to_multiple,
-            pad_packed_seq_to=max_seq_len*batch_size if cp_size > 1 else None,
+            pad_packed_seq_to=max_seq_len * batch_size if cp_size > 1 else None,
             cp_rank=rank,
             cp_size=cp_size,
         )
@@ -152,16 +180,21 @@ class SequencePackingGradientTestActor:
             )
             run_seq = 0
             for i, seq_len in enumerate(seq_lengths):
-                padded_seqlen = cu_seqlens_padded[i+1] - cu_seqlens_padded[i]
+                padded_seqlen = cu_seqlens_padded[i + 1] - cu_seqlens_padded[i]
                 if padded_seqlen > baseline_logits.shape[1]:
                     # pad the logits with zeros
-                    tmp_logits = torch.zeros(1, padded_seqlen, vocab_size, device="cuda")
-                    tmp_logits[:, :seq_len] = baseline_logits[i: i+1, :seq_len]
+                    tmp_logits = torch.zeros(
+                        1, padded_seqlen, vocab_size, device="cuda"
+                    )
+                    tmp_logits[:, :seq_len] = baseline_logits[i : i + 1, :seq_len]
                 else:
-                    tmp_logits = baseline_logits[i: i+1, :padded_seqlen]
-                packed_logits[:, run_seq // cp_size: (run_seq + padded_seqlen) // cp_size, :] = _get_tokens_on_this_cp_rank(tmp_logits, rank, cp_size)
+                    tmp_logits = baseline_logits[i : i + 1, :padded_seqlen]
+                packed_logits[
+                    :, run_seq // cp_size : (run_seq + padded_seqlen) // cp_size, :
+                ] = _get_tokens_on_this_cp_rank(tmp_logits, rank, cp_size)
                 run_seq += padded_seqlen
             return packed_logits
+
         packed_logits = make_packed_logits(baseline_logits)
 
         # Create sequence packing wrapper
@@ -201,44 +234,72 @@ class SequencePackingGradientTestActor:
         packed_grad_mean = torch.mean(torch.abs(packed_grad)).item()
         # print(f"max grad on dims {torch.max(torch.abs(packed_grad), dim=0)}, {torch.max(torch.abs(packed_grad), dim=1)}, {torch.max(torch.abs(packed_grad), dim=2)}")
 
-        print(f"Rank {rank}: Packed gradient stats - norm: {packed_grad_norm:.4f}, max: {packed_grad_max:.4f}, mean: {packed_grad_mean:.4f}")
+        print(
+            f"Rank {rank}: Packed gradient stats - norm: {packed_grad_norm:.4f}, max: {packed_grad_max:.4f}, mean: {packed_grad_mean:.4f}"
+        )
 
         # ===== ANALYSIS =====
-        gradient_ratio_norm = packed_grad_norm / baseline_grad_norm if baseline_grad_norm > 0 else float('inf')
-        gradient_ratio_max = packed_grad_max / baseline_grad_max if baseline_grad_max > 0 else float('inf')
-        gradient_ratio_mean = packed_grad_mean / baseline_grad_mean if baseline_grad_mean > 0 else float('inf')
+        gradient_ratio_norm = (
+            packed_grad_norm / baseline_grad_norm
+            if baseline_grad_norm > 0
+            else float("inf")
+        )
+        gradient_ratio_max = (
+            packed_grad_max / baseline_grad_max
+            if baseline_grad_max > 0
+            else float("inf")
+        )
+        gradient_ratio_mean = (
+            packed_grad_mean / baseline_grad_mean
+            if baseline_grad_mean > 0
+            else float("inf")
+        )
 
-        print(f"Rank {rank}: Gradient ratios - norm: {gradient_ratio_norm:.4f}, max: {gradient_ratio_max:.4f}, mean: {gradient_ratio_mean:.4f}")
+        print(
+            f"Rank {rank}: Gradient ratios - norm: {gradient_ratio_norm:.4f}, max: {gradient_ratio_max:.4f}, mean: {gradient_ratio_mean:.4f}"
+        )
 
-        print(f"differences by token: {torch.sum(torch.abs(packed_grad - baseline_grad_store), dim=-1)}")
+        print(
+            f"differences by token: {torch.sum(torch.abs(packed_grad - baseline_grad_store), dim=-1)}"
+        )
 
-        torch.testing.assert_close(packed_grad, baseline_grad_store, atol=1e-6, rtol=1e-6)
+        torch.testing.assert_close(
+            packed_grad, baseline_grad_store, atol=1e-6, rtol=1e-6
+        )
 
         # test 3: with forward_step_arbitrary_loss
         # reset grad
         baseline_logits.grad.zero_()
         packed_logits = make_packed_logits(baseline_logits)
 
-        #mock model forward
+        # mock model forward
         class MockModel:
             def __init__(self):
                 self.logits = packed_logits
+
             def __call__(self, *args, **kwargs):
                 return self.logits
-            def forward(self, input_ids, position_ids, attention_mask, packed_seq_params=None):
+
+            def forward(
+                self, input_ids, position_ids, attention_mask, packed_seq_params=None
+            ):
                 return self.logits
 
         class MockMcoreState:
             def __init__(self):
                 # context that does nothing, but supports both with straggler_timer and with straggler_timer(bdata=True)
                 from contextlib import nullcontext
+
                 class DummyStragglerTimer:
                     def __call__(self, *args, **kwargs):
                         return nullcontext()
+
                     def __enter__(self):
                         return self
+
                     def __exit__(self, exc_type, exc_val, exc_tb):
                         pass
+
                 self.straggler_timer = DummyStragglerTimer()
 
         output_tensor, wrapped_loss_fn = forward_step_arbitrary_loss(
@@ -251,7 +312,7 @@ class SequencePackingGradientTestActor:
             pack_sequences=True,
             seq_length_key="input_lengths",
             pad_individual_seqs_to_multiple_of=pad_to_multiple,
-            pad_full_seq_to=max_seq_len*batch_size if cp_size > 1 else None,
+            pad_full_seq_to=max_seq_len * batch_size if cp_size > 1 else None,
             cp_normalize=True,
         )
         loss, metrics = wrapped_loss_fn(output_tensor)
@@ -266,126 +327,149 @@ class SequencePackingGradientTestActor:
         packed_grad_norm = torch.norm(packed_grad).item()
         packed_grad_max = torch.max(torch.abs(packed_grad)).item()
         packed_grad_mean = torch.mean(torch.abs(packed_grad)).item()
-        print(f"Rank {rank}: Packed gradient stats - norm: {packed_grad_norm:.4f}, max: {packed_grad_max:.4f}, mean: {packed_grad_mean:.4f}")
+        print(
+            f"Rank {rank}: Packed gradient stats - norm: {packed_grad_norm:.4f}, max: {packed_grad_max:.4f}, mean: {packed_grad_mean:.4f}"
+        )
 
-        gradient_ratio_norm = packed_grad_norm / baseline_grad_norm if baseline_grad_norm > 0 else float('inf')
-        gradient_ratio_max = packed_grad_max / baseline_grad_max if baseline_grad_max > 0 else float('inf')
+        gradient_ratio_norm = (
+            packed_grad_norm / baseline_grad_norm
+            if baseline_grad_norm > 0
+            else float("inf")
+        )
+        gradient_ratio_max = (
+            packed_grad_max / baseline_grad_max
+            if baseline_grad_max > 0
+            else float("inf")
+        )
 
-        print(f"Rank {rank}: Gradient ratios - norm: {gradient_ratio_norm:.4f}, max: {gradient_ratio_max:.4f}")
-        print(f"differences by token: {torch.sum(torch.abs(packed_grad - baseline_grad_store), dim=-1)}")
-        
-        
-        
-        
+        print(
+            f"Rank {rank}: Gradient ratios - norm: {gradient_ratio_norm:.4f}, max: {gradient_ratio_max:.4f}"
+        )
+        print(
+            f"differences by token: {torch.sum(torch.abs(packed_grad - baseline_grad_store), dim=-1)}"
+        )
 
-SEQUENCE_PACKING_GRADIENT_TEST_ACTOR_FQN = f"{SequencePackingGradientTestActor.__module__}.SequencePackingGradientTestActor"
+
+SEQUENCE_PACKING_GRADIENT_TEST_ACTOR_FQN = (
+    f"{SequencePackingGradientTestActor.__module__}.SequencePackingGradientTestActor"
+)
 
 
 @pytest.fixture
 def register_sequence_packing_gradient_test_actor():
     """Register the SequencePackingGradientTestActor for use in tests."""
-    original_registry_value = ACTOR_ENVIRONMENT_REGISTRY.get(SEQUENCE_PACKING_GRADIENT_TEST_ACTOR_FQN)
-    ACTOR_ENVIRONMENT_REGISTRY[SEQUENCE_PACKING_GRADIENT_TEST_ACTOR_FQN] = PY_EXECUTABLES.MCORE
-    
+    original_registry_value = ACTOR_ENVIRONMENT_REGISTRY.get(
+        SEQUENCE_PACKING_GRADIENT_TEST_ACTOR_FQN
+    )
+    ACTOR_ENVIRONMENT_REGISTRY[SEQUENCE_PACKING_GRADIENT_TEST_ACTOR_FQN] = (
+        PY_EXECUTABLES.MCORE
+    )
+
     yield SEQUENCE_PACKING_GRADIENT_TEST_ACTOR_FQN
-    
+
     # Clean up registry
     if SEQUENCE_PACKING_GRADIENT_TEST_ACTOR_FQN in ACTOR_ENVIRONMENT_REGISTRY:
         if original_registry_value is None:
             del ACTOR_ENVIRONMENT_REGISTRY[SEQUENCE_PACKING_GRADIENT_TEST_ACTOR_FQN]
         else:
-            ACTOR_ENVIRONMENT_REGISTRY[SEQUENCE_PACKING_GRADIENT_TEST_ACTOR_FQN] = original_registry_value
+            ACTOR_ENVIRONMENT_REGISTRY[SEQUENCE_PACKING_GRADIENT_TEST_ACTOR_FQN] = (
+                original_registry_value
+            )
 
 
 @pytest.mark.unit
 @pytest.mark.parametrize("cp_size", [1, 2])
-def test_sequence_packing_gradients_with_cp(register_sequence_packing_gradient_test_actor, cp_size):
+def test_sequence_packing_gradients_with_cp(
+    register_sequence_packing_gradient_test_actor, cp_size
+):
     """Test sequence packing gradients with context parallelism."""
     # Skip if not enough GPUs
     if not torch.cuda.is_available() or torch.cuda.device_count() < cp_size:
-        pytest.skip(f"Not enough GPUs available. Need {cp_size}, got {torch.cuda.device_count()}")
-    
+        pytest.skip(
+            f"Not enough GPUs available. Need {cp_size}, got {torch.cuda.device_count()}"
+        )
+
     # Create virtual cluster
     cluster = RayVirtualCluster(bundle_ct_per_node_list=[cp_size], use_gpus=True)
-    
+
     try:
         actor_fqn = register_sequence_packing_gradient_test_actor
-        
+
         # For CP, all ranks are in a single group
         sharding = NamedSharding(layout=list(range(cp_size)), names=["cp"])
         builder = RayWorkerBuilder(actor_fqn, cp_size)
-        
+
         worker_group = RayWorkerGroup(
             cluster=cluster,
             remote_worker_builder=builder,
             workers_per_node=None,
             sharding_annotations=sharding,
         )
-        
+
         # Run the test on all workers
         futures = worker_group.run_all_workers_single_data(
             "test_sequence_packing_gradients"
         )
         results = ray.get(futures)
-        
-#         # Analyze results from all workers
+
+        #         # Analyze results from all workers
         # print("\n=== GRADIENT ANALYSIS RESULTS ===")
-        
+
         # all_high_gradients = []
         # all_warning_messages = []
-        
+
         # for i, result in enumerate(results):
-            # print(f"\nWorker {i} (Rank {result['rank']}):")
-            # print(f"  Success: {result['success']}")
-            
-            # if result['error']:
-                # print(f"  Error: {result['error']}")
-            
-            # # Print detailed stats
-            # baseline = result['baseline_stats']
-            # packed = result['packed_stats']
-            # ratios = result['gradient_ratios']
-            
-            # print(f"  Baseline - Loss: {baseline['loss']:.6f}, Grad norm: {baseline['grad_norm']:.4f}, Max: {baseline['grad_max']:.4f}, Mean: {baseline['grad_mean']:.4f}")
-            # print(f"  Packed   - Loss: {packed['loss']:.6f}, Grad norm: {packed['grad_norm']:.4f}, Max: {packed['grad_max']:.4f}, Mean: {packed['grad_mean']:.4f}")
-            # print(f"  Ratios   - Norm: {ratios['norm']:.4f}, Max: {ratios['max']:.4f}, Mean: {ratios['mean']:.4f}")
-            
-            # if result['high_gradients_detected']:
-                # all_high_gradients.append(i)
-                # all_warning_messages.extend(result['warning_messages'])
-                # print(f"  ⚠️  HIGH GRADIENTS DETECTED!")
-                # for msg in result['warning_messages']:
-                    # print(f"    - {msg}")
-            # else:
-                # print(f"  ✅ Gradients appear normal")
-        
+        # print(f"\nWorker {i} (Rank {result['rank']}):")
+        # print(f"  Success: {result['success']}")
+
+        # if result['error']:
+        # print(f"  Error: {result['error']}")
+
+        # # Print detailed stats
+        # baseline = result['baseline_stats']
+        # packed = result['packed_stats']
+        # ratios = result['gradient_ratios']
+
+        # print(f"  Baseline - Loss: {baseline['loss']:.6f}, Grad norm: {baseline['grad_norm']:.4f}, Max: {baseline['grad_max']:.4f}, Mean: {baseline['grad_mean']:.4f}")
+        # print(f"  Packed   - Loss: {packed['loss']:.6f}, Grad norm: {packed['grad_norm']:.4f}, Max: {packed['grad_max']:.4f}, Mean: {packed['grad_mean']:.4f}")
+        # print(f"  Ratios   - Norm: {ratios['norm']:.4f}, Max: {ratios['max']:.4f}, Mean: {ratios['mean']:.4f}")
+
+        # if result['high_gradients_detected']:
+        # all_high_gradients.append(i)
+        # all_warning_messages.extend(result['warning_messages'])
+        # print(f"  ⚠️  HIGH GRADIENTS DETECTED!")
+        # for msg in result['warning_messages']:
+        # print(f"    - {msg}")
+        # else:
+        # print(f"  ✅ Gradients appear normal")
+
         # # Final assessment
         # print(f"\n=== FINAL ASSESSMENT ===")
         # if all_high_gradients:
-            # print(f"❌ HIGH GRADIENTS DETECTED on workers: {all_high_gradients}")
-            # print("This indicates a potential issue with gradient accumulation in sequence packing + CP.")
-            # print("Issues found:")
-            # for msg in set(all_warning_messages):
-                # print(f"  - {msg}")
-            
-            # # Don't fail the test immediately, but mark it as a known issue
-            # print("\n⚠️  This is a known issue being debugged. Test will pass but issue is documented.")
+        # print(f"❌ HIGH GRADIENTS DETECTED on workers: {all_high_gradients}")
+        # print("This indicates a potential issue with gradient accumulation in sequence packing + CP.")
+        # print("Issues found:")
+        # for msg in set(all_warning_messages):
+        # print(f"  - {msg}")
+
+        # # Don't fail the test immediately, but mark it as a known issue
+        # print("\n⚠️  This is a known issue being debugged. Test will pass but issue is documented.")
         # else:
-            # print("✅ All gradients appear normal across all workers")
-        
+        # print("✅ All gradients appear normal across all workers")
+
         # # For now, we'll make the test pass even if high gradients are detected
         # # so we can continue debugging. In a real scenario, you'd want to fix the issue.
         # for i, result in enumerate(results):
-            # if not result["success"]:
-                # print(f"\n⚠️  Worker {i} detected high gradients - this is a known issue under investigation")
-                # # assert result["success"], f"Worker {i} failed: {result['error']}"
-        
+        # if not result["success"]:
+        # print(f"\n⚠️  Worker {i} detected high gradients - this is a known issue under investigation")
+        # # assert result["success"], f"Worker {i} failed: {result['error']}"
+
         worker_group.shutdown(force=True)
-        
+
     finally:
         cluster.shutdown()
 
 
 if __name__ == "__main__":
     # Run the test directly
-    pytest.main([__file__, "-v", "-s"]) 
+    pytest.main([__file__, "-v", "-s"])

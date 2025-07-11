@@ -187,6 +187,7 @@ def dtensor_from_parallel_logits_to_logprobs(
 
     return probs[:, :-1]
 
+
 def from_parallel_logits_to_logprobs(
     vocab_parallel_logits: torch.Tensor,
     target: torch.Tensor,
@@ -236,10 +237,12 @@ def from_parallel_logits_to_logprobs(
         tp_group,
         inference_only,
     ).contiguous()
-   
+
     if cp_size > 1:
         # we need to gather the logits by context parallelism
-        probs = allgather_cp_sharded_tensor(probs, cp_group, seq_dim=1)#, unpadded_seqlen=target.shape[1])
+        probs = allgather_cp_sharded_tensor(
+            probs, cp_group, seq_dim=1
+        )  # , unpadded_seqlen=target.shape[1])
 
     if pad_len > 0:
         probs = probs[:, :-pad_len]
@@ -287,7 +290,9 @@ def from_parallel_logits_to_logprobs_packed_sequences(
     cp_rank = 0 if cp_group is None else torch.distributed.get_rank(cp_group)
 
     # Roll each sequence individually
-    rolled_targets = torch.zeros(target.shape[0] // cp_size, dtype=target.dtype, device=target.device)
+    rolled_targets = torch.zeros(
+        target.shape[0] // cp_size, dtype=target.dtype, device=target.device
+    )
     for i in range(batch_size):
         start_idx = cu_seqlens_padded[i].item()
         end_idx = cu_seqlens_padded[i + 1].item()
@@ -295,8 +300,9 @@ def from_parallel_logits_to_logprobs_packed_sequences(
         # Get the sequence targets and roll by -1
         seq_targets = target[start_idx:end_idx]
         rolled_seq_targets = seq_targets.roll(shifts=-1, dims=0)
-        rolled_targets[start_idx // cp_size : end_idx // cp_size] = _get_tokens_on_this_cp_rank(rolled_seq_targets, cp_rank, cp_size, seq_dim=0)
-
+        rolled_targets[start_idx // cp_size : end_idx // cp_size] = (
+            _get_tokens_on_this_cp_rank(rolled_seq_targets, cp_rank, cp_size, seq_dim=0)
+        )
 
     # Add batch dimension back for DistributedLogprob
     rolled_targets = rolled_targets.unsqueeze(0)
@@ -328,7 +334,9 @@ def from_parallel_logits_to_logprobs_packed_sequences(
         for i in range(batch_size):
             start_idx = cu_seqlens_padded[i].item()
             end_idx = cu_seqlens_padded[i + 1].item()
-            final_probs[start_idx:end_idx] = allgather_cp_sharded_tensor(probs[start_idx // cp_size:end_idx // cp_size], cp_group, seq_dim=0)
+            final_probs[start_idx:end_idx] = allgather_cp_sharded_tensor(
+                probs[start_idx // cp_size : end_idx // cp_size], cp_group, seq_dim=0
+            )
         probs = final_probs
 
     out_logprobs = torch.zeros(
@@ -361,8 +369,9 @@ def _get_tokens_on_this_cp_rank(
     seq_dim: int = 1,
 ) -> torch.Tensor:
     """Get tokens on this context parallelism rank.
+
     Assumes that input_ids are already padded to a multiple of cp_size * 2 or cp_size == 1.
-    
+
     Args:
         input_ids: Input token IDs [seq_length, ]
         cp_rank: Context parallelism rank
@@ -373,37 +382,41 @@ def _get_tokens_on_this_cp_rank(
     """
     if cp_size == 1:
         return input_ids
-    
+
     # load balance for causal attention
     shard_size = input_ids.shape[seq_dim] // (cp_size * 2)
     shard_inds = (cp_rank, (cp_size * 2) - cp_rank - 1)
-    
+
     # Create slices for each dimension
     slices = [slice(None)] * input_ids.dim()
     ids_chunks = []
-    
+
     for ind in shard_inds:
         slices[seq_dim] = slice(ind * shard_size, (ind + 1) * shard_size)
         ids_chunks.append(input_ids[slices])
-    
+
     ids = torch.cat(ids_chunks, dim=seq_dim)
     return ids
 
 
-def allgather_cp_sharded_tensor(tensor, cp_group, seq_dim=1):#, unpadded_seqlen=None):
-    return AllGatherCPTensor.apply(tensor, cp_group, seq_dim)#, unpadded_seqlen)
+def allgather_cp_sharded_tensor(
+    tensor, cp_group, seq_dim=1
+):  # , unpadded_seqlen=None):
+    return AllGatherCPTensor.apply(tensor, cp_group, seq_dim)  # , unpadded_seqlen)
+
 
 class AllGatherCPTensor(torch.autograd.Function):
-    def forward(ctx, tensor, cp_group: torch.distributed.ProcessGroup, seq_dim=1):#, unpadded_seqlen: Optional[int] = None):
+    def forward(
+        ctx, tensor, cp_group: torch.distributed.ProcessGroup, seq_dim=1
+    ):  # , unpadded_seqlen: Optional[int] = None):
         cp_size = torch.distributed.get_world_size(cp_group)
         cp_rank_chunks = []
         for _ in range(cp_size):
             cp_rank_chunks.append(torch.empty_like(tensor))
 
         torch.distributed.all_gather(
-            tensor_list=cp_rank_chunks, 
-            tensor=tensor, 
-            group=cp_group)
+            tensor_list=cp_rank_chunks, tensor=tensor, group=cp_group
+        )
 
         # undo the CP load balancing chunking
         tensor_chunks = []
@@ -423,7 +436,7 @@ class AllGatherCPTensor(torch.autograd.Function):
         ctx.seq_dim = seq_dim
         ctx.cp_group = cp_group
         # ctx.unpadded_seqlen = unpadded_seqlen
-        
+
         return ret_tensor
 
     def backward(ctx, grad_output):
@@ -431,12 +444,12 @@ class AllGatherCPTensor(torch.autograd.Function):
         cp_rank = torch.distributed.get_rank(ctx.cp_group)
         torch.distributed.all_reduce(grad_output, group=ctx.cp_group)
 
-        #chunk the seqdim in 2*cp chunks, and select with a CP load balanced indexing
+        # chunk the seqdim in 2*cp chunks, and select with a CP load balanced indexing
         seq_dim = ctx.seq_dim
         # if ctx.unpadded_seqlen is not None:
-            # # Zero out grad_output along the seq_dim after unpadded_seqlen
-            # slicer = [slice(None)] * grad_output.dim()
-            # slicer[seq_dim] = slice(ctx.unpadded_seqlen, None)
+        # # Zero out grad_output along the seq_dim after unpadded_seqlen
+        # slicer = [slice(None)] * grad_output.dim()
+        # slicer[seq_dim] = slice(ctx.unpadded_seqlen, None)
         #     grad_output[tuple(slicer)] = 0
 
         grad_output = grad_output.view(
@@ -451,6 +464,8 @@ class AllGatherCPTensor(torch.autograd.Function):
         ).cuda(non_blocking=True)
 
         grad_input = grad_output.index_select(seq_dim, index)
-        grad_input = grad_input.view(*grad_input.shape[0:seq_dim], -1, *grad_input.shape[(seq_dim + 2) :])
+        grad_input = grad_input.view(
+            *grad_input.shape[0:seq_dim], -1, *grad_input.shape[(seq_dim + 2) :]
+        )
 
-        return grad_input, None, None#, None
+        return grad_input, None, None  # , None

@@ -39,14 +39,14 @@ from megatron.core.inference.text_generation_controllers.text_generation_control
 from megatron.core.models.gpt import GPTModel
 from megatron.core.optimizer import ChainedOptimizer
 from megatron.core.parallel_state import (
+    get_context_parallel_group,
+    get_context_parallel_rank,
     get_pipeline_model_parallel_group,
     get_pipeline_model_parallel_last_rank,
     get_pipeline_model_parallel_rank,
     get_pipeline_model_parallel_world_size,
     get_tensor_model_parallel_group,
     get_tensor_model_parallel_rank,
-    get_context_parallel_rank,
-    get_context_parallel_group,
     is_pipeline_last_stage,
 )
 from megatron.core.pipeline_parallel import get_forward_backward_func
@@ -971,15 +971,19 @@ class MegatronPolicyWorker:
                 cp_size = self.cfg["megatron_cfg"]["context_parallel_size"]
                 cp_rank = get_context_parallel_rank()
                 pad_factor = cp_size * 2 * tp_size if cp_size > 1 else tp_size
-                input_ids, input_ids_cp_sharded, packed_seq_params, cu_seqlens, cu_seqlens_padded = (
-                    _pack_sequences_for_megatron(
-                        data_dict["input_ids"].clone(),
-                        data_dict["input_lengths"],
-                        pad_individual_seqs_to_multiple_of=pad_factor,
-                        pad_packed_seq_to=pad_full_seq_to,
-                        cp_rank=cp_rank,
-                        cp_size=cp_size,
-                    )
+                (
+                    input_ids,
+                    input_ids_cp_sharded,
+                    packed_seq_params,
+                    cu_seqlens,
+                    cu_seqlens_padded,
+                ) = _pack_sequences_for_megatron(
+                    data_dict["input_ids"].clone(),
+                    data_dict["input_lengths"],
+                    pad_individual_seqs_to_multiple_of=pad_factor,
+                    pad_packed_seq_to=pad_full_seq_to,
+                    cp_rank=cp_rank,
+                    cp_size=cp_size,
                 )
                 attention_mask, position_ids = None, None
                 unpacked_input_ids = data_dict["input_ids"]

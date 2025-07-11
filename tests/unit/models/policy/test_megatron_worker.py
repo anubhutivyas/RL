@@ -1320,9 +1320,11 @@ def test_megatron_context_parallel_logprob_agreement():
 
     # Create test data with varying sequence lengths to test sequence packing
     torch.manual_seed(42)  # Fixed seed for reproducibility
-    input_ids = torch.arange(seq_len * batch_size, device="cuda").reshape(batch_size, seq_len)
+    input_ids = torch.arange(seq_len * batch_size, device="cuda").reshape(
+        batch_size, seq_len
+    )
     # Create varied sequence lengths for more realistic sequence packing test
-    input_lengths = torch.tensor([31,21,29,56], dtype=torch.int32)
+    input_lengths = torch.tensor([31, 21, 29, 56], dtype=torch.int32)
     attention_mask = torch.zeros(batch_size, seq_len)
     for i, length in enumerate(input_lengths):
         attention_mask[i, :length] = 1
@@ -1336,7 +1338,9 @@ def test_megatron_context_parallel_logprob_agreement():
     )
 
     # Test 1: Non-CP model (context_parallel_size=1) with sequence packing
-    print("=== Testing Non-CP model (context_parallel_size=1) with sequence packing ===")
+    print(
+        "=== Testing Non-CP model (context_parallel_size=1) with sequence packing ==="
+    )
     cluster_no_cp = RayVirtualCluster(
         name="test-no-cp-packing",
         bundle_ct_per_node_list=[num_gpus],
@@ -1345,12 +1349,10 @@ def test_megatron_context_parallel_logprob_agreement():
         max_colocated_worker_groups=1,
     )
 
-    config_no_cp = create_megatron_test_config(
-        tp=1, pp=1, precision="bfloat16"
-    )
+    config_no_cp = create_megatron_test_config(tp=1, pp=1, precision="bfloat16")
     # Ensure context parallel is disabled
     config_no_cp["megatron_cfg"]["context_parallel_size"] = 1
-    
+
     # Enable sequence packing
     config_no_cp["sequence_packing"] = {
         "enabled": True,
@@ -1358,7 +1360,7 @@ def test_megatron_context_parallel_logprob_agreement():
         "logprob_mb_tokens": seq_len,
         "algorithm": "modified_first_fit_decreasing",
     }
-    
+
     tokenizer = get_tokenizer(config_no_cp["tokenizer"])
     config_no_cp["generation"] = configure_generation_config(
         config_no_cp["generation"], tokenizer
@@ -1385,7 +1387,7 @@ def test_megatron_context_parallel_logprob_agreement():
     config_no_cp_no_packing["sequence_packing"] = {
         "enabled": False,
     }
-    policy_no_cp_no_packing= Policy(
+    policy_no_cp_no_packing = Policy(
         cluster=cluster_no_cp,
         config=config_no_cp_no_packing,
         tokenizer=tokenizer,
@@ -1399,17 +1401,22 @@ def test_megatron_context_parallel_logprob_agreement():
     print(f"Non-CP logprobs no packing sample: {logprobs_no_cp_no_packing[0, :5]}")
 
     cluster_no_cp.shutdown()
-    
+
     # Verify logprobs match between CP and non-CP models with sequence packing
     print("=== Comparing logprobs ===")
-    
+
     # Check shapes match
     print(f"diff packing {logprobs_no_cp - logprobs_no_cp_no_packing}")
     assert logprobs_no_cp.shape == logprobs_no_cp_no_packing.shape, (
         f"Logprob shapes should match: {logprobs_no_cp.shape} vs {logprobs_no_cp_no_packing.shape}"
     )
-    torch.testing.assert_close(logprobs_no_cp, logprobs_no_cp_no_packing, rtol=1e-3, atol=1e-3), (
-        "Logprobs should match between non-CP and non-CP models with sequence packing"
+    (
+        torch.testing.assert_close(
+            logprobs_no_cp, logprobs_no_cp_no_packing, rtol=1e-3, atol=1e-3
+        ),
+        (
+            "Logprobs should match between non-CP and non-CP models with sequence packing"
+        ),
     )
 
     # Test 2: CP model (context_parallel_size=2) with sequence packing
@@ -1422,12 +1429,10 @@ def test_megatron_context_parallel_logprob_agreement():
         max_colocated_worker_groups=1,
     )
 
-    config_cp = create_megatron_test_config(
-        tp=1, pp=1, precision="bfloat16"
-    )
+    config_cp = create_megatron_test_config(tp=1, pp=1, precision="bfloat16")
     # Enable context parallel
     config_cp["megatron_cfg"]["context_parallel_size"] = 2
-    
+
     # Enable sequence packing
     config_cp["sequence_packing"] = {
         "enabled": True,
@@ -1435,7 +1440,7 @@ def test_megatron_context_parallel_logprob_agreement():
         "logprob_mb_tokens": seq_len,
         "algorithm": "modified_first_fit_decreasing",
     }
-    
+
     config_cp["generation"] = configure_generation_config(
         config_cp["generation"], tokenizer
     )
@@ -1459,22 +1464,28 @@ def test_megatron_context_parallel_logprob_agreement():
 
     # Verify logprobs match between CP and non-CP models with sequence packing
     print("=== Comparing logprobs ===")
-    
+
     # Check shapes match
     assert logprobs_no_cp.shape == logprobs_cp.shape, (
         f"Logprob shapes should match: {logprobs_no_cp.shape} vs {logprobs_cp.shape}"
     )
-    
+
     # Check that neither contains NaN or Inf
-    assert not torch.isnan(logprobs_no_cp).any(), "Non-CP logprobs should not contain NaN"
-    assert not torch.isinf(logprobs_no_cp).any(), "Non-CP logprobs should not contain Inf"
+    assert not torch.isnan(logprobs_no_cp).any(), (
+        "Non-CP logprobs should not contain NaN"
+    )
+    assert not torch.isinf(logprobs_no_cp).any(), (
+        "Non-CP logprobs should not contain Inf"
+    )
     assert not torch.isnan(logprobs_cp).any(), "CP logprobs should not contain NaN"
     assert not torch.isinf(logprobs_cp).any(), "CP logprobs should not contain Inf"
-    
+
     # Check that first token logprobs are zero (by convention)
-    assert torch.all(logprobs_no_cp[:, 0] == 0), "First token logprobs should be zero (non-CP)"
+    assert torch.all(logprobs_no_cp[:, 0] == 0), (
+        "First token logprobs should be zero (non-CP)"
+    )
     assert torch.all(logprobs_cp[:, 0] == 0), "First token logprobs should be zero (CP)"
-    
+
     # Compare logprobs with tight tolerance
     logprobs_cp = logprobs_cp * attention_mask
     print(f"diff {logprobs_no_cp_no_packing - logprobs_cp}")
@@ -1482,17 +1493,19 @@ def test_megatron_context_parallel_logprob_agreement():
     mean_diff = torch.mean(torch.abs(logprobs_no_cp_no_packing - logprobs_cp)).item()
     print(f"Max difference: {max_diff}")
     print(f"Mean difference: {mean_diff}")
-    
+
     # Assert logprobs are identical (or very close due to floating point)
     torch.testing.assert_close(
-        logprobs_no_cp_no_packing, 
-        logprobs_cp, 
-        rtol=1e-3, 
+        logprobs_no_cp_no_packing,
+        logprobs_cp,
+        rtol=1e-3,
         atol=1e-2,
-        msg="CP and non-CP models should produce identical logprobs with sequence packing"
+        msg="CP and non-CP models should produce identical logprobs with sequence packing",
     )
-    
-    print("✓ SUCCESS: CP and non-CP models produce identical logprobs with sequence packing")
+
+    print(
+        "✓ SUCCESS: CP and non-CP models produce identical logprobs with sequence packing"
+    )
 
 
 @pytest.mark.timeout(300)
@@ -1505,8 +1518,10 @@ def test_megatron_context_parallel_training_agreement():
 
     # Create test data with varying sequence lengths to test sequence packing
     torch.manual_seed(42)  # Fixed seed for reproducibility
-    input_ids = torch.arange(seq_len * batch_size, device="cuda").reshape(batch_size, seq_len)
-    
+    input_ids = torch.arange(seq_len * batch_size, device="cuda").reshape(
+        batch_size, seq_len
+    )
+
     # Create varied sequence lengths for more realistic sequence packing test
     input_lengths = torch.tensor([33, 48], dtype=torch.int32)
     attention_mask = torch.zeros(batch_size, seq_len)
@@ -1521,9 +1536,9 @@ def test_megatron_context_parallel_training_agreement():
     generation_logprobs = prev_logprobs.clone()
     reference_policy_logprobs = prev_logprobs.clone()
     labels = torch.randint(0, vocab_size, (batch_size, seq_len))
-    
+
     for i in range(batch_size):
-        token_mask[i, :input_lengths[i]] = 1
+        token_mask[i, : input_lengths[i]] = 1
 
     base_data = BatchedDataDict(
         {
@@ -1541,7 +1556,9 @@ def test_megatron_context_parallel_training_agreement():
     )
 
     # Test 1: Non-CP model (context_parallel_size=1) with sequence packing
-    print("=== Testing Non-CP model (context_parallel_size=1) with sequence packing ===")
+    print(
+        "=== Testing Non-CP model (context_parallel_size=1) with sequence packing ==="
+    )
     cluster_no_cp = RayVirtualCluster(
         name="test-no-cp-training",
         bundle_ct_per_node_list=[1],
@@ -1550,13 +1567,11 @@ def test_megatron_context_parallel_training_agreement():
         max_colocated_worker_groups=1,
     )
 
-    config_no_cp = create_megatron_test_config(
-        tp=1, pp=1, precision="bfloat16"
-    )
+    config_no_cp = create_megatron_test_config(tp=1, pp=1, precision="bfloat16")
     # Ensure context parallel is disabled
     config_no_cp["megatron_cfg"]["context_parallel_size"] = 1
     config_no_cp["train_global_batch_size"] = 2
-    
+
     # Enable sequence packing
     config_no_cp["sequence_packing"] = {
         "enabled": True,
@@ -1564,7 +1579,7 @@ def test_megatron_context_parallel_training_agreement():
         "logprob_mb_tokens": seq_len,
         "algorithm": "modified_first_fit_decreasing",
     }
-    
+
     tokenizer = get_tokenizer(config_no_cp["tokenizer"])
     config_no_cp["generation"] = configure_generation_config(
         config_no_cp["generation"], tokenizer
@@ -1596,7 +1611,7 @@ def test_megatron_context_parallel_training_agreement():
     no_cp_results = policy_no_cp.train(base_data, loss_fn)
     no_cp_loss = no_cp_results["loss"]
     no_cp_metrics = no_cp_results["all_mb_metrics"]
-    
+
     print(f"Non-CP training loss: {no_cp_loss}")
     print(f"Non-CP metrics: {no_cp_metrics}")
 
@@ -1614,13 +1629,11 @@ def test_megatron_context_parallel_training_agreement():
         max_colocated_worker_groups=1,
     )
 
-    config_cp = create_megatron_test_config(
-        tp=1, pp=1, precision="bfloat16"
-    )
+    config_cp = create_megatron_test_config(tp=1, pp=1, precision="bfloat16")
     # Enable context parallel
     config_cp["megatron_cfg"]["context_parallel_size"] = 2
     config_cp["train_global_batch_size"] = 2
-    
+
     # Enable sequence packing
     config_cp["sequence_packing"] = {
         "enabled": True,
@@ -1628,7 +1641,7 @@ def test_megatron_context_parallel_training_agreement():
         "logprob_mb_tokens": seq_len,
         "algorithm": "modified_first_fit_decreasing",
     }
-    
+
     config_cp["generation"] = configure_generation_config(
         config_cp["generation"], tokenizer
     )
@@ -1645,7 +1658,7 @@ def test_megatron_context_parallel_training_agreement():
     cp_results = policy_cp.train(base_data, loss_fn)
     cp_loss = cp_results["loss"]
     cp_metrics = cp_results["all_mb_metrics"]
-    
+
     print(f"CP training loss: {cp_loss}")
     print(f"CP metrics: {cp_metrics}")
 
@@ -1655,25 +1668,25 @@ def test_megatron_context_parallel_training_agreement():
 
     # Compare training results
     print("=== Comparing training results ===")
-    
+
     # Check that neither contains NaN or Inf
     assert not torch.isnan(no_cp_loss).any(), "Non-CP loss should not contain NaN"
     assert not torch.isinf(no_cp_loss).any(), "Non-CP loss should not contain Inf"
     assert not torch.isnan(cp_loss).any(), "CP loss should not contain NaN"
     assert not torch.isinf(cp_loss).any(), "CP loss should not contain Inf"
-    
+
     # Check shapes match
     assert no_cp_loss.shape == cp_loss.shape, (
         f"Loss shapes should match: {no_cp_loss.shape} vs {cp_loss.shape}"
     )
-    
+
     # Compare loss values with tolerance
     loss_diff = torch.abs(no_cp_loss - cp_loss)
     max_loss_diff = torch.max(loss_diff).item()
     mean_loss_diff = torch.mean(loss_diff).item()
-    
+
     print(f"Loss difference - Max: {max_loss_diff:.6f}, Mean: {mean_loss_diff:.6f}")
-    
+
     # Check key metrics are similar
     key_metrics = ["probs_ratio", "grad_norm", "kl_penalty", "approx_entropy"]
     for metric in key_metrics:
@@ -1684,22 +1697,24 @@ def test_megatron_context_parallel_training_agreement():
                 diff = abs(sum(no_cp_val) - sum(cp_val) * 2)
             else:
                 diff = abs(sum(no_cp_val) - sum(cp_val))
-            print(f"Metric {metric}: Non-CP={sum(no_cp_val):.6f}, CP={sum(cp_val):.6f}, Diff={diff:.6f}")
-            
+            print(
+                f"Metric {metric}: Non-CP={sum(no_cp_val):.6f}, CP={sum(cp_val):.6f}, Diff={diff:.6f}"
+            )
+
             # Allow some tolerance for floating point differences
-            assert (
-                diff < 0.01 * sum(no_cp_val) or diff < 1e-4
-            ), f"Metric {metric} differs too much: {diff:.6f}"
-    
+            assert diff < 0.01 * sum(no_cp_val) or diff < 1e-4, (
+                f"Metric {metric} differs too much: {diff:.6f}"
+            )
+
     # Assert losses are very close (accounting for minor floating point differences)
     torch.testing.assert_close(
-        no_cp_loss, 
-        cp_loss, 
-        rtol=1e-2, 
+        no_cp_loss,
+        cp_loss,
+        rtol=1e-2,
         atol=1e-2,
-        msg="CP and non-CP models should produce very similar training losses with sequence packing"
+        msg="CP and non-CP models should produce very similar training losses with sequence packing",
     )
-    
-    print("✓ SUCCESS: CP and non-CP models produce consistent training results with ClippedPG loss and sequence packing")
 
-
+    print(
+        "✓ SUCCESS: CP and non-CP models produce consistent training results with ClippedPG loss and sequence packing"
+    )

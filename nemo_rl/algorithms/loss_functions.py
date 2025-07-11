@@ -14,7 +14,6 @@
 from typing import Any, Optional, TypedDict, TypeVar
 
 import torch
-import torch.nn.functional as F
 
 from nemo_rl.algorithms.interfaces import LossFunction, LossType
 from nemo_rl.algorithms.utils import (
@@ -153,7 +152,7 @@ class ClippedPGLossFn(LossFunction):
                 inference_only=False,
                 cp_group=context_parallel_group,
             )
-            curr_logprobs = curr_logprobs[:, :data["input_ids"].shape[1] - 1]
+            curr_logprobs = curr_logprobs[:, : data["input_ids"].shape[1] - 1]
         elif isinstance(next_token_logits, torch.distributed.tensor.DTensor):
             curr_logprobs = get_logprobs_from_vocab_parallel_logits(
                 next_token_logits, data["input_ids"], seq_index=seq_index
@@ -169,7 +168,6 @@ class ClippedPGLossFn(LossFunction):
             curr_logprobs = next_token_logprobs.gather(
                 dim=-1, index=next_tokens.unsqueeze(-1)
             ).squeeze(-1)
-
 
         # Calculate KL regularization.
         if self.reference_policy_kl_penalty != 0:
@@ -343,7 +341,7 @@ class NLLLoss(LossFunction):
                 inference_only=False,
                 cp_group=context_parallel_group,
             )
-            token_logprobs = token_logprobs[:, :data["input_ids"].shape[1] - 1]
+            token_logprobs = token_logprobs[:, : data["input_ids"].shape[1] - 1]
         elif isinstance(next_token_logits, torch.distributed.tensor.DTensor):
             token_logprobs = get_logprobs_from_vocab_parallel_logits(
                 next_token_logits, data["input_ids"]
@@ -494,7 +492,7 @@ class DPOLossFn(LossFunction):
                 inference_only=False,
                 cp_group=context_parallel_group,
             )
-            token_logprobs = token_logprobs[:, :data["input_ids"].shape[1] - 1]
+            token_logprobs = token_logprobs[:, : data["input_ids"].shape[1] - 1]
         elif isinstance(next_token_logits, torch.distributed.tensor.DTensor):
             token_logprobs = get_logprobs_from_vocab_parallel_logits(
                 next_token_logits, data["input_ids"]
@@ -668,8 +666,15 @@ class SequencePackingLossWrapper:
                     unpadded_seq_data[k] = v
 
             # get next_token_logits
-            cp_size = 1 if context_parallel_group is None else torch.distributed.get_world_size(context_parallel_group)
-            logit_slice_idxs = slice(seq_start // cp_size, (seq_start + padded_seq_lengths[seq_idx]) // cp_size)
+            cp_size = (
+                1
+                if context_parallel_group is None
+                else torch.distributed.get_world_size(context_parallel_group)
+            )
+            logit_slice_idxs = slice(
+                seq_start // cp_size,
+                (seq_start + padded_seq_lengths[seq_idx]) // cp_size,
+            )
             next_token_logits_slice = next_token_logits[:, logit_slice_idxs, :]
 
             loss, metrics = self.loss_fn(

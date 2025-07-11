@@ -300,7 +300,7 @@ def distributed_test_runner():
 
         # Generate a single random port in the main process
         port = random.randint(10000, 20000)
-        
+
         # use a queue to report exceptions
         queue = mp.get_context("spawn").Queue()
 
@@ -317,12 +317,16 @@ def distributed_test_runner():
             msg = queue.get()
             raise RuntimeError(msg)
 
-
     return run_distributed_test
 
 
 def _distributed_test_wrapper(
-    rank: int, test_fn: Callable, world_size: int, port: int, backend: str, queue: mp.Queue
+    rank: int,
+    test_fn: Callable,
+    world_size: int,
+    port: int,
+    backend: str,
+    queue: mp.Queue,
 ) -> None:
     """Wrapper function that sets up the distributed environment before running the test function.
     Internal use only - use distributed_test_runner fixture instead.
@@ -347,6 +351,7 @@ def _distributed_test_wrapper(
     except Exception as e:
         # report exception to the main process
         import traceback
+
         queue.put(f"Error in rank {rank}:\n{e}\n{traceback.format_exc()}")
         # still raise the exception to stop the current process
         raise
