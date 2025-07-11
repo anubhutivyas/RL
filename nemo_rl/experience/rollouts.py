@@ -428,6 +428,9 @@ def run_multi_turn_rollout(
                 # Record truncation
                 sample_truncated[active_indices[i]] = True
 
+                # NOTE @mahanfathi: this is a hack to mask out truncated samples for loss calculation (suggested by DAPO paper)
+                current_batch["loss_multiplier"][global_idx] = 0.0
+
             tokenized_env_obs_message = {
                 "role": env_output.observations[i]["role"],
                 "content": env_obs_content,
