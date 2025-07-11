@@ -453,6 +453,11 @@ class MegatronPolicyWorker:
         model_cfg.sequence_parallel = self.cfg["megatron_cfg"]["sequence_parallel"]
         model_cfg.context_parallel_size = self.cfg["megatron_cfg"][
             "context_parallel_size"
+        ]
+        if model_cfg.context_parallel_size > 1:
+            assert self.cfg["sequence_packing"]["enabled"], (
+                "Sequence Packing must be enabled to use Context Parallelism with MCore"
+            )
         model_cfg.expert_tensor_parallel_size = self.cfg["megatron_cfg"][
             "expert_tensor_parallel_size"
         ]
@@ -561,7 +566,6 @@ class MegatronPolicyWorker:
             ),
         )
         self.megatron_cfg.validate()
-        print(f"cfg: {self.megatron_cfg}")
         (
             self.mcore_state,
             self.model,
