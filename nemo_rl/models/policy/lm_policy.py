@@ -136,6 +136,9 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
                 ],
                 "max_tokens_per_microbatch": 0,  # Override this in each different call (presumably different sizes)
             }
+            assert not config["sequence_packing"]["enabled"], (
+                "Dynamic Batching is exclusive of Sequence Packing. Please disable Sequence Packing to use Dynamic Batching"
+            )
         else:
             self.use_dynamic_batches = False
 
@@ -156,6 +159,9 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
                 if cp_size > 1
                 else tp_size,
             }
+            assert not config["dynamic_batching"]["enabled"], (
+                "Sequence Packing is exclusive of Dynamic Batching. Please disable Dynamic Batching"
+            )
         else:
             self.use_sequence_packing = False
 
