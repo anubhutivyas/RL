@@ -18,7 +18,6 @@ import itertools
 import os
 import subprocess
 from typing import Any, Dict, List, Tuple, Optional
-import time
 import yaml
 
 
@@ -194,42 +193,6 @@ def format_parameter_override(param_dict: Dict[str, Any]) -> str:
     return " ".join(overrides)
 
 
-def wait_for_job_completion(job_id: str, check_interval: int = 30) -> bool:
-    """
-    Wait for a Slurm job to complete.
-    
-    Args:
-        job_id: The job ID to monitor
-        check_interval: How often to check job status (in seconds)
-    
-    Returns:
-        bool: True if job completed (regardless of success/failure), False if job not found
-    """
-    while True:
-        # Check job status using squeue
-        result = subprocess.run(
-            ["squeue", "--job", job_id, "--noheader", "--format=%T"],
-            capture_output=True,
-            text=True
-        )
-        
-        if result.returncode != 0:
-            # Job not found in queue, assume it's completed
-            print(f"Job {job_id} no longer in queue (completed)")
-            return True
-        
-        status = result.stdout.strip()
-        if not status:
-            # Job not found in queue, assume it's completed
-            print(f"Job {job_id} no longer in queue (completed)")
-            return True
-        
-        print(f"Job {job_id} status: {status}")
-        
-        # Job is still running, wait and check again
-        time.sleep(check_interval)
-
-
 def launch_experiment(
     script: str,
     config: Optional[str],
@@ -305,7 +268,10 @@ def launch_experiment(
     
     # Add dependency if specified
     if dependency:
-        sbatch_cmd.append(f"--dependency={dependency}")
+        if dependency == "singleton":
+            sbatch_cmd.append("--dependency=singleton")
+        else:
+            sbatch_cmd.append(f"--dependency={dependency}")
     
     sbatch_cmd.append("ray.sub")
     
@@ -375,13 +341,14 @@ def main():
     print(f"Jobs per chain: {args.chain}")
     print(f"Total jobs: {total_jobs}\n")
     
-    if args.chain > 1 and not args.dry:
-        print("NOTE: Jobs will be submitted sequentially within each chain.")
-        print("First jobs of each chain will run in parallel.\n")
+    if args.chain > 1:
+        print("NOTE: Jobs in each chain will run sequentially using Slurm singleton dependency.")
+        print("Chains for different parameter combinations will run in parallel.\n")
     
     # Launch experiments
-    def launch_chain(sweep_idx: int, params: Dict[str, Any]):
-        """Launch a complete chain of jobs for a single parameter combination."""
+    job_counter = 0
+    for i, params in enumerate(param_combinations):
+        # Format parameter overrides
         param_overrides = format_parameter_override(params)
         
         # Generate base job name
@@ -390,23 +357,21 @@ def main():
             else os.path.splitext(os.path.basename(script_path))[0]
         )
         
-        # Launch each job in the chain sequentially
+        # Create shared job name for all jobs in this chain
+        if len(param_combinations) > 1:
+            shared_job_name = f"{base_job_name}_sweep{i+1}"
+        else:
+            shared_job_name = base_job_name
+        
+        # Shared log directory for all jobs in this chain
+        log_dir_name = shared_job_name
+        
+        # Submit all jobs in this chain
         for chain_idx in range(args.chain):
-            # Create job name with sweep and chain information
-            if len(param_combinations) > 1 and args.chain > 1:
-                job_name = f"{base_job_name}_sweep{sweep_idx+1}_chain{chain_idx+1}"
-                log_dir_name = f"{base_job_name}_sweep{sweep_idx+1}"
-            elif len(param_combinations) > 1:
-                job_name = f"{base_job_name}_sweep{sweep_idx+1}"
-                log_dir_name = job_name
-            elif args.chain > 1:
-                job_name = f"{base_job_name}_chain{chain_idx+1}"
-                log_dir_name = base_job_name
-            else:
-                job_name = base_job_name
-                log_dir_name = job_name
+            # Use singleton dependency for jobs after the first in the chain
+            dependency = "singleton" if chain_idx > 0 else None
             
-            # Launch experiment (no dependency needed since we wait for completion)
+            # Launch experiment
             cmd, job_id = launch_experiment(
                 script=script_path,
                 config=config_path,
@@ -417,52 +382,24 @@ def main():
                 partition=args.partition,
                 container=args.container,
                 mounts=args.mounts,
-                job_name=job_name,
+                job_name=shared_job_name,  # Same name for all jobs in chain
                 dry_run=args.dry,
                 extra_args=extra_args,
-                dependency=None,  # No dependency needed
+                dependency=dependency,
                 log_dir_name=log_dir_name,
             )
             
             # Print experiment info
             print_experiment_info(
-                job_name=job_name,
+                job_name=f"{shared_job_name}_chain{chain_idx+1}" if args.chain > 1 else shared_job_name,
                 params=params,
                 cmd=cmd,
                 job_id=job_id,
                 dry_run=args.dry,
-                dependency=None,
+                dependency=dependency,
             )
             
-            # Wait for job completion before submitting the next job in the chain
-            if not args.dry and job_id and chain_idx < args.chain - 1:
-                print(f"Waiting for job {job_id} to complete before submitting next job in chain...")
-                wait_for_job_completion(job_id)
-                print(f"Job {job_id} completed. Submitting next job in chain.\n")
-    
-    # Launch all chains
-    if args.chain == 1 or args.dry:
-        # Simple case: single job per chain or dry run
-        for i, params in enumerate(param_combinations):
-            launch_chain(i, params)
-    else:
-        # Complex case: multiple jobs per chain, need to handle parallelism
-        import threading
-        
-        def run_chain_thread(sweep_idx: int, params: Dict[str, Any]):
-            """Run a chain in a separate thread."""
-            launch_chain(sweep_idx, params)
-        
-        # Launch all chains in parallel (each chain runs sequentially internally)
-        threads = []
-        for i, params in enumerate(param_combinations):
-            thread = threading.Thread(target=run_chain_thread, args=(i, params))
-            threads.append(thread)
-            thread.start()
-        
-        # Wait for all chains to complete
-        for thread in threads:
-            thread.join()
+            job_counter += 1
     
     print(f"{total_jobs} jobs submitted: {len(param_combinations)} sweeps, with chain size {args.chain}.")
 
