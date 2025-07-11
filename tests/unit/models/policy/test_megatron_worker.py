@@ -1318,7 +1318,7 @@ def test_megatron_context_parallel_logprob_agreement():
     torch.manual_seed(42)  # Fixed seed for reproducibility
     input_ids = torch.arange(seq_len * batch_size, device="cuda").reshape(batch_size, seq_len)
     # Create varied sequence lengths for more realistic sequence packing test
-    input_lengths = torch.tensor([33,23,29,64], dtype=torch.int32)
+    input_lengths = torch.tensor([31,21,29,56], dtype=torch.int32)
     attention_mask = torch.zeros(batch_size, seq_len)
     for i, length in enumerate(input_lengths):
         attention_mask[i, :length] = 1

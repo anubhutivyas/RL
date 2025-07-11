@@ -228,7 +228,7 @@ def from_parallel_logits_to_logprobs_packed_sequences(
         seq_targets = target[start_idx:end_idx]
         rolled_seq_targets = seq_targets.roll(shifts=-1, dims=0)
         rolled_targets[start_idx // cp_size : end_idx // cp_size] = _get_tokens_on_this_cp_rank(rolled_seq_targets, cp_rank, cp_size, seq_dim=0)
-        print(f"start_idx {start_idx}, end_idx {end_idx}, target preroll {target[start_idx:end_idx]}, target postroll {rolled_targets}")
+        # print(f"start_idx {start_idx}, end_idx {end_idx}, target preroll {target[start_idx:end_idx]}, target postroll {rolled_targets}")
 
 
     # Add batch dimension back for DistributedLogprob
