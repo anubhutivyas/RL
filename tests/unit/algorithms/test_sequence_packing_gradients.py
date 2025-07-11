@@ -425,8 +425,3 @@ def test_sequence_packing_gradients_with_cp(
     _ = ray.get(futures)
     worker_group.shutdown(force=True)
     cluster.shutdown()
-
-
-if __name__ == "__main__":
-    # Run the test directly
-    pytest.main([__file__, "-v", "-s"])
