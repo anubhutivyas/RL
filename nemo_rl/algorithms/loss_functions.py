@@ -341,6 +341,7 @@ class NLLLoss(LossFunction):
                 vocab_end_index=(vocab_parallel_rank + 1) * next_token_logits.shape[-1],
                 tp_group=vocab_parallel_group,
                 inference_only=False,
+                cp_group=context_parallel_group,
             )
             token_logprobs = token_logprobs[:, :data["input_ids"].shape[1] - 1]
         elif isinstance(next_token_logits, torch.distributed.tensor.DTensor):
@@ -491,7 +492,9 @@ class DPOLossFn(LossFunction):
                 vocab_end_index=(vocab_parallel_rank + 1) * next_token_logits.shape[-1],
                 tp_group=vocab_parallel_group,
                 inference_only=False,
+                cp_group=context_parallel_group,
             )
+            token_logprobs = token_logprobs[:, :data["input_ids"].shape[1] - 1]
         elif isinstance(next_token_logits, torch.distributed.tensor.DTensor):
             token_logprobs = get_logprobs_from_vocab_parallel_logits(
                 next_token_logits, data["input_ids"]
