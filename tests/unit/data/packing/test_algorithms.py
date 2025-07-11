@@ -324,4 +324,3 @@ class TestSequencePacker:
             print(
                 f"Warning: {algorithm.name} produced the same result with different seeds"
             )
-
