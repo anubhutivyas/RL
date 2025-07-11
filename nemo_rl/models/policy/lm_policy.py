@@ -214,10 +214,10 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
         # shard_idx = 0
         # # Convert to 2d dim array
         # for _ in range(dp_size):
-            # cp_data = []
-            # for _ in range(cp_size):
-                # cp_data.append(sharded_data[shard_idx])
-                # shard_idx += 1
+        # cp_data = []
+        # for _ in range(cp_size):
+        # cp_data.append(sharded_data[shard_idx])
+        # shard_idx += 1
         #     sharded_data_2d.append(cp_data)
         sharded_data_2d = sharded_data
 
@@ -225,8 +225,16 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
             "get_logprobs",
             data=sharded_data_2d,
             in_sharded_axes=["data_parallel"],
-            replicate_on_axes=["context_parallel", "tensor_parallel", "pipeline_parallel"],
-            output_is_replicated=["context_parallel", "tensor_parallel", "pipeline_parallel"],
+            replicate_on_axes=[
+                "context_parallel",
+                "tensor_parallel",
+                "pipeline_parallel",
+            ],
+            output_is_replicated=[
+                "context_parallel",
+                "tensor_parallel",
+                "pipeline_parallel",
+            ],
         )
         logprobs: BatchedDataDict[LogprobOutputSpec] = BatchedDataDict.from_batches(
             self.worker_group.get_all_worker_results(futures)
@@ -281,18 +289,26 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
         # shard_idx = 0
         # # Convert to 2d dim array
         # for _ in range(dp_size):
-            # cp_data = []
-            # for _ in range(cp_size):
-                # cp_data.append(sharded_data[shard_idx])
-                # shard_idx += 1
-            # sharded_data_2d.append(cp_data)
+        # cp_data = []
+        # for _ in range(cp_size):
+        # cp_data.append(sharded_data[shard_idx])
+        # shard_idx += 1
+        # sharded_data_2d.append(cp_data)
 
         futures = self.worker_group.run_all_workers_sharded_data(
             "get_reference_policy_logprobs",
             data=sharded_data_2d,
             in_sharded_axes=["data_parallel"],
-            replicate_on_axes=["context_parallel", "tensor_parallel", "pipeline_parallel"],
-            output_is_replicated=["context_parallel", "tensor_parallel", "pipeline_parallel"],
+            replicate_on_axes=[
+                "context_parallel",
+                "tensor_parallel",
+                "pipeline_parallel",
+            ],
+            output_is_replicated=[
+                "context_parallel",
+                "tensor_parallel",
+                "pipeline_parallel",
+            ],
             common_kwargs={"micro_batch_size": micro_batch_size},
         )
         logprobs: BatchedDataDict[ReferenceLogprobOutputSpec] = (
