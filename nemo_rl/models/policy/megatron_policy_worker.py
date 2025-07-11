@@ -1817,6 +1817,9 @@ class MegatronPolicyWorker:
                             numel,
                         )
                     )
+            self.num_buckets = num_buckets
+            self.dtype_to_max_bucket_size = dtype_to_max_bucket_size
+            self.weight_update_metadata_for_all_buckets = weight_update_metadata_for_all_buckets
 
             return {
                 'device_id': self.report_device_id(),
@@ -1834,13 +1837,30 @@ class MegatronPolicyWorker:
                 'need_update_cache': need_update_cache,
             }
 
-    def create_refit_buffers_and_associate_param_with_buffer(self, dtype_to_max_bucket_size, weight_update_metadata_for_all_buckets):
+    def create_refit_buffers_and_associate_param_with_buffer(self):
         """
         Create refit buffers for the model.
         """
-        pass # todo implement this
+        # step 1: create torch tensors for ipc
+        self._held_refit_buffers = {}
+        for key, size in self.dtype_to_max_bucket_size.items():
+            self._held_refit_buffers[key] = torch.empty(size, dtype=key, device=torch.cuda.current_device())
+        
+
+        # step 2: associate each param with a buffer
+        self._key_to_list_of_gather_dest = {}
+        for bucket in self.weight_update_metadata_for_all_buckets:
+            for (name, pp_local_rank_id, shape, param_dtype, offset, numel) in bucket:
+                full_param = self._held_refit_buffers[param_dtype][offset:offset+numel]
+                self._key_to_list_of_gather_dest[name] = full_param
+        
+        # step 3: prepare ipc handles
+        device_uuid = self.report_device_id()
+        from torch.multiprocessing.reductions import reduce_tensor
+        ipc_handles = {k: reduce_tensor(v) for k, v in self._held_refit_buffers.items()}
+        return {device_uuid: ipc_handles}
 
     def fill_refit_bucket(self, bucket_id):
         """Fill the refit bucket."""
-        pass # todo implement this
+        pass
     

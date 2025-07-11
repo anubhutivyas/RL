@@ -350,6 +350,8 @@ class VllmGenerationWorker:
         else:
             self.llm = vllm.LLM(**llm_kwargs)
 
+        self.vllm_device_ids = self.report_device_id()
+
     def init_collective(
         self, rank_prefix: int, ip: str, port: int, world_size: int
     ) -> None:
@@ -1278,12 +1280,32 @@ class VllmGenerationWorker:
         self.refit_buffer_ipc_handles = refit_buffer_ipc_handles
         if weight_update_metadata is not None:
             self.weight_update_metadata = weight_update_metadata
+        ray_worker_outputs = []
+        for worker, device_id in zip(
+            self.llm.llm_engine.model_executor.workers, self.vllm_device_ids
+        ):
+            ray_worker_outputs.append(
+                worker.execute_method.remote("update_weight_update_metadata_for_refit", refit_buffer_ipc_handles[device_id], weight_update_metadata[device_id])
+            )
+        ray.get(ray_worker_outputs)
     
     def consume_refit_bucket(self, bucket_id):
-        pass # todo implement this
-    
-    
 
+        assert self.llm is not None, (
+            "Attempting to consume refit bucket with either an uninitialized vLLM or non-model-owner"
+        )
+        assert self.cfg["vllm_cfg"]["async_engine"], (
+            "consume_refit_bucket can only be used with async_engine=True. Use consume_refit_bucket_async instead."
+        )
+        try:
+            result_or_coro = self.llm.collective_rpc(
+                "consume_refit_bucket", args=(bucket_id,)
+            )
+            ray.get(result_or_coro)
+            return True
+        except Exception as e:
+            print(f"Exception during consume_refit_bucket: {e}")
+            return False
 
 class VllmGeneration(GenerationInterface):
     def __init__(
@@ -1976,4 +1998,5 @@ class VllmGeneration(GenerationInterface):
             bucket_id=bucket_id,
             run_rank_0_only_axes=["tensor_parallel", "pipeline_parallel"],
         )
-        ray.get(futures)
+        results = ray.get(futures)
+        return all(result for result in results if result is not None)

@@ -563,17 +563,9 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
                     )
         
         # step 3: create ipc handles
-        args = []
-        for i in range(len(results)):
-            args.append(
-                (
-                    self.cached_weight_update_metadata[i]['dtype_to_max_bucket_size'],
-                    self.cached_weight_update_metadata[i]['weight_update_metadata_for_all_buckets'],
-                )
-            )
         futures = self.worker_group.run_all_workers_multiple_data(
             "create_refit_buffers_and_associate_param_with_buffer",
-            args,
+            args=(),
         )
         refit_buffer_ipc_handles = ray.get(futures)
 
