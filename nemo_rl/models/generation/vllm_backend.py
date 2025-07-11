@@ -114,6 +114,8 @@ class VllmInternalWorkerExtension:
             print(
                 f"Error in VllmInternalWorkerExtension.update_weights_from_ipc_handles: {e}"
             )
+            import traceback
+            traceback.print_exc()
             return False
 
     def update_weights_from_collective(self, info: dict[str, Any]) -> bool:

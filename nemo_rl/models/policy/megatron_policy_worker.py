@@ -1504,6 +1504,8 @@ class MegatronPolicyWorker:
         else:
             pack_tensor_for_ipc = False
 
+        # print("PACKING TENSORS FOR IPC", pack_tensor_for_ipc)
+        pack_tensor_for_ipc = True
         if pack_tensor_for_ipc:
             # Pack tensors in gathered_hf_params into consolidated tensors by dtype
             # First calculate total size needed for each dtype
@@ -1512,16 +1514,17 @@ class MegatronPolicyWorker:
 
             for key, tensor in gathered_hf_params.items():
                 tensor_metadata[key] = (
+                    # tensor.shape,  # shape of the tensor
                     tuple(tensor.shape),  # shape of the tensor
-                    # tensor.dtype,  # dtype of the tensor
-                    0,  # dtype of the tensor
+                    tensor.dtype,  # dtype of the tensor
+                    # 0,  # dtype of the tensor
                     # type_to_total_size[tensor.dtype],  # offset of the tensor
                     type_to_total_size[0],  # offset of the tensor
                     # in packed buffer
                     tensor.numel(),  # size of the tensor
                 )
-                # type_to_total_size[tensor.dtype] += tensor.numel()
-                type_to_total_size[0] += tensor.numel()
+                type_to_total_size[tensor.dtype] += tensor.numel()
+                # type_to_total_size[0] += tensor.numel()
 
             # Allocate consolidated tensors for each dtype
             packed_tensors = {
@@ -1569,9 +1572,6 @@ class MegatronPolicyWorker:
             self._held_gather_buffer = gathered_hf_params
             serialized = (0, all_handles)
 
-        if torch.distributed.get_rank() == 0:
-            import pdb; pdb.set_trace()
-        torch.distributed.barrier()
         return {device_uuid: serialized}
 
     def prepare_for_lp_inference(self):
