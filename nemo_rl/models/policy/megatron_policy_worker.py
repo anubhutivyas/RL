@@ -869,7 +869,6 @@ class MegatronPolicyWorker:
                         loss_metrics["global_valid_toks"] = global_valid_toks.item()
                         mb_losses.append(loss_metrics["loss"])
 
-                    print(f"gb_loss {gb_loss_metrics}")
                     torch.distributed.broadcast_object_list(
                         [gb_loss_metrics],
                         src=get_pipeline_model_parallel_last_rank(),
@@ -961,12 +960,6 @@ class MegatronPolicyWorker:
                 data.get_microbatch_iterator_for_packable_sequences_len()
             )
             pp_seq_dim_size = pad_full_seq_to
-        # elif self.cfg["sequence_packing"]["enabled"]:
-            # _, pad_full_seq_to = (
-                # data.get_microbatch_iterator_for_packable_sequences_len()
-            # )
-            # pp_seq_dim_size = pad_full_seq_to
-
         else:
             pad_full_seq_to = None
 
@@ -992,7 +985,6 @@ class MegatronPolicyWorker:
                         cp_size=cp_size,
                     )
                 )
-                print(f"cu_seqlens_padded {cu_seqlens_padded}")
                 attention_mask, position_ids = None, None
                 unpacked_input_ids = data_dict["input_ids"]
             else:
@@ -1015,7 +1007,6 @@ class MegatronPolicyWorker:
                 stc = time.time()
                 tp_grp = get_tensor_model_parallel_group()
                 tp_rank = get_tensor_model_parallel_rank()
-                print(f"output_tensor {output_tensor[0,:,0]}, rank {get_context_parallel_rank()}")
                 if self.cfg["sequence_packing"]["enabled"]:
                     token_logprobs = from_parallel_logits_to_logprobs_packed_sequences(
                         output_tensor,

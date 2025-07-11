@@ -171,7 +171,7 @@ def from_parallel_logits_to_logprobs(
     
     if cp_size > 1:
         # we need to gather the logits by context parallelism
-        probs = allgather_cp_sharded_tensor(probs, cp_group, seq_dim=1, unpadded_seqlen=target.shape[1])
+        probs = allgather_cp_sharded_tensor(probs, cp_group, seq_dim=1)#, unpadded_seqlen=target.shape[1])
 
     if pad_len > 0:
         probs = probs[:, :-pad_len]
@@ -228,7 +228,6 @@ def from_parallel_logits_to_logprobs_packed_sequences(
         seq_targets = target[start_idx:end_idx]
         rolled_seq_targets = seq_targets.roll(shifts=-1, dims=0)
         rolled_targets[start_idx // cp_size : end_idx // cp_size] = _get_tokens_on_this_cp_rank(rolled_seq_targets, cp_rank, cp_size, seq_dim=0)
-        # print(f"start_idx {start_idx}, end_idx {end_idx}, target preroll {target[start_idx:end_idx]}, target postroll {rolled_targets}")
 
 
     # Add batch dimension back for DistributedLogprob
@@ -323,11 +322,11 @@ def _get_tokens_on_this_cp_rank(
     return ids
 
 
-def allgather_cp_sharded_tensor(tensor, cp_group, seq_dim=1, unpadded_seqlen=None):
-    return AllGatherCPTensor.apply(tensor, cp_group, seq_dim, unpadded_seqlen)
+def allgather_cp_sharded_tensor(tensor, cp_group, seq_dim=1):#, unpadded_seqlen=None):
+    return AllGatherCPTensor.apply(tensor, cp_group, seq_dim)#, unpadded_seqlen)
 
 class AllGatherCPTensor(torch.autograd.Function):
-    def forward(ctx, tensor, cp_group: torch.distributed.ProcessGroup, seq_dim=1, unpadded_seqlen: Optional[int] = None):
+    def forward(ctx, tensor, cp_group: torch.distributed.ProcessGroup, seq_dim=1):#, unpadded_seqlen: Optional[int] = None):
         cp_size = torch.distributed.get_world_size(cp_group)
         cp_rank_chunks = []
         for _ in range(cp_size):
@@ -355,7 +354,7 @@ class AllGatherCPTensor(torch.autograd.Function):
 
         ctx.seq_dim = seq_dim
         ctx.cp_group = cp_group
-        ctx.unpadded_seqlen = unpadded_seqlen
+        # ctx.unpadded_seqlen = unpadded_seqlen
         
         return ret_tensor
 
@@ -366,11 +365,11 @@ class AllGatherCPTensor(torch.autograd.Function):
 
         #chunk the seqdim in 2*cp chunks, and select with a CP load balanced indexing
         seq_dim = ctx.seq_dim
-        if ctx.unpadded_seqlen is not None:
-            # Zero out grad_output along the seq_dim after unpadded_seqlen
-            slicer = [slice(None)] * grad_output.dim()
-            slicer[seq_dim] = slice(ctx.unpadded_seqlen, None)
-            grad_output[tuple(slicer)] = 0
+        # if ctx.unpadded_seqlen is not None:
+            # # Zero out grad_output along the seq_dim after unpadded_seqlen
+            # slicer = [slice(None)] * grad_output.dim()
+            # slicer[seq_dim] = slice(ctx.unpadded_seqlen, None)
+        #     grad_output[tuple(slicer)] = 0
 
         grad_output = grad_output.view(
             *grad_output.shape[0:seq_dim],
@@ -386,4 +385,4 @@ class AllGatherCPTensor(torch.autograd.Function):
         grad_input = grad_output.index_select(seq_dim, index)
         grad_input = grad_input.view(*grad_input.shape[0:seq_dim], -1, *grad_input.shape[(seq_dim + 2) :])
 
-        return grad_input, None, None, None
+        return grad_input, None, None#, None
