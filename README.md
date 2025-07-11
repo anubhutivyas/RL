@@ -2,7 +2,7 @@
 
 <!-- markdown all in one -->
 - [Nemo RL: A Scalable and Efficient Post-Training Library](#nemo-rl-a-scalable-and-efficient-post-training-library)
-  - [📣 News](#-news)
+  - [News](#news)
   - [Features](#features)
   - [Prerequisites](#prerequisites)
   - [Supported Training Backends](#training-backends)
@@ -37,9 +37,14 @@ What you can expect:
 - **Comprehensive documentation** that is both detailed and user-friendly, with practical examples.
 
 ## News
-* [5/14/2025] [Reproduce DeepscaleR with NeMo RL!](docs/guides/grpo-deepscaler.md)
+* [7/9/2025] [Reinforcement Learning with NVIDIA NeMo-RL: Reproducing a DeepScaleR Recipe Using GRPO](https://developer.nvidia.com/blog/reinforcement-learning-with-nvidia-nemo-rl-reproducing-a-deepscaler-recipe-using-grpo/)
+* [5/14/2025] [Reproduce DeepscaleR with NeMo RL!](docs/guides/examples/grpo-deepscaler.md)
 * [5/14/2025] [Release v0.2.1!](https://github.com/NVIDIA-NeMo/RL/releases/tag/v0.2.1)
-    * 📊 View the release run metrics on [Google Colab](https://colab.research.google.com/drive/1o14sO0gj_Tl_ZXGsoYip3C0r5ofkU1Ey?usp=sharing) to get a head start on your experimentation.
+    * View the release run metrics on [Google Colab](https://colab.research.google.com/drive/1o14sO0gj_Tl_ZXGsoYip3C0r5ofkU1Ey?usp=sharing) to get a head start on your experimentation.
+* [1/8/2025] [Release v0.3.0-rc0!](https://github.com/NVIDIA-NeMo/RL/releases/tag/v0.3.0-rc0)
+    * Major documentation improvements and enhanced user experience
+    * Improved navigation structure and comprehensive guides
+    * Better code examples and error handling throughout
 
 ## Features
 
@@ -129,7 +134,7 @@ NeMo RL supports multiple training backends to accommodate different model sizes
 - **DTensor (FSDP2)** - PyTorch's next-generation distributed training with improved memory efficiency
 - **Megatron-LM** - NVIDIA's high-performance training framework for scaling to large models with pipeline parallelism
 
-The training backend is automatically determined based on your YAML configuration settings. For detailed information on backend selection, configuration, and examples, see the [Training Backends documentation](docs/design-docs/training-backends.md) in the Core Design & Architecture section.
+The training backend is automatically determined based on your YAML configuration settings. For detailed information on backend selection, configuration, and examples, see the [Training Backends documentation](docs/design-docs/computational-systems/training-backends.md) in the Core Design & Architecture section.
 
 ## GRPO
 
@@ -173,7 +178,7 @@ uv run python examples/run_grpo_math.py \
   --config examples/configs/grpo_math_1B_megatron.yaml
 ```
 
-For additional details on supported backends and how to configure the training backend to suit your setup, refer to the [Training Backends documentation](docs/design-docs/training-backends.md) in the Core Design & Architecture section.
+For additional details on supported backends and how to configure the training backend to suit your setup, refer to the [Training Backends documentation](docs/design-docs/computational-systems/training-backends.md) in the Core Design & Architecture section.
 
 ### GRPO Multi-node
 
@@ -308,7 +313,7 @@ uv run python examples/run_dpo.py \
   logger.wandb.name="llama-dpo-sft"
 ```
 
-Refer to `examples/configs/dpo.yaml` for a full list of parameters that can be overridden. For an in-depth explanation of how to add your own DPO dataset, refer to the [DPO documentation](docs/guides/dpo.md).
+Refer to `examples/configs/dpo.yaml` for a full list of parameters that can be overridden. For an in-depth explanation of how to add your own DPO dataset, refer to the [DPO documentation](docs/guides/training-algorithms/dpo.md).
 
 ### DPO Multi-node
 
@@ -316,7 +321,7 @@ For distributed DPO training across multiple nodes, modify the following script 
 
 ```sh
 # Run from the root of NeMo RL repo
-## number of nodes to use for your job
+# number of nodes to use for your job
 NUM_ACTOR_NODES=2
 
 COMMAND="uv run ./examples/run_dpo.py --config examples/configs/dpo.yaml cluster.num_nodes=2 cluster.gpus_per_node=8 dpo.val_global_batch_size=32 checkpointing.checkpoint_dir='results/dpo_llama81_2nodes' logger.wandb_enabled=True logger.wandb.name='dpo-llama1b'" \
@@ -350,7 +355,7 @@ uv run python examples/convert_dcp_to_hf.py \
 ```
 > **Note:** Adjust the paths according to your training output directory structure.
 
-For an in-depth explanation of checkpointing, refer to the [Checkpointing documentation](docs/design-docs/checkpointing.md) in the Core Design & Architecture section.
+For an in-depth explanation of checkpointing, refer to the [Checkpointing documentation](docs/design-docs/development-infrastructure/checkpointing.md) in the Core Design & Architecture section.
 
 ### Run Evaluation
 
@@ -377,7 +382,7 @@ uv run python examples/run_eval.py \
 ```
 > **Note:** Evaluation results may vary slightly due to various factors, such as sampling parameters, random seed, inference engine version, and inference engine settings.
 
-Refer to `examples/configs/eval.yaml` for a full list of parameters that can be overridden. For an in-depth explanation of evaluation, refer to the [Evaluation documentation](docs/guides/algorithms/eval.md).
+Refer to `examples/configs/eval.yaml` for a full list of parameters that can be overridden. For an in-depth explanation of evaluation, refer to the [Evaluation documentation](docs/guides/training-algorithms/eval.md).
 
 ## Set Up Clusters
 
@@ -390,13 +395,13 @@ For detailed instructions on how to set up and launch NeMo RL on Slurm or Kubern
   ModuleNotFoundError: No module named 'megatron'
   ```
   
-  If you see this error, there is likely an issue with your virtual environments. To fix this, first intialize the submodules:
+  If you see this error, there is likely an issue with your virtual environments. To fix this, first initialize the submodules:
 
   ```sh
   git submodule update --init --recursive
   ```
 
-  and then force a rebuild of the virutal environments by setting `NRL_FORCE_REBUILD_VENVS=true` next time you launch a run:
+  and then force a rebuild of the virtual environments by setting `NRL_FORCE_REBUILD_VENVS=true` next time you launch a run:
 
   ```sh
   NRL_FORCE_REBUILD_VENVS=true uv run examples/run_grpo.py ...
@@ -409,7 +414,7 @@ If you use NeMo RL in your research, please cite it using the following BibTeX e
 ```bibtex
 @misc{nemo-rl,
 title = {NeMo RL: A Scalable and Efficient Post-Training Library},
-howpublished = {\url{https://github.com/NVIDIA/NeMo-RL}},
+howpublished = {\url{https://github.com/NVIDIA-NeMo/RL}},
 year = {2025},
 note = {GitHub repository},
 }
@@ -417,8 +422,8 @@ note = {GitHub repository},
 
 ## Contributing
 
-We welcome contributions to NeMo RL! Please see our [Contributing Guidelines](https://github.com/NVIDIA/NeMo-RL/blob/main/CONTRIBUTING.md) for more information on how to get involved.
+We welcome contributions to NeMo RL! Please see our [Contributing Guidelines](https://github.com/NVIDIA-NeMo/RL/blob/main/CONTRIBUTING.md) for more information on how to get involved.
 
 ## Licenses
 
-NVIDIA NeMo RL is licensed under the [Apache License 2.0](https://github.com/NVIDIA/NeMo-RL/blob/main/LICENSE).
+NVIDIA NeMo RL is licensed under the [Apache License 2.0](https://github.com/NVIDIA-NeMo/RL/blob/main/LICENSE).

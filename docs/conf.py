@@ -110,14 +110,14 @@ myst_heading_anchors = 5  # Generates anchor links for headings up to level 5
 
 # MyST substitutions for reusable variables across documentation
 myst_substitutions = {
-    "product_name": "NVIDIA NeMo RL",
-    "product_name_short": "NeMo RL",
+    "product_name": "NVIDIA NeMo Run",
+    "product_name_short": "NeMo Run",
     "company": "NVIDIA",
     "version": release,
     "current_year": "2025",
-    "github_repo": "[https://github.com/NVIDIA/NeMo-RL](https://github.com/NVIDIA/NeMo-RL)",
-    "docs_url": "[https://docs.nvidia.com/nemo-rl](https://docs.nvidia.com/nemo-rl)",
-    "support_email": "nemo-rl-support@nvidia.com",
+    "github_repo": "[https://github.com/NVIDIA/Run](https://github.com/NVIDIA/Run)",
+    "docs_url": "[https://docs.nvidia.com/nemo-run](https://docs.nvidia.com/nemo-run)",
+    "support_email": "nemo-run-support@nvidia.com",
     "min_python_version": "3.9",
     "recommended_cuda": "12.0+",
 }
@@ -136,38 +136,8 @@ numfig_format = {
 numfig_secnum_depth = 1  # Gives you "Figure 1.1, 1.2, 2.1, etc."
 
 # -- Options for custom roles -----------------------------------------------------
-# Add support for octicon role with proper SVG rendering
-def setup(app):
-    from docutils import nodes
-    from docutils.parsers.rst import roles
-    
-    # Define the octicon role with proper SVG rendering
-    def octicon_role(name, rawtext, text, lineno, inliner, options={}, content=[]):
-        # Parse the octicon syntax: {octicon}`icon-name;size;classes`
-        parts = text.split(';')
-        icon_name = parts[0].strip()
-        size = parts[1].strip() if len(parts) > 1 else "1em"
-        classes = parts[2].strip() if len(parts) > 2 else ""
-        
-        # Create a span with proper octicon classes
-        # The octicon CSS will handle the SVG rendering
-        node = nodes.inline(rawtext, "", classes=['octicon', f'octicon-{icon_name}', classes])
-        node['style'] = f'font-size: {size}; margin-right: 0.25em;'
-        
-        # Add data attributes for JavaScript enhancement
-        node['data-icon'] = icon_name
-        node['data-size'] = size
-        
-        return [node], []
-    
-    # Register the octicon role
-    # app.add_role('octicon', octicon_role)
-    
-    # Add custom CSS for enhanced octicon styling
-    app.add_css_file('octicons.css')
-    
-    # Add JavaScript for octicon enhancement
-    app.add_js_file('octicons.js')
+# Octicon support is handled by sphinx_design and nvidia_sphinx_theme
+# No custom setup needed since octicons work out of the box
 
 # Suppress expected warnings for conditional content builds
 suppress_warnings = [
@@ -198,7 +168,7 @@ if autodoc2_packages:
         extensions.append("autodoc2")
 
     autodoc2_render_plugin = "myst"  # Use MyST for rendering docstrings
-    autodoc2_output_dir = "apidocs"  # Output directory for autodoc2 (relative to docs/)
+    autodoc2_output_dir = "api-docs"  # Output directory for autodoc2 (relative to docs/)
     # This is a workaround that uses the parser located in autodoc2_docstrings_parser.py to allow autodoc2 to
     # render google style docstrings.
     # Related Issue: [https://github.com/sphinx-extensions2/sphinx-autodoc2/issues/33](https://github.com/sphinx-extensions2/sphinx-autodoc2/issues/33)
@@ -243,15 +213,15 @@ html_theme_options = {
 
 }
 
-html_static_path = ["_static"]
-html_css_files = [
-    "https://cdnjs.cloudflare.com/ajax/libs/octicons/8.5.0/build.css",  # GitHub Octicons CDN
-    "octicons.css",  # Custom octicon styling
-]
+# html_static_path = ["_static"]  # Commented out since no static files are needed
+# html_css_files = [
+#     "https://cdnjs.cloudflare.com/ajax/libs/octicons/8.5.0/build.css",  # GitHub Octicons CDN
+#     "octicons.css",  # Custom octicon styling
+# ]
 
-html_js_files = [
-    "octicons.js",  # Octicon enhancement script
-]
+# html_js_files = [
+#     "octicons.js",  # Octicon enhancement script
+# ]
 
 html_extra_path = ["project.json", "versions1.json"]
 

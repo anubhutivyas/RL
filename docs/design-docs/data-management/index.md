@@ -13,9 +13,37 @@ This section covers data handling, processing, and persistence mechanisms in NeM
 - **Chat Datasets**: Explore the design of chat dataset processing and conversation handling
 - **Padding**: Learn about padding strategies and their impact on training efficiency
 
+## Data Management
+
+::::{grid} 1 1 1 2
+:gutter: 2 2 2 2
+
+:::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Chat Datasets
+:link: chat-datasets
+:link-type: doc
+
+Explore the design of chat dataset processing and conversation handling.
+
++++
+{bdg-info}`Data`
+:::
+
+:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Padding
+:link: padding
+:link-type: doc
+
+Learn about padding strategies and their impact on training efficiency.
+
++++
+{bdg-secondary}`Optimization`
+:::
+
+::::
+
 ```{toctree}
 :maxdepth: 1
 :caption: Data Management
+:hidden:
 
 chat-datasets
 padding

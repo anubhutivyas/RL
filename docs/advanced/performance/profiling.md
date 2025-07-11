@@ -30,7 +30,7 @@ NRL_NSYS_PROFILE_STEP_RANGE=1:2 NRL_NSYS_WORKER_PATTERNS="*policy*,*vllm*" uv ru
 NRL_NSYS_PROFILE_STEP_RANGE=3:5 NRL_NSYS_WORKER_PATTERNS="dtensor_policy_worker" uv run examples/run_grpo.py
 ```
 
-**Note**: For detailed NSYS profiling setup and usage, see the [NSYS Profiling Guide](../../guides/development/nsys-profiling.md).
+**Note**: For detailed NSYS profiling setup and usage, see the [NSYS Profiling Guide](../../guides/environment-data/nsys-profiling.md).
 
 #### Custom NVTX Markers
 Add custom markers to identify specific operations:

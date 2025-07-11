@@ -177,4 +177,221 @@ are already taken by some other service backgrounded on your cluster.
 
 ## Kubernetes
 
-TBD
+NeMo RL can be deployed on Kubernetes clusters for scalable, containerized training. This section covers setting up Ray clusters on Kubernetes and running NeMo RL jobs.
+
+### Prerequisites
+
+Before deploying NeMo RL on Kubernetes, ensure you have:
+
+- **Kubernetes Cluster**: A functional Kubernetes cluster with GPU nodes
+- **NVIDIA GPU Operator**: Installed and configured for GPU access
+- **Helm**: For managing Ray cluster deployments
+- **kubectl**: Configured to access your Kubernetes cluster
+- **Container Registry Access**: Access to pull NeMo RL container images
+
+### Deploy Ray Cluster
+
+Use the Ray Helm chart to deploy a Ray cluster on Kubernetes:
+
+```bash
+# Add the Ray Helm repository
+helm repo add ray https://ray-project.github.io/ray-charts/
+helm repo update
+
+# Create a values file for your Ray cluster
+cat > ray-cluster-values.yaml << EOF
+ray:
+  head:
+    replicas: 1
+    resources:
+      limits:
+        cpu: "4"
+        memory: "8Gi"
+        nvidia.com/gpu: 1
+      requests:
+        cpu: "2"
+        memory: "4Gi"
+        nvidia.com/gpu: 1
+    container:
+      image: nvcr.io/nvidia/pytorch:23.12-py3
+      command: ["ray", "start", "--head", "--port=6379"]
+  
+  worker:
+    replicas: 3  # Adjust based on your needs
+    resources:
+      limits:
+        cpu: "8"
+        memory: "32Gi"
+        nvidia.com/gpu: 8
+      requests:
+        cpu: "4"
+        memory: "16Gi"
+        nvidia.com/gpu: 8
+    container:
+      image: nvcr.io/nvidia/pytorch:23.12-py3
+      command: ["ray", "start", "--address=\$RAY_HEAD_SERVICE_HOST:6379"]
+
+  dashboard:
+    enabled: true
+    port: 8265
+EOF
+
+# Deploy the Ray cluster
+helm install ray-cluster ray/ray-cluster -f ray-cluster-values.yaml
+```
+
+### Verify Cluster Status
+
+Check that your Ray cluster is running properly:
+
+```bash
+# Check Ray cluster pods
+kubectl get pods -l ray.io/cluster=ray-cluster
+
+# Check Ray cluster services
+kubectl get services -l ray.io/cluster=ray-cluster
+
+# Access Ray dashboard
+kubectl port-forward svc/ray-cluster-head-svc 8265:8265
+```
+
+### Run NeMo RL Jobs
+
+Once your Ray cluster is running, you can submit NeMo RL jobs:
+
+```bash
+# Create a job configuration
+cat > nemo-rl-job.yaml << EOF
+apiVersion: ray.io/v1
+kind: RayJob
+metadata:
+  name: nemo-rl-training
+spec:
+  entrypoint: |
+    #!/bin/bash
+    git clone https://github.com/NVIDIA/NeMo-RL.git
+    cd NeMo-RL
+    pip install uv
+    uv run ./examples/run_grpo_math.py
+  runtimeEnv:
+    pip:
+      - torch>=2.0.0
+      - transformers>=4.30.0
+      - accelerate
+      - ray[default]
+  clusterSpec:
+    headGroupSpec:
+      serviceType: ClusterIP
+      replicas: 1
+      rayStartParams:
+        dashboard-host: "0.0.0.0"
+      template:
+        spec:
+          containers:
+          - name: ray-head
+            image: nvcr.io/nvidia/pytorch:23.12-py3
+            resources:
+              limits:
+                nvidia.com/gpu: 1
+              requests:
+                nvidia.com/gpu: 1
+    workerGroupSpecs:
+    - replicas: 3
+      rayStartParams: {}
+      template:
+        spec:
+          containers:
+          - name: ray-worker
+            image: nvcr.io/nvidia/pytorch:23.12-py3
+            resources:
+              limits:
+                nvidia.com/gpu: 8
+              requests:
+                nvidia.com/gpu: 8
+EOF
+
+# Submit the job
+kubectl apply -f nemo-rl-job.yaml
+```
+
+### Monitor Jobs
+
+Monitor your NeMo RL training jobs:
+
+```bash
+# Check job status
+kubectl get rayjobs
+
+# View job logs
+kubectl logs -f rayjob/nemo-rl-training
+
+# Access Ray dashboard for job monitoring
+kubectl port-forward svc/ray-cluster-head-svc 8265:8265
+```
+
+### Environment Configuration
+
+Set up environment variables for your Kubernetes deployment:
+
+```bash
+# Create a ConfigMap for environment variables
+cat > nemo-rl-config.yaml << EOF
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nemo-rl-config
+data:
+  HF_HOME: "/workspace/cache"
+  WANDB_API_KEY: "your_wandb_api_key"
+  HF_TOKEN: "your_hf_token"
+  HF_DATASETS_CACHE: "/workspace/datasets"
+EOF
+
+kubectl apply -f nemo-rl-config.yaml
+```
+
+### Persistent Storage
+
+For long-running training jobs, configure persistent storage:
+
+```yaml
+# Add to your Ray cluster values
+ray:
+  head:
+    volumeMounts:
+    - name: cache-storage
+      mountPath: /workspace/cache
+    - name: datasets-storage
+      mountPath: /workspace/datasets
+    volumes:
+    - name: cache-storage
+      persistentVolumeClaim:
+        claimName: nemo-rl-cache-pvc
+    - name: datasets-storage
+      persistentVolumeClaim:
+        claimName: nemo-rl-datasets-pvc
+```
+
+### Scaling Considerations
+
+- **GPU Resources**: Ensure your Kubernetes nodes have sufficient GPU resources
+- **Network Bandwidth**: High-speed interconnects improve distributed training performance
+- **Storage I/O**: Use high-performance storage for dataset caching and checkpointing
+- **Memory Requirements**: Monitor memory usage and adjust resource limits accordingly
+
+### Troubleshooting
+
+Common issues and solutions:
+
+```bash
+# Check GPU availability
+kubectl get nodes -o json | jq '.items[].status.allocatable."nvidia.com/gpu"'
+
+# Verify Ray cluster connectivity
+kubectl exec -it ray-cluster-head-0 -- ray status
+
+# Check resource usage
+kubectl top pods -l ray.io/cluster=ray-cluster
+```
+
+For more detailed Kubernetes deployment options, refer to the [Ray Kubernetes documentation](https://docs.ray.io/en/latest/ray-core/configure.html#kubernetes).

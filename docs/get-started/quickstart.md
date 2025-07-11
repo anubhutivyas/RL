@@ -5,7 +5,7 @@ Get started with NeMo RL in minutes! This guide will walk you through your first
 ## Prerequisites
 
 Before starting, ensure you have:
-- [Installed NeMo RL](installation.md)
+- [Installed NeMo RL](installation)
 - Set up your environment variables
 - Authenticated with Hugging Face (if using Llama models)
 
@@ -219,8 +219,8 @@ uv run python examples/run_sft.py \
 
 ### Getting Help
 
-- Check the [troubleshooting guide](../reference/troubleshooting.md)
-- Review [configuration options](../reference/configuration.md)
+- Check the [troubleshooting guide](../configuration-cli/troubleshooting)
+- Review [configuration options](../configuration-cli/configuration)
 - Join the [NeMo Discord](https://discord.gg/nvidia-nemo)
 
 ## Next Steps
@@ -228,18 +228,18 @@ uv run python examples/run_sft.py \
 After completing the quickstart:
 
 1. **Explore Algorithms**:
-   - [GRPO Guide](../guides/algorithms/grpo.md) - Advanced preference learning
-   - [DPO Guide](../guides/algorithms/dpo.md) - Direct preference optimization
-   - [SFT Guide](../guides/algorithms/sft.md) - Supervised fine-tuning
+   - [GRPO Guide](../guides/training-algorithms/grpo) - Advanced preference learning
+- [DPO Guide](../guides/training-algorithms/dpo) - Direct preference optimization
+- [SFT Guide](../guides/training-algorithms/sft) - Supervised fine-tuning
 
 2. **Learn Configuration**:
-   - [Configuration Reference](../reference/configuration.md)
-   - [CLI Reference](../reference/cli.md)
+   - [Configuration Reference](../configuration-cli/configuration)
+- [CLI Reference](../configuration-cli/cli)
 
 3. **Scale Up**:
    - [Cluster Setup](cluster.md) - Multi-node training
-   - [Packaging Guide](../guides/development/packaging.md) - Production deployment
+- [Packaging Guide](../guides/production-support/packaging) - Production deployment
 
 4. **Evaluate Models**:
-   - [Evaluation Guide](../guides/algorithms/eval.md) - Model assessment
-   - [Troubleshooting](../reference/troubleshooting.md) - Common issues 
+   - [Evaluation Guide](../guides/training-algorithms/eval) - Model assessment
+- [Troubleshooting](../configuration-cli/troubleshooting) - Common issues 

@@ -166,7 +166,7 @@ This template provides a solid foundation for creating professional, maintainabl
     - [🎨 **Modern Design**](#-modern-design)
     - [🔗 **Advanced Navigation**](#-advanced-navigation)
     - [🛠️ **Sphinx Extensions**](#️-sphinx-extensions)
-    - [📊 **Content Patterns**](#-content-patterns)
+    - [📊 **Content Patterns**](#content-patterns)
   - [Template Structure](#template-structure)
   - [How to Use This Template](#how-to-use-this-template)
   - [Key Files to Customize](#key-files-to-customize)

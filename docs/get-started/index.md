@@ -73,7 +73,7 @@ Select the training method that best fits your needs and experience level:
 :gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`play;1.5em;sd-mr-1` SFT Training
-:link: ../guides/algorithms/sft
+:link: ../guides/training-algorithms/sft
 :link-alt: Supervised Fine-Tuning guide
 
 Get started with supervised fine-tuning for language models. Perfect for beginners and domain adaptation tasks.
@@ -83,7 +83,7 @@ Get started with supervised fine-tuning for language models. Perfect for beginne
 :::
 
 :::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` GRPO Training
-:link: ../guides/algorithms/grpo
+:link: ../guides/training-algorithms/grpo
 :link-alt: Group Relative Policy Optimization guide
 
 Learn Group Relative Policy Optimization for reinforcement learning with language models. Advanced RL training.
@@ -93,7 +93,7 @@ Learn Group Relative Policy Optimization for reinforcement learning with languag
 :::
 
 :::{grid-item-card} {octicon}`heart;1.5em;sd-mr-1` DPO Training
-:link: ../guides/algorithms/dpo
+:link: ../guides/training-algorithms/dpo
 :link-alt: Direct Preference Optimization guide
 
 Explore Direct Preference Optimization for preference learning and alignment. Preference-based training.
@@ -128,10 +128,10 @@ If you're new to NeMo RL, we recommend following this progression:
 ## Environment Configuration
 
 ### Setup Options
-- **[Installation Guide](installation.md)** - Complete setup instructions for all environments
-- **[Local Workstation](local-workstation.md)** - Configure your development environment
-- **[Docker Setup](docker.md)** - Use NeMo RL with Docker containers
-- **[Cluster Setup](cluster.md)** - Configure Ray clusters for distributed training
+- **[Installation Guide](installation)** - Complete setup instructions for all environments
+- **[Local Workstation](local-workstation)** - Configure your development environment
+- **[Docker Setup](docker)** - Use NeMo RL with Docker containers
+- **[Cluster Setup](cluster)** - Configure Ray clusters for distributed training
 
 ### System Requirements
 - **Hardware Requirements** - Understand GPU memory and compute needs
@@ -154,7 +154,7 @@ Access structured learning paths, tutorial series, and advanced techniques for m
 :::
 
 :::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Evaluation Setup
-:link: ../guides/algorithms/eval
+:link: ../guides/training-algorithms/eval
 :link-alt: Model evaluation and benchmarking
 
 Set up model evaluation and benchmarking for your trained models.
@@ -169,17 +169,17 @@ Set up model evaluation and benchmarking for your trained models.
 
 After completing your first training run:
 
-1. **Explore Algorithms**: Try [GRPO](../guides/algorithms/grpo.md) and [DPO](../guides/algorithms/dpo.md) training
-2. **Scale Up**: Set up [distributed training](cluster.md) for larger models
-3. **Optimize Performance**: Use [profiling tools](../guides/development/nsys-profiling.md) for training optimization
-4. **Customize**: Learn to [add new models](../guides/development/adding-new-models.md) and environments
-5. **Deploy**: Follow the [packaging guide](../guides/development/packaging.md) for production deployment
+1. **Explore Algorithms**: Try [GRPO](../guides/training-algorithms/grpo) and [DPO](../guides/training-algorithms/dpo) training
+2. **Scale Up**: Set up [distributed training](cluster) for larger models
+3. **Optimize Performance**: Use [profiling tools](../guides/environment-data/nsys-profiling) for training optimization
+4. **Customize**: Learn to [add new models](../guides/model-development/adding-new-models) and environments
+5. **Deploy**: Follow the [packaging guide](../guides/production-support/packaging) for production deployment
 
 ## Get Help
 
-- [Troubleshooting](../reference/troubleshooting.md) - Common issues and solutions
-- [API Reference](../reference/api.md) - Complete API documentation
-- [Configuration Guide](../reference/configuration.md) - Understand training parameters
+- [Troubleshooting](../configuration-cli/troubleshooting) - Common issues and solutions
+- [API Documentation](../api-docs/index) - Complete API documentation
+- [Configuration Guide](../configuration-cli/configuration) - Understand training parameters
 - [Community Support](https://github.com/NVIDIA-NeMo/RL/issues) - GitHub issues and discussions
 
 ---
@@ -196,8 +196,6 @@ local-workstation
 docker
 cluster
 tutorials
-feature-set-a
-feature-set-b
 ```
 
 

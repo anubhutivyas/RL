@@ -28,10 +28,11 @@ Master the development tools and infrastructure that support NeMo RL development
 ## Core Architecture
 
 ::::{grid} 1 1 1 2
-:gutter: 1 1 1 2
+:gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`light-bulb;1.5em;sd-mr-1` Design Philosophy
 :link: core-architecture/design-and-philosophy
+:link-type: doc
 
 Understand the core design principles and philosophical approach behind NeMo RL's architecture.
 
@@ -39,17 +40,9 @@ Understand the core design principles and philosophical approach behind NeMo RL'
 {bdg-primary}`Foundation`
 :::
 
-:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Training Backends
-:link: computational-systems/training-backends
-
-Explore the different training backends supported by NeMo RL and their capabilities.
-
-+++
-{bdg-info}`Implementation`
-:::
-
 :::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` FSDP2 Parallel Plan
 :link: core-architecture/fsdp2-parallel-plan
+:link-type: doc
 
 Learn about the FSDP2 parallelization strategy and implementation details.
 
@@ -59,6 +52,7 @@ Learn about the FSDP2 parallelization strategy and implementation details.
 
 :::{grid-item-card} {octicon}`play;1.5em;sd-mr-1` Generation
 :link: core-architecture/generation
+:link-type: doc
 
 Explore the text generation pipeline and inference mechanisms.
 
@@ -71,10 +65,11 @@ Explore the text generation pipeline and inference mechanisms.
 ## Data Management
 
 ::::{grid} 1 1 1 2
-:gutter: 1 1 1 2
+:gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Chat Datasets
 :link: data-management/chat-datasets
+:link-type: doc
 
 Explore the design of chat dataset processing and conversation handling.
 
@@ -84,6 +79,7 @@ Explore the design of chat dataset processing and conversation handling.
 
 :::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Padding
 :link: data-management/padding
+:link-type: doc
 
 Learn about padding strategies and their impact on training efficiency.
 
@@ -96,10 +92,11 @@ Learn about padding strategies and their impact on training efficiency.
 ## Computational Systems
 
 ::::{grid} 1 1 1 2
-:gutter: 1 1 1 2
+:gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Training Backends
 :link: computational-systems/training-backends
+:link-type: doc
 
 Explore the different training backends supported by NeMo RL and their capabilities.
 
@@ -109,6 +106,7 @@ Explore the different training backends supported by NeMo RL and their capabilit
 
 :::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Logger
 :link: computational-systems/logger
+:link-type: doc
 
 Understand the logging system and observability features in NeMo RL.
 
@@ -118,6 +116,7 @@ Understand the logging system and observability features in NeMo RL.
 
 :::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` UV Package Manager
 :link: computational-systems/uv
+:link-type: doc
 
 Learn about UV integration and package management strategies.
 
@@ -130,10 +129,11 @@ Learn about UV integration and package management strategies.
 ## Development Infrastructure
 
 ::::{grid} 1 1 1 2
-:gutter: 1 1 1 2
+:gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Loss Functions
 :link: development-infrastructure/loss-functions
+:link-type: doc
 
 Understand the mathematical foundations and implementation of RL loss functions.
 
@@ -143,6 +143,7 @@ Understand the mathematical foundations and implementation of RL loss functions.
 
 :::{grid-item-card} {octicon}`download;1.5em;sd-mr-1` Checkpointing
 :link: development-infrastructure/checkpointing
+:link-type: doc
 
 Understand the checkpointing mechanisms and strategies for model state persistence.
 
@@ -152,18 +153,14 @@ Understand the checkpointing mechanisms and strategies for model state persisten
 
 ::::
 
-
 ```{toctree}
 :caption: Core Design & Architecture
 :maxdepth: 2
 :hidden:
 
-
-core-architecture/design-and-philosophy
-core-architecture/fsdp2-parallel-plan
-core-architecture/generation
-computational-systems/index
+core-architecture/index
 data-management/index
+computational-systems/index
 development-infrastructure/index
 ```
 

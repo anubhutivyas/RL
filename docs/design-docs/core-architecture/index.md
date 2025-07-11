@@ -14,9 +14,47 @@ This section contains the fundamental architectural decisions and design princip
 - **FSDP2 Parallel Plan**: Learn about the FSDP2 parallelization strategy and implementation details  
 - **Generation**: Explore the text generation pipeline and inference mechanisms
 
+## Core Architecture
+
+::::{grid} 1 1 1 2
+:gutter: 2 2 2 2
+
+:::{grid-item-card} {octicon}`light-bulb;1.5em;sd-mr-1` Design Philosophy
+:link: design-and-philosophy
+:link-type: doc
+
+Understand the core design principles and philosophical approach behind NeMo RL's architecture.
+
++++
+{bdg-primary}`Foundation`
+:::
+
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` FSDP2 Parallel Plan
+:link: fsdp2-parallel-plan
+:link-type: doc
+
+Learn about the FSDP2 parallelization strategy and implementation details.
+
++++
+{bdg-warning}`Advanced`
+:::
+
+:::{grid-item-card} {octicon}`play;1.5em;sd-mr-1` Generation
+:link: generation
+:link-type: doc
+
+Explore the text generation pipeline and inference mechanisms.
+
++++
+{bdg-info}`Computation`
+:::
+
+::::
+
 ```{toctree}
 :maxdepth: 1
 :caption: Core Architecture
+:hidden:
 
 design-and-philosophy
 fsdp2-parallel-plan

@@ -268,12 +268,12 @@ uv run python run_sft.py --config configs/sft.yaml cluster.gpus_per_node=1
 ### Getting Help
 
 - **GitHub Issues**: [NeMo RL Issues](https://github.com/NVIDIA-NeMo/RL/issues)
-- **Documentation**: Check the [troubleshooting guide](../reference/troubleshooting.md)
+- **Documentation**: Check the [troubleshooting guide](../configuration-cli/troubleshooting)
 - **Community**: Join the [NeMo Discord](https://discord.gg/nvidia-nemo)
 
 ## Next Steps
 
 After installation, proceed to:
-- [Quickstart Guide](quickstart.md) - Get started with your first training run
+- [Quickstart Guide](quickstart) - Get started with your first training run
 - [Cluster Setup](cluster.md) - Set up distributed training
-- [Configuration Guide](../reference/configuration.md) - Learn about configuration options 
+- [Configuration Guide](../configuration-cli/configuration) - Learn about configuration options 

@@ -482,6 +482,6 @@ After setting up benchmarking:
 4. **Scale Testing**: Extend benchmarks to larger models and clusters
 
 For more advanced topics, see:
-- [Performance Profiling](../profiling.md) - Detailed profiling techniques
+- [Performance Profiling](profiling.md) - Detailed profiling techniques
 - [Memory Optimization](memory-optimization.md) - Memory optimization strategies
 - [Distributed Training](distributed-training.md) - Multi-GPU training benchmarks 

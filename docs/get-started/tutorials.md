@@ -4,7 +4,7 @@ tags: ["tutorials", "learning", "examples", "beginner", "advanced", "reinforceme
 categories: ["getting-started"]
 ---
 
-# Tutorials and Learning Resources
+# Tutorials & Learning Resources
 
 Welcome to the NeMo RL tutorials! This comprehensive guide will help you learn NeMo RL from the ground up, whether you're a beginner or an advanced user looking to master complex reinforcement learning techniques.
 
@@ -13,28 +13,28 @@ Welcome to the NeMo RL tutorials! This comprehensive guide will help you learn N
 Follow this structured learning path to master NeMo RL:
 
 ### **Beginner Path** (0-2 weeks)
-1. **Installation & Setup** → [Installation Guide](installation.md)
-2. **First Training Run** → [Quickstart Guide](quickstart.md)
-3. **Basic Concepts** → [About NeMo RL](../about/index.md)
-4. **SFT Training** → [SFT Tutorial](../guides/algorithms/sft.md)
+1. **Installation & Setup** → [Installation Guide](installation)
+2. **First Training Run** → [Quickstart Guide](quickstart)
+3. **Basic Concepts** → [About NeMo RL](../about/index)
+4. **SFT Training** → [SFT Tutorial](../guides/training-algorithms/sft)
 
 ### **Intermediate Path** (2-4 weeks)
-1. **DPO Training** → [DPO Tutorial](../guides/algorithms/dpo.md)
-2. **Model Evaluation** → [Evaluation Guide](../guides/algorithms/eval.md)
-3. **Custom Environments** → [Environment Development](../guides/development/environment-development.md)
-4. **Distributed Training** → [Distributed Training Guide](../guides/development/distributed-training.md)
+1. **DPO Training** → [DPO Tutorial](../guides/training-algorithms/dpo)
+2. **Model Evaluation** → [Evaluation Guide](../guides/training-algorithms/eval)
+3. **Custom Environments** → [Environment Development](../guides/environment-data/environment-development)
+4. **Distributed Training** → [Distributed Training Guide](../guides/environment-data/distributed-training)
 
-### 🎯 **Advanced Path** (4+ weeks)
-1. **GRPO Training** → [GRPO Tutorial](../guides/algorithms/grpo.md)
-2. **Performance Optimization** → [NSYS Profiling](../guides/development/nsys-profiling.md)
-3. **Custom Model Integration** → [Adding New Models](../guides/development/adding-new-models.md)
-4. **Production Deployment** → [Packaging Guide](../guides/development/packaging.md)
+### **Advanced Path** (4+ weeks)
+1. **GRPO Training** → [GRPO Tutorial](../guides/training-algorithms/grpo)
+2. **Performance Optimization** → [NSYS Profiling](../guides/environment-data/nsys-profiling)
+3. **Custom Model Integration** → [Adding New Models](../guides/model-development/adding-new-models)
+4. **Production Deployment** → [Packaging Guide](../guides/production-support/packaging)
 
 ## Tutorial Series
 
 Our comprehensive tutorial series provides hands-on experience with real-world examples and best practices.
 
-### 📚 **Complete Tutorial Series**
+### **Complete Tutorial Series**
 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
@@ -81,7 +81,7 @@ Review performance benchmarks and test suites to understand training efficiency 
 
 ::::
 
-### 🎓 **Tutorial Descriptions**
+### **Tutorial Descriptions**
 
 #### **SFT (Supervised Fine-Tuning) Series**
 - **Beginner-Friendly**: Start with basic supervised fine-tuning concepts
@@ -111,7 +111,7 @@ Review performance benchmarks and test suites to understand training efficiency 
 
 Take your NeMo RL skills to the next level with these advanced tutorials designed for experienced practitioners.
 
-### 🧠 **Advanced Reinforcement Learning**
+### **Advanced Reinforcement Learning**
 
 #### **Custom Environment Development**
 Learn to create sophisticated custom environments for specialized RL tasks:
@@ -181,7 +181,7 @@ Design and conduct rigorous experiments:
 - **Statistical Analysis**: Proper statistical analysis of experimental results
 - **Reproducible Research**: Ensure your research is reproducible and well-documented
 
-### 🛠 **Integration and Extensions**
+### **Integration and Extensions**
 
 #### **Third-Party Integrations**
 Integrate NeMo RL with other tools and frameworks:

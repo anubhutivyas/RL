@@ -89,35 +89,35 @@ NeMo RL is a comprehensive, open-source framework designed for reinforcement lea
 Ready to begin your NeMo RL journey? Here's how to get started:
 
 ### **Installation**
-- [Installation Guide](../get-started/installation.md) - Complete setup instructions
-- [Local Workstation](../get-started/local-workstation.md) - Development environment setup
-- [Docker Setup](../get-started/docker.md) - Containerized installation
+- [Installation Guide](../get-started/installation) - Complete setup instructions
+- [Local Workstation](../get-started/local-workstation) - Development environment setup
+- [Docker Setup](../get-started/docker) - Containerized installation
 
 ### **Quick Start**
-- [Quickstart Tutorial](../get-started/quickstart.md) - Run your first training job
-- [Cluster Setup](../get-started/cluster.md) - Distributed training configuration
+- [Quickstart Tutorial](../get-started/quickstart) - Run your first training job
+- [Cluster Setup](../get-started/cluster) - Distributed training configuration
 
 ### **Training Guides**
-- See the {ref}`guides/algorithms/sft.md` for SFT training.
-- See the {ref}`guides/algorithms/grpo.md` for GRPO training.
-- See the {ref}`guides/algorithms/dpo.md` for DPO training.
-- See the {ref}`guides/algorithms/eval.md` for evaluation.
-- See the {ref}`guides/development/adding-new-models.md` for adding new models.
-- See the {ref}`guides/development/environment-development.md` for custom environments.
-- See the {ref}`guides/development/distributed-training.md` for distributed training.
-- See the {ref}`guides/development/packaging.md` for packaging and deployment.
+- See the [SFT Training](../guides/training-algorithms/sft) for SFT training.
+- See the [GRPO Training](../guides/training-algorithms/grpo) for GRPO training.
+- See the [DPO Training](../guides/training-algorithms/dpo) for DPO training.
+- See the [Evaluation](../guides/training-algorithms/eval) for evaluation.
+- See the [Adding New Models](../guides/model-development/adding-new-models) for adding new models.
+- See the [Environment Development](../guides/environment-data/environment-development) for custom environments.
+- See the [Distributed Training](../guides/environment-data/distributed-training) for distributed training.
+- See the [Packaging](../guides/production-support/packaging) for packaging and deployment.
 
 ### **Reference Documentation**
-- [API Reference](../reference/api.md) - Complete API documentation
-- [Configuration](../reference/configuration.md) - Configuration options
-- [CLI Reference](../reference/cli.md) - Command-line interface
-- [Troubleshooting](../reference/troubleshooting.md) - Common issues and solutions
+- [API Documentation](../api-docs/index) - Complete API documentation
+- [Configuration](../configuration-cli/configuration) - Configuration options
+- [CLI Reference](../configuration-cli/cli) - Command-line interface
+- [Troubleshooting](../configuration-cli/troubleshooting) - Common issues and solutions
 
 ### **Advanced Topics**
-- [Adding New Models](../guides/development/adding-new-models.md) - Custom model integration
-- [Create Custom RL Environments](../guides/development/environment-development.md) - Custom RL environments
-- [Set Up Distributed Training with Ray](../guides/development/distributed-training.md) - Multi-node training
-- [Packaging](../guides/development/packaging.md) - Production deployment
+- [Adding New Models](../guides/model-development/adding-new-models) - Custom model integration
+- [Create Custom RL Environments](../guides/environment-data/environment-development) - Custom RL environments
+- [Set Up Distributed Training with Ray](../guides/environment-data/distributed-training) - Multi-node training
+- [Packaging](../guides/production-support/packaging) - Production deployment
 
 ---
 

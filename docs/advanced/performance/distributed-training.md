@@ -310,4 +310,4 @@ After setting up distributed training:
 For more advanced topics, see:
 - [Memory Optimization](memory-optimization.md) - Memory management techniques
 - [Mixed Precision](mixed-precision.md) - Mixed precision training
-- [Performance Profiling](../profiling.md) - Profiling tools and techniques 
+- [Performance Profiling](profiling.md) - Detailed profiling techniques 

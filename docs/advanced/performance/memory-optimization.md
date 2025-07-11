@@ -324,4 +324,4 @@ After implementing memory optimizations:
 For more advanced topics, see:
 - [Distributed Training](distributed-training.md) - Multi-GPU training strategies
 - [Mixed Precision](mixed-precision.md) - Mixed precision training techniques
-- [Performance Profiling](../profiling.md) - Profiling tools and techniques 
+- [Performance Profiling](profiling.md) - Profiling tools and techniques 

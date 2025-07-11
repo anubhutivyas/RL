@@ -606,6 +606,6 @@ After setting up monitoring:
 4. **Scale Monitoring**: Extend monitoring to larger deployments
 
 For more advanced topics, see:
-- [Performance Profiling](../profiling.md) - Detailed profiling techniques
+- [Performance Profiling](profiling.md) - Detailed profiling techniques
 - [Benchmarking](benchmarking.md) - Performance benchmarking tools
 - [Memory Optimization](memory-optimization.md) - Memory monitoring and optimization 
