@@ -405,82 +405,26 @@ def test_sequence_packing_gradients_with_cp(
     # Create virtual cluster
     cluster = RayVirtualCluster(bundle_ct_per_node_list=[cp_size], use_gpus=True)
 
-    try:
-        actor_fqn = register_sequence_packing_gradient_test_actor
+    actor_fqn = register_sequence_packing_gradient_test_actor
 
-        # For CP, all ranks are in a single group
-        sharding = NamedSharding(layout=list(range(cp_size)), names=["cp"])
-        builder = RayWorkerBuilder(actor_fqn, cp_size)
+    # For CP, all ranks are in a single group
+    sharding = NamedSharding(layout=list(range(cp_size)), names=["cp"])
+    builder = RayWorkerBuilder(actor_fqn, cp_size)
 
-        worker_group = RayWorkerGroup(
-            cluster=cluster,
-            remote_worker_builder=builder,
-            workers_per_node=None,
-            sharding_annotations=sharding,
-        )
+    worker_group = RayWorkerGroup(
+        cluster=cluster,
+        remote_worker_builder=builder,
+        workers_per_node=None,
+        sharding_annotations=sharding,
+    )
 
-        # Run the test on all workers
-        futures = worker_group.run_all_workers_single_data(
-            "test_sequence_packing_gradients"
-        )
-        results = ray.get(futures)
-
-        #         # Analyze results from all workers
-        # print("\n=== GRADIENT ANALYSIS RESULTS ===")
-
-        # all_high_gradients = []
-        # all_warning_messages = []
-
-        # for i, result in enumerate(results):
-        # print(f"\nWorker {i} (Rank {result['rank']}):")
-        # print(f"  Success: {result['success']}")
-
-        # if result['error']:
-        # print(f"  Error: {result['error']}")
-
-        # # Print detailed stats
-        # baseline = result['baseline_stats']
-        # packed = result['packed_stats']
-        # ratios = result['gradient_ratios']
-
-        # print(f"  Baseline - Loss: {baseline['loss']:.6f}, Grad norm: {baseline['grad_norm']:.4f}, Max: {baseline['grad_max']:.4f}, Mean: {baseline['grad_mean']:.4f}")
-        # print(f"  Packed   - Loss: {packed['loss']:.6f}, Grad norm: {packed['grad_norm']:.4f}, Max: {packed['grad_max']:.4f}, Mean: {packed['grad_mean']:.4f}")
-        # print(f"  Ratios   - Norm: {ratios['norm']:.4f}, Max: {ratios['max']:.4f}, Mean: {ratios['mean']:.4f}")
-
-        # if result['high_gradients_detected']:
-        # all_high_gradients.append(i)
-        # all_warning_messages.extend(result['warning_messages'])
-        # print(f"  ⚠️  HIGH GRADIENTS DETECTED!")
-        # for msg in result['warning_messages']:
-        # print(f"    - {msg}")
-        # else:
-        # print(f"  ✅ Gradients appear normal")
-
-        # # Final assessment
-        # print(f"\n=== FINAL ASSESSMENT ===")
-        # if all_high_gradients:
-        # print(f"❌ HIGH GRADIENTS DETECTED on workers: {all_high_gradients}")
-        # print("This indicates a potential issue with gradient accumulation in sequence packing + CP.")
-        # print("Issues found:")
-        # for msg in set(all_warning_messages):
-        # print(f"  - {msg}")
-
-        # # Don't fail the test immediately, but mark it as a known issue
-        # print("\n⚠️  This is a known issue being debugged. Test will pass but issue is documented.")
-        # else:
-        # print("✅ All gradients appear normal across all workers")
-
-        # # For now, we'll make the test pass even if high gradients are detected
-        # # so we can continue debugging. In a real scenario, you'd want to fix the issue.
-        # for i, result in enumerate(results):
-        # if not result["success"]:
-        # print(f"\n⚠️  Worker {i} detected high gradients - this is a known issue under investigation")
-        # # assert result["success"], f"Worker {i} failed: {result['error']}"
-
-        worker_group.shutdown(force=True)
-
-    finally:
-        cluster.shutdown()
+    # Run the test on all workers
+    futures = worker_group.run_all_workers_single_data(
+        "test_sequence_packing_gradients"
+    )
+    _ = ray.get(futures)
+    worker_group.shutdown(force=True)
+    cluster.shutdown()
 
 
 if __name__ == "__main__":
