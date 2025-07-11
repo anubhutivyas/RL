@@ -127,36 +127,6 @@ Handle model-specific behaviors and special cases in NeMo RL.
 ::::{grid} 1 2 2 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Cluster Setup
-:link: environment-data/cluster
-:link-type: doc
-
-Set up and configure Ray clusters for distributed training.
-
-+++
-{bdg-warning}`Advanced`
-:::
-
-:::{grid-item-card} {octicon}`container;1.5em;sd-mr-1` Docker Environment
-:link: environment-data/docker
-:link-type: doc
-
-Run NeMo RL in Docker containers for reproducible environments.
-
-+++
-{bdg-info}`Setup`
-:::
-
-:::{grid-item-card} {octicon}`computer;1.5em;sd-mr-1` Local Workstation
-:link: environment-data/local-workstation
-:link-type: doc
-
-Set up NeMo RL on your local machine for development and testing.
-
-+++
-{bdg-primary}`Beginner`
-:::
-
 :::{grid-item-card} {octicon}`bug;1.5em;sd-mr-1` Debugging
 :link: environment-data/debugging
 :link-type: doc

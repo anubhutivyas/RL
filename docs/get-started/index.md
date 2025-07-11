@@ -125,18 +125,7 @@ If you're new to NeMo RL, we recommend following this progression:
 5. **Scale with Performance Tools** - Optimize with distributed training and profiling
 6. **Customize with Development Tools** - Extend and deploy your solutions
 
-## Environment Configuration
 
-### Setup Options
-- **[Installation Guide](installation)** - Complete setup instructions for all environments
-- **[Local Workstation](local-workstation)** - Configure your development environment
-- **[Docker Setup](docker)** - Use NeMo RL with Docker containers
-- **[Cluster Setup](cluster)** - Configure Ray clusters for distributed training
-
-### System Requirements
-- **Hardware Requirements** - Understand GPU memory and compute needs
-- **Authentication Setup** - Set up Hugging Face authentication
-- **Environment Variables** - Configure necessary environment variables
 
 ## Learning Paths
 

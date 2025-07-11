@@ -226,9 +226,6 @@ For more information on contributing, see the [Development Guide](../guides/prod
 
 distributed
 models
-algorithms
-data
-utils
 auto-generated
 nemo_rl/nemo_rl
 
