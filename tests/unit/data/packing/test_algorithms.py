@@ -325,6 +325,3 @@ class TestSequencePacker:
                 f"Warning: {algorithm.name} produced the same result with different seeds"
             )
 
-
-if __name__ == "__main__":
-    pytest.main(["-xvs", __file__])
