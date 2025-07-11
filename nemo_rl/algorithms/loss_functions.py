@@ -140,9 +140,6 @@ class ClippedPGLossFn(LossFunction):
 
         next_token_logits = next_token_logits.to(torch.float32)
 
-        # print(f"data['input_ids'].shape: {data['input_ids'].shape}")
-        # print(f"next_token_logits.shape: {next_token_logits.shape}")
-        # print(f"lp_error: {torch.sum(torch.abs((generation_logprobs - prev_logprobs) * mask)) / torch.sum(mask)}")
         if vocab_parallel_group is not None:
             assert vocab_parallel_rank is not None, (
                 "vocab_parallel_rank must be provided when vocab_parallel_group is provided"
@@ -173,9 +170,6 @@ class ClippedPGLossFn(LossFunction):
                 dim=-1, index=next_tokens.unsqueeze(-1)
             ).squeeze(-1)
 
-
-        # print(f"c shape {curr_logprobs.shape}, p shape {prev_logprobs.shape}, m shape {mask.shape}, i shape {data['input_ids'].shape}", flush=True)
-        # print(f"curr_lp_diff: {torch.sum(torch.abs((curr_logprobs - prev_logprobs) * mask)) / torch.sum(mask)}", flush=True)
 
         # Calculate KL regularization.
         if self.reference_policy_kl_penalty != 0:
@@ -210,7 +204,6 @@ class ClippedPGLossFn(LossFunction):
         else:
             kl = torch.tensor(0.0)
 
-        print(f"kl: {kl * global_valid_toks / torch.sum(mask)}")
         # Calculate clipped loss function if ppo ratio is enabled.
         if not self.disable_ppo_ratio:
             ratios = (curr_logprobs - prev_logprobs).exp()
@@ -226,7 +219,6 @@ class ClippedPGLossFn(LossFunction):
 
         # Determine which value to use for clipping (max for pessimistic estimate)
         clip_loss = torch.max(loss1, loss2)
-        print(f"clip_loss: {torch.sum(clip_loss * mask) / torch.sum(mask)}")
 
         # Dual-clipping see https://arxiv.org/pdf/1912.09729
         if self.ratio_clip_c is not None:
@@ -282,7 +274,6 @@ class ClippedPGLossFn(LossFunction):
             )
 
         loss = actor_loss + kl
-        print(f"loss: {loss * global_valid_toks / torch.sum(mask)}, global_valid_toks: {global_valid_toks}, torch.sum(mask): {torch.sum(mask)}")
         with torch.no_grad():
             probs_ratio = masked_mean(
                 ratios.detach(),
@@ -668,30 +659,15 @@ class SequencePackingLossWrapper:
             seq_data = data.slice(seq_idx, seq_idx + 1)
             unpadded_seq_data = {}
             for k, v in seq_data.items():
-                # print(f"k: {k}, v: {v.shape}")
                 if isinstance(v, torch.Tensor) and v.ndim > 1 and v.shape[1] > 1:
                     unpadded_seq_data[k] = v[:, : unpadded_seq_lengths[seq_idx]]
-                    # seq_data[k] = v[:, :unpadded_seq_lengths[seq_idx]]
-                    # tensor_to_pad = v[:, :padded_seq_lengths[seq_idx]]
-                    # pad_amount = padded_seq_lengths[seq_idx] - tensor_to_pad.shape[1]
-                    # # The pad tuple is for (left, right) padding starting from the last dimension.
-                    # # We want to pad the second dimension (dim=1) on the right.
-                    # padding = (0, 0) * (tensor_to_pad.ndim - 2) + (0, pad_amount)
-                    # padded_seq_data[k] = F.pad(tensor_to_pad, padding)
                 else:
-                    # padded_seq_data[k] = v
                     unpadded_seq_data[k] = v
 
             # get next_token_logits
             cp_size = 1 if context_parallel_group is None else torch.distributed.get_world_size(context_parallel_group)
             logit_slice_idxs = slice(seq_start // cp_size, (seq_start + padded_seq_lengths[seq_idx]) // cp_size)
-            # print(f"rank {torch.distributed.get_rank()}: seqidx {seq_idx}, next_token_logits: {next_token_logits.shape}")
-            # print(f"rank {torch.distributed.get_rank()}: seqidx {seq_idx}, cu_seqlens_q: {self.cu_seqlens_q}")
-            # print(f"rank {torch.distributed.get_rank()}: seqidx {seq_idx}, unpadded_seq_data: {unpadded_seq_data[list(unpadded_seq_data.keys())[0]].shape}")
-            # print(f"rank {torch.distributed.get_rank()}: seqidx {seq_idx}, seq_start: {seq_start}, seq_end: {seq_end}, cp_size: {cp_size}")
-            # print(f"rank {torch.distributed.get_rank()}: seqidx {seq_idx}, logit_slice_idxs: {logit_slice_idxs}")
             next_token_logits_slice = next_token_logits[:, logit_slice_idxs, :]
-            # print(f"seq_start: {seq_start}, seq_end: {seq_end}, next_token_logits: {next_token_logits_slice.shape}")
 
             loss, metrics = self.loss_fn(
                 next_token_logits_slice,
