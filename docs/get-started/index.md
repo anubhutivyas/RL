@@ -102,73 +102,27 @@ Explore Direct Preference Optimization for preference learning and alignment. Pr
 {bdg-info}`Intermediate`
 :::
 
-:::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Distributed Training
-:link: cluster
-:link-alt: Cluster setup and distributed training guide
-
-Set up multi-GPU and multi-node training clusters for large-scale RL experiments.
-
-+++
-{bdg-secondary}`Advanced`
-:::
-
 ::::
 
-## Recommended Learning Path
+## Distributed Training
 
-If you're new to NeMo RL, we recommend following this progression:
-
-1. **Start with SFT Training** - Build your foundation with supervised fine-tuning
-2. **Explore DPO Training** - Learn preference-based learning techniques  
-3. **Try an End-to-End Example** - Run a complete training workflow
-4. **Dive into GRPO** - Master advanced reinforcement learning
-5. **Scale with Performance Tools** - Optimize with distributed training and profiling
-6. **Customize with Development Tools** - Extend and deploy your solutions
-
-
-
-## Learning Paths
-
-::::{grid} 1 1 1 2
-:gutter: 2 2 2 2
-
-:::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` Tutorials & Learning
-:link: ../guides/examples-tutorials/index
-:link-alt: Comprehensive tutorials and learning resources
-
-Access structured learning paths, tutorial series, and advanced techniques for mastering NeMo RL.
-
-+++
-{bdg-primary}`Learning`
-:::
-
-:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Evaluation Setup
-:link: ../guides/training-algorithms/eval
-:link-alt: Model evaluation and benchmarking
-
-Set up model evaluation and benchmarking for your trained models.
-
-+++
-{bdg-secondary}`Analysis`
-:::
-
-::::
+For details on scaling NeMo RL across multiple GPUs and nodes, see the [Distributed Training Guide](../advanced/performance/distributed-training.md).
 
 ## Next Steps
 
 After completing your first training run:
 
 1. **Explore Algorithms**: Try [GRPO](../guides/training-algorithms/grpo) and [DPO](../guides/training-algorithms/dpo) training
-2. **Scale Up**: Set up [distributed training](cluster) for larger models
+2. **Scale Up**: Set up [distributed training](cluster.md) for larger models
 3. **Optimize Performance**: Use [profiling tools](../guides/environment-data/nsys-profiling) for training optimization
 4. **Customize**: Learn to [add new models](../guides/model-development/adding-new-models) and environments
-5. **Deploy**: Follow the [packaging guide](../guides/production-support/packaging) for production deployment
+5. **Deploy**: Follow the [production support guide](../guides/production-support/index) for production deployment
 
 ## Get Help
 
 - [Troubleshooting](../configuration-cli/troubleshooting) - Common issues and solutions
 - [API Documentation](../api-docs/index) - Complete API documentation
-- [Configuration Guide](../configuration-cli/configuration) - Understand training parameters
+- [Configuration Guide](../configuration-cli/configuration-reference) - Understand training parameters
 - [Community Support](https://github.com/NVIDIA-NeMo/RL/issues) - GitHub issues and discussions
 
 ---

@@ -29,7 +29,7 @@ Comprehensive analysis of loss function implementations, including mathematical 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Mathematical Foundations
+:::{grid-item-card} Mathematical Foundations
 :link: mathematical-foundations
 :link-type: doc
 
@@ -39,7 +39,7 @@ Core RL theory, convergence proofs, and fundamental concepts that underpin NeMo 
 {bdg-primary}`Foundation`
 :::
 
-:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` GRPO Theory
+:::{grid-item-card} GRPO Theory
 :link: grpo-theory
 :link-type: doc
 
@@ -49,7 +49,7 @@ Mathematical formulation of Group Relative Policy Optimization with dual-clippin
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} {octicon}`heart;1.5em;sd-mr-1` DPO Theory
+:::{grid-item-card} DPO Theory
 :link: dpo-theory
 :link-type: doc
 
@@ -59,7 +59,7 @@ Direct Preference Optimization theory with preference loss and SFT loss componen
 {bdg-info}`Intermediate`
 :::
 
-:::{grid-item-card} {octicon}`play;1.5em;sd-mr-1` SFT Theory
+:::{grid-item-card} SFT Theory
 :link: sft-theory
 :link-type: doc
 
@@ -69,7 +69,7 @@ Supervised Fine-Tuning mathematical foundations and negative log-likelihood loss
 {bdg-primary}`Foundation`
 :::
 
-:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Loss Functions
+:::{grid-item-card} Loss Functions
 :link: loss-functions
 :link-type: doc
 
@@ -126,7 +126,6 @@ After understanding the mathematical foundations:
 :caption: Theory
 :maxdepth: 2
 :hidden:
-
 
 mathematical-foundations
 grpo-theory

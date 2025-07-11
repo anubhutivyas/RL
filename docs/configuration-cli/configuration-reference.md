@@ -166,45 +166,7 @@ data:
 
 ## Distributed Training Configuration
 
-### FSDP Strategy
-
-```yaml
-distributed:
-  strategy: "fsdp2"
-  num_nodes: 1
-  num_gpus: 8
-  fsdp_config:
-    mixed_precision: "bf16"
-    activation_checkpointing: true
-    sharding_strategy: "FULL_SHARD"
-    cpu_offload: false
-```
-
-### Megatron Strategy
-
-```yaml
-distributed:
-  strategy: "megatron"
-  num_nodes: 1
-  num_gpus: 8
-  tensor_model_parallel_size: 2
-  pipeline_model_parallel_size: 4
-  sequence_parallel: true
-  use_flash_attention: true
-```
-
-### Ray Strategy
-
-```yaml
-distributed:
-  strategy: "ray"
-  num_nodes: 1
-  num_gpus: 8
-  ray_config:
-    address: "auto"
-    runtime_env:
-      working_dir: "."
-```
+For comprehensive distributed training configuration and best practices, see the [Distributed Training Guide](../advanced/performance/distributed-training.md).
 
 ## Environment Configuration
 

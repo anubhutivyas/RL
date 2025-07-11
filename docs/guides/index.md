@@ -2,22 +2,6 @@
 
 Welcome to the NeMo RL Guides! This comprehensive collection provides everything you need to master reinforcement learning with large language models using NeMo RL.
 
-## What You'll Find Here
-
-Our guides are organized into four main categories to help you navigate from basic concepts to practical implementations:
-
-### **Training Algorithms** 
-Learn the core RL algorithms that power NeMo RL. Start with Supervised Fine-Tuning (SFT) as your foundation, then explore advanced techniques like Group Relative Policy Optimization (GRPO) and Direct Preference Optimization (DPO). Each algorithm guide includes detailed explanations, mathematical foundations, and practical implementation examples.
-
-### **Model Development**
-Extend NeMo RL with custom model architectures and backends. Learn to add new models, handle model-specific quirks, and implement custom model diagnostics for specialized use cases.
-
-### **Environment & Data**
-Create custom RL environments and optimize data processing pipelines. Learn distributed training strategies, custom environment development, and performance optimization techniques.
-
-### **Production & Support**
-Deploy your models to production and maintain reliable training pipelines. Learn testing strategies, performance profiling, packaging solutions, and troubleshooting common issues.
-
 ## Training Algorithms
 
 ::::{grid} 1 1 1 2
@@ -65,21 +49,19 @@ Model evaluation and benchmarking strategies for RL-trained models.
 
 ::::
 
-
-
 ## Model Development
 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`plus;1.5em;sd-mr-1` Adding New Models
+:::{grid-item-card} {octicon}`plus;1.5em;sd-mr-1` Add New Models
 :link: model-development/adding-new-models
 :link-type: doc
 
-Extend NeMo RL with custom model architectures and backends.
+Learn how to integrate custom models and architectures into NeMo RL training pipelines.
 
 +++
-{bdg-info}`Development`
+{bdg-warning}`Advanced`
 :::
 
 :::{grid-item-card} {octicon}`alert;1.5em;sd-mr-1` Model Quirks & Special Cases
@@ -144,16 +126,6 @@ Testing, debugging, packaging, and deployment strategies.
 
 +++
 {bdg-secondary}`Production`
-:::
-
-:::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` Documentation
-:link: model-development/documentation
-:link-type: doc
-
-Build and maintain NeMo RL documentation.
-
-+++
-{bdg-info}`Development`
 :::
 
 ::::

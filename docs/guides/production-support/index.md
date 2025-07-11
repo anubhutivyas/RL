@@ -16,7 +16,7 @@ Our production and support guides help you:
 ::::{grid} 1 2 2 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`checklist;1.5em;sd-mr-1` Testing & Debugging
+:::{grid-item-card} Testing & Debugging
 :link: testing
 :link-type: doc
 
@@ -26,34 +26,14 @@ Testing strategies and debugging techniques for RL training pipelines.
 {bdg-success}`Quality`
 :::
 
-:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Packaging
-:link: packaging
+:::{grid-item-card} Documentation
+:link: documentation
 :link-type: doc
 
-Deployment and packaging strategies for production environments.
+Best practices for maintaining, writing, and organizing production documentation for NeMo RL deployments.
 
 +++
-{bdg-secondary}`Production`
-:::
-
-:::{grid-item-card} {octicon}`bug;1.5em;sd-mr-1` Troubleshooting
-:link: troubleshooting
-:link-type: doc
-
-Common issues, error messages, and solutions for NeMo RL.
-
-+++
-{bdg-warning}`Support`
-:::
-
-:::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` Documentation
-:link: ../model-development/documentation
-:link-type: doc
-
-Build and maintain NeMo RL documentation.
-
-+++
-{bdg-info}`Development`
+{bdg-info}`Docs`
 :::
 
 ::::
@@ -123,10 +103,10 @@ For additional support and troubleshooting, refer to the individual guides in th
 
 ```{toctree}
 :maxdepth: 2
-:caption: Production & Support
 :hidden:
 
-testing
+documentation
 packaging
 troubleshooting
+testing
 ``` 

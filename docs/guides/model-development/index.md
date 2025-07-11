@@ -5,14 +5,14 @@ Guides for extending NeMo RL with custom models and handling model-specific quir
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`plus;1.5em;sd-mr-1` Adding New Models
+:::{grid-item-card} {octicon}`plus;1.5em;sd-mr-1` Add New Models
 :link: adding-new-models
 :link-type: doc
 
-Guide to extending NeMo RL with custom models.
+Learn how to integrate custom models and architectures into NeMo RL training pipelines.
 
 +++
-{bdg-info}`Development`
+{bdg-warning}`Advanced`
 :::
 
 :::{grid-item-card} {octicon}`alert;1.5em;sd-mr-1` Model Quirks & Special Cases
@@ -29,6 +29,7 @@ Handle model-specific behaviors and quirks.
 
 ```{toctree}
 :maxdepth: 1
+:hidden:
 
 adding-new-models
 model-quirks

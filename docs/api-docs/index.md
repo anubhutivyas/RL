@@ -23,7 +23,7 @@ These capabilities are implemented through a set of composable abstractions that
 :gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Distributed Computing
-:link: distributed
+:link: nemo_rl/nemo_rl.distributed
 :link-type: doc
 
 Core distributed computing abstractions including VirtualCluster and WorkerGroup.
@@ -33,7 +33,7 @@ Core distributed computing abstractions including VirtualCluster and WorkerGroup
 :::
 
 :::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Models & Policies
-:link: models
+:link: nemo_rl/nemo_rl.models
 :link-type: doc
 
 Model interfaces, policy implementations, and generation backends.
@@ -43,7 +43,7 @@ Model interfaces, policy implementations, and generation backends.
 :::
 
 :::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Algorithms
-:link: algorithms
+:link: nemo_rl/nemo_rl.algorithms
 :link-type: doc
 
 RL algorithms including DPO, GRPO, SFT, and custom loss functions.
@@ -53,7 +53,7 @@ RL algorithms including DPO, GRPO, SFT, and custom loss functions.
 :::
 
 :::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Data & Environments
-:link: data
+:link: nemo_rl/nemo_rl.data
 :link-type: doc
 
 Data processing, dataset interfaces, and environment implementations.
@@ -191,11 +191,11 @@ class CustomPolicy(PolicyInterface):
 
 The following sections provide detailed API documentation for each component:
 
-- [Distributed Computing](distributed): VirtualCluster, WorkerGroup, and distributed utilities
-- [Models & Policies](models): Policy interfaces, generation backends, and model implementations
-- [Algorithms](algorithms): RL algorithms, loss functions, and training utilities
-- [Data & Environments](data): Dataset interfaces, environment abstractions, and data processing
-- [Utilities](utils): Logging, configuration, and utility functions
+- [Distributed Computing](nemo_rl/nemo_rl.distributed): VirtualCluster, WorkerGroup, and distributed utilities
+- [Models & Policies](nemo_rl/nemo_rl.models): Policy interfaces, generation backends, and model implementations
+- [Algorithms](nemo_rl/nemo_rl.algorithms): RL algorithms, loss functions, and training utilities
+- [Data & Environments](nemo_rl/nemo_rl.data): Dataset interfaces, environment abstractions, and data processing
+- [Utilities](nemo_rl/nemo_rl.utils): Logging, configuration, and utility functions
 - [Auto-Generated Reference](auto-generated): Complete API reference with all functions, classes, and parameters
 - [Complete API Reference](nemo_rl/nemo_rl): Full auto-generated documentation for all modules
 
@@ -207,7 +207,7 @@ See the [Guides](../guides/index) section for practical examples and tutorials c
 - [GRPO Training](../guides/training-algorithms/grpo) 
 - [SFT Training](../guides/training-algorithms/sft)
 - [Model Evaluation](../guides/training-algorithms/eval)
-- [Adding New Models](../guides/model-development/adding-new-models)
+- [Add New Models](../guides/model-development/adding-new-models)
 
 ## Contributing
 
@@ -222,17 +222,9 @@ For more information on contributing, see the [Development Guide](../guides/prod
 
 ```{toctree}
 :maxdepth: 2
-:caption: API Documentation
+:hidden:
 
 distributed
 models
 auto-generated
-nemo_rl/nemo_rl
-
-# Auto-generated API Reference
-nemo_rl/nemo_rl.algorithms
-nemo_rl/nemo_rl.distributed
-nemo_rl/nemo_rl.models
-nemo_rl/nemo_rl.data
-nemo_rl/nemo_rl.utils
 ``` 

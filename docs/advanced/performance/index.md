@@ -4,215 +4,406 @@ tags: ["performance", "optimization", "profiling", "scaling", "efficiency"]
 categories: ["performance"]
 ---
 
-# Performance & Optimization
+# Advanced Performance
 
-This section provides comprehensive guides for optimizing performance and scaling NeMo RL training across different hardware configurations and model sizes.
+This guide covers advanced performance optimization techniques for NeMo RL training.
 
-## What You'll Find Here
+## Overview
 
-Our performance documentation covers all aspects of optimizing NeMo RL for maximum efficiency and scalability:
-
-### **Performance Profiling**
-Advanced profiling techniques to identify bottlenecks and optimize training performance across different hardware configurations.
-
-### **Scaling Strategies**
-Distributed training strategies for scaling across multiple GPUs, nodes, and clusters while maintaining training stability.
-
-### **Optimization Techniques**
-Memory optimization, mixed precision training, and other techniques to maximize hardware utilization and training speed.
-
-### **Benchmarking & Monitoring**
-Comprehensive benchmarking frameworks and monitoring tools to track performance metrics and training progress.
-
-## Performance Optimization
-
-::::{grid} 1 1 1 2
-:gutter: 2 2 2 2
-
-:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Performance Profiling
-:link: profiling
-:link-type: doc
-
-Advanced profiling techniques with NSYS, PyTorch Profiler, and custom profiling tools.
-
-+++
-{bdg-warning}`Advanced`
-:::
-
-
-
-
-
-
-
-
-
-
-
-::::
-
-## Key Performance Areas
-
-### Training Efficiency
-Optimize training speed and resource utilization:
-
-- **Throughput Optimization**: Maximize samples processed per second
-- **Memory Efficiency**: Minimize memory usage while maintaining performance
-- **Communication Optimization**: Reduce inter-node communication overhead
-- **Load Balancing**: Distribute work evenly across available resources
-
-### Scalability
-Scale training across different hardware configurations:
-
-- **Single GPU**: Optimize for single GPU training
-- **Multi-GPU**: Scale across multiple GPUs on a single node
-- **Multi-Node**: Scale across multiple nodes in a cluster
-- **Heterogeneous**: Handle mixed hardware configurations
-
-### Resource Management
-Efficient use of computational resources:
-
-- **GPU Utilization**: Maximize GPU compute and memory utilization
-- **CPU Optimization**: Efficient CPU usage for data preprocessing
-- **Network Optimization**: Minimize network communication overhead
-- **Storage I/O**: Optimize data loading and checkpointing
+Performance optimization is crucial for efficient RL training, especially when working with large models and datasets. This guide covers techniques for optimizing training speed, memory usage, and scalability.
 
 ## Performance Optimization Strategies
 
-### 1. Profiling & Analysis
-- **Identify Bottlenecks**: Use profiling tools to find performance bottlenecks
-- **Memory Analysis**: Analyze memory usage patterns and optimize
-- **Communication Analysis**: Profile inter-node communication overhead
-- **I/O Analysis**: Identify data loading and storage bottlenecks
-
-### 2. Algorithm Optimization
-- **Batch Size Tuning**: Optimize batch sizes for maximum throughput
-- **Gradient Accumulation**: Use gradient accumulation for large effective batch sizes
-- **Mixed Precision**: Use FP16/BF16 for faster training and reduced memory
-- **Gradient Checkpointing**: Trade compute for memory efficiency
-
-### 3. Infrastructure Optimization
-- **Data Pipeline**: Optimize data loading and preprocessing
-- **Network Configuration**: Optimize network settings for distributed training
-- **Storage Configuration**: Use fast storage for checkpoints and data
-- **Monitoring**: Set up comprehensive monitoring and alerting
-
-## Advanced Performance Topics
-
-### Model Parallelism
-Advanced techniques for large model training:
-
-- **Tensor Parallelism**: Split model tensors across GPUs
-- **Pipeline Parallelism**: Split model layers across GPUs
-- **Expert Parallelism**: Distribute experts in mixture-of-experts models
-- **Hybrid Parallelism**: Combine multiple parallelism strategies
-
 ### Memory Optimization
-Advanced memory management techniques:
 
-- **Gradient Checkpointing**: Trade compute for memory efficiency
-- **Activation Checkpointing**: Save memory by recomputing activations
-- **Dynamic Memory Allocation**: Optimize memory allocation patterns
-- **Memory Pinning**: Optimize CPU-GPU memory transfers
+#### Gradient Checkpointing
+
+Reduce memory usage by recomputing intermediate activations:
+
+```yaml
+# Enable gradient checkpointing
+training:
+  gradient_checkpointing: true
+  gradient_accumulation_steps: 4
+```
+
+#### Mixed Precision Training
+
+Use lower precision to reduce memory and speed up training:
+
+```yaml
+training:
+  precision: "bf16"  # or "fp16"
+  autocast: true
+  scaler: "dynamic"
+```
+
+#### Model Sharding
+
+Distribute model across multiple GPUs:
+
+```yaml
+cluster:
+  name: "fsdp"
+  fsdp_config:
+    mixed_precision: true
+    activation_checkpointing: true
+    sharding_strategy: "FULL_SHARD"
+```
+
+### Data Loading Optimization
+
+#### Efficient Data Loading
+
+```python
+# Optimize data loading
+from nemo_rl.data import optimize_dataloader
+
+dataloader = optimize_dataloader(
+    dataset,
+    batch_size=8,
+    num_workers=4,
+    pin_memory=True,
+    prefetch_factor=2
+)
+```
+
+#### Memory-Mapped Files
+
+For large datasets, use memory-mapped files:
+
+```python
+import mmap
+
+def create_memory_mapped_dataset(file_path):
+    """Create memory-mapped dataset for efficient loading."""
+    with open(file_path, 'rb') as f:
+        mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
+        return mm
+```
+
+### Computational Optimization
+
+#### Kernel Fusion
+
+Fuse operations to reduce kernel launches:
+
+```python
+# Enable kernel fusion
+import torch
+
+torch.backends.cudnn.benchmark = True
+torch.backends.cudnn.deterministic = False
+```
+
+#### Compilation
+
+Use PyTorch compilation for faster execution:
+
+```python
+# Compile model for faster inference
+model = torch.compile(model, mode="reduce-overhead")
+```
+
+## Profiling and Monitoring
+
+### Performance Profiling
+
+#### PyTorch Profiler
+
+```python
+from torch.profiler import profile, record_function, ProfilerActivity
+
+with profile(
+    activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
+    record_shapes=True,
+    with_stack=True
+) as prof:
+    with record_function("model_inference"):
+        outputs = model(inputs)
+
+# Print profiling results
+print(prof.key_averages().table(sort_by="cuda_time_total"))
+```
+
+#### Memory Profiling
+
+```python
+import torch
+
+def profile_memory():
+    """Profile GPU memory usage."""
+    print(f"Allocated: {torch.cuda.memory_allocated() / 1024**3:.2f} GB")
+    print(f"Cached: {torch.cuda.memory_reserved() / 1024**3:.2f} GB")
+    print(f"Max allocated: {torch.cuda.max_memory_allocated() / 1024**3:.2f} GB")
+```
+
+### Real-Time Monitoring
+
+#### Training Metrics
+
+```python
+from nemo_rl.utils.monitoring import TrainingMonitor
+
+monitor = TrainingMonitor()
+
+# Monitor during training
+for batch in dataloader:
+    with monitor.record_step():
+        loss = model(batch)
+        loss.backward()
+        optimizer.step()
+    
+    # Log metrics
+    monitor.log_metrics({
+        'loss': loss.item(),
+        'memory_usage': torch.cuda.memory_allocated() / 1024**3,
+        'throughput': monitor.get_throughput()
+    })
+```
+
+## Distributed Training Optimization
 
 ### Communication Optimization
-Optimize distributed training communication:
 
-- **Gradient Compression**: Compress gradients to reduce communication
-- **All-Reduce Optimization**: Optimize gradient synchronization
-- **Overlap Communication**: Overlap computation and communication
-- **Topology Optimization**: Optimize network topology for training
+#### Gradient Compression
 
-## Performance Monitoring
+```yaml
+cluster:
+  name: "fsdp"
+  fsdp_config:
+    mixed_precision: true
+    activation_checkpointing: true
+    sharding_strategy: "FULL_SHARD"
+    gradient_compression: "fp16"  # or "bf16"
+```
 
-### Real-Time Metrics
-Monitor key performance indicators:
+#### Overlap Communication
 
-- **Training Throughput**: Samples processed per second
-- **GPU Utilization**: GPU compute and memory utilization
-- **Memory Usage**: Peak and average memory usage
-- **Communication Overhead**: Time spent in communication
+```python
+# Overlap communication with computation
+from torch.distributed import all_reduce
 
-### Long-Term Tracking
-Track performance over time:
+def overlap_allreduce(gradients):
+    """Overlap gradient allreduce with computation."""
+    handles = []
+    for grad in gradients:
+        handle = all_reduce(grad, async_op=True)
+        handles.append(handle)
+    
+    # Continue with computation while communication happens
+    # ...
+    
+    # Wait for communication to complete
+    for handle in handles:
+        handle.wait()
+```
 
-- **Training Curves**: Loss and metric progression
-- **Resource Usage**: CPU, GPU, and memory usage trends
-- **Convergence Analysis**: Training stability and convergence
-- **Cost Analysis**: Computational cost per training step
+### Load Balancing
 
-### Alerting & Debugging
-Proactive monitoring and debugging:
+#### Dynamic Batching
 
-- **Performance Alerts**: Alert on performance degradation
-- **Resource Alerts**: Alert on resource exhaustion
-- **Training Alerts**: Alert on training instability
-- **Debugging Tools**: Tools for performance debugging
+```python
+class DynamicBatcher:
+    def __init__(self, max_batch_size=32):
+        self.max_batch_size = max_batch_size
+        self.current_batch = []
+    
+    def add_sample(self, sample):
+        """Add sample to current batch."""
+        self.current_batch.append(sample)
+        
+        if len(self.current_batch) >= self.max_batch_size:
+            return self.get_batch()
+        return None
+    
+    def get_batch(self):
+        """Get current batch and reset."""
+        batch = self.current_batch
+        self.current_batch = []
+        return batch
+```
 
-## Benchmarking Frameworks
+## Hardware-Specific Optimizations
 
-### Standard Benchmarks
-Comprehensive benchmarking suites:
+### GPU Optimizations
 
-- **Training Speed**: Throughput and time-to-convergence benchmarks
-- **Memory Usage**: Peak and average memory usage benchmarks
-- **Scalability**: Scaling efficiency across different configurations
-- **Algorithm Comparison**: Compare different algorithms and configurations
+#### Memory Management
 
-### Custom Benchmarks
-Framework for custom benchmarking:
+```python
+# Optimize GPU memory usage
+import torch
 
-- **Model-Specific**: Benchmarks for specific model architectures
-- **Task-Specific**: Benchmarks for specific tasks and datasets
-- **Hardware-Specific**: Benchmarks for specific hardware configurations
-- **Cost-Efficiency**: Benchmarks considering computational cost
+def optimize_gpu_memory():
+    """Optimize GPU memory usage."""
+    # Clear cache
+    torch.cuda.empty_cache()
+    
+    # Set memory fraction
+    torch.cuda.set_per_process_memory_fraction(0.8)
+    
+    # Enable memory pool
+    torch.cuda.memory.set_per_process_memory_fraction(0.8)
+```
+
+#### Kernel Optimization
+
+```python
+# Optimize CUDA kernels
+import torch
+
+# Enable cuDNN benchmarking
+torch.backends.cudnn.benchmark = True
+
+# Use deterministic algorithms for reproducibility
+torch.backends.cudnn.deterministic = False
+```
+
+### CPU Optimizations
+
+#### Data Loading
+
+```python
+# Optimize CPU data loading
+import torch
+
+def optimize_data_loading(dataloader):
+    """Optimize data loading performance."""
+    dataloader.num_workers = min(8, torch.multiprocessing.cpu_count())
+    dataloader.pin_memory = True
+    dataloader.prefetch_factor = 2
+    return dataloader
+```
+
+#### Multiprocessing
+
+```python
+# Use multiprocessing for data preprocessing
+import multiprocessing as mp
+
+def preprocess_parallel(dataset, num_workers=4):
+    """Preprocess dataset using multiple processes."""
+    with mp.Pool(num_workers) as pool:
+        processed_data = pool.map(preprocess_function, dataset)
+    return processed_data
+```
+
+## Benchmarking
+
+### Performance Benchmarks
+
+#### Training Speed
+
+```python
+import time
+from nemo_rl.utils.benchmarking import TrainingBenchmark
+
+benchmark = TrainingBenchmark()
+
+# Benchmark training speed
+start_time = time.time()
+for epoch in range(num_epochs):
+    for batch in dataloader:
+        loss = model(batch)
+        loss.backward()
+        optimizer.step()
+end_time = time.time()
+
+training_time = end_time - start_time
+samples_per_second = len(dataset) / training_time
+
+print(f"Training time: {training_time:.2f} seconds")
+print(f"Samples per second: {samples_per_second:.2f}")
+```
+
+#### Memory Usage
+
+```python
+def benchmark_memory():
+    """Benchmark memory usage during training."""
+    memory_usage = []
+    
+    for batch in dataloader:
+        # Record memory before forward pass
+        memory_before = torch.cuda.memory_allocated()
+        
+        # Forward pass
+        outputs = model(batch)
+        loss = criterion(outputs, targets)
+        
+        # Record memory after forward pass
+        memory_after = torch.cuda.memory_allocated()
+        
+        memory_usage.append(memory_after - memory_before)
+        
+        # Backward pass
+        loss.backward()
+        optimizer.step()
+    
+    return memory_usage
+```
 
 ## Best Practices
 
-### Performance Tuning
-Systematic approach to performance optimization:
+### 1. Start Simple
 
-1. **Profile First**: Always profile before optimizing
-2. **Measure Impact**: Measure the impact of each optimization
-3. **Iterate**: Continuously iterate and improve
-4. **Document**: Document all optimizations and their effects
+- Begin with basic optimizations
+- Profile before optimizing
+- Measure impact of each change
 
-### Resource Planning
-Plan resources for optimal performance:
+### 2. Memory First
 
-- **Hardware Selection**: Choose appropriate hardware for your workload
-- **Configuration Tuning**: Tune system and software configurations
-- **Capacity Planning**: Plan for current and future needs
-- **Cost Optimization**: Balance performance and cost
+- Optimize memory usage before speed
+- Use gradient checkpointing for large models
+- Enable mixed precision training
 
-### Monitoring & Maintenance
-Ongoing performance management:
+### 3. Data Loading
 
-- **Regular Monitoring**: Monitor performance continuously
-- **Proactive Maintenance**: Address issues before they impact training
-- **Performance Reviews**: Regular performance reviews and optimization
-- **Documentation**: Maintain performance documentation
+- Use multiple workers for data loading
+- Enable pin memory for GPU transfers
+- Prefetch data when possible
 
-## Next Steps
+### 4. Distributed Training
 
-After understanding performance optimization:
+- Use appropriate sharding strategy
+- Overlap communication with computation
+- Balance load across nodes
 
-1. **Profile Your Training**: Identify performance bottlenecks
-2. **Optimize Memory Usage**: Implement memory optimization techniques
-3. **Scale Training**: Implement distributed training strategies
-4. **Monitor Performance**: Set up comprehensive monitoring
-5. **Benchmark Results**: Compare with standard benchmarks
+### 5. Monitoring
+
+- Monitor key metrics continuously
+- Set up alerts for performance issues
+- Use profiling tools regularly
+
+## Troubleshooting
+
+### Common Performance Issues
+
+1. **Memory Issues**
+   - Reduce batch size
+   - Enable gradient checkpointing
+   - Use mixed precision
+
+2. **Slow Training**
+   - Profile bottlenecks
+   - Optimize data loading
+   - Use distributed training
+
+3. **Communication Overhead**
+   - Use gradient compression
+   - Overlap communication
+   - Optimize network configuration
+
+For more specific optimization techniques, see [Distributed Training](distributed-training.md) and [Performance Analysis](../research/performance-analysis.md). 
 
 ```{toctree}
-:caption: Performance
 :maxdepth: 2
 :hidden:
 
-
-profiling
-distributed-training
+benchmarking
 memory-optimization
 mixed-precision
-benchmarking
 monitoring
+profiling
+distributed-training
 ``` 

@@ -276,4 +276,4 @@ uv run python run_sft.py --config configs/sft.yaml cluster.gpus_per_node=1
 After installation, proceed to:
 - [Quickstart Guide](quickstart) - Get started with your first training run
 - [Cluster Setup](cluster.md) - Set up distributed training
-- [Configuration Guide](../configuration-cli/configuration) - Learn about configuration options 
+- [Configuration Reference](../configuration-cli/configuration-reference) - Complete configuration options 

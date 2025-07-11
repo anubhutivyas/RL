@@ -24,7 +24,7 @@ When running the next command, we use the Hugging Face checkpoint as the initial
 ## Training Curve
 When using the above commands, we get the following training curve:
 
-![Training Performance](../assets/deepscaler_training_progress.png)
+![Training Performance](../../assets/deepscaler_training_progress.png)
 
 Notably, we are able to achieve an average training reward of 0.65 in just 400 training steps.
 
@@ -43,6 +43,6 @@ Use `generation.model_name` to specify the path to the Hugging Face checkpoint. 
 ## Evaluation Results
 Using the above instructions to train DeepSeek-R1-Distill-Qwen-1.5B on the DeepScaleR dataset, we can track the model's performance on the AIME24 benchmark throughout training. The following plot shows the evaluation metrics as training progresses:
 
-![AIME24 Performance](../assets/aime_training_progress.png)
+![AIME24 Performance](../../assets/aime_training_progress.png)
 
 We are able to surpass OpenAI O1's performance on the AIME24 benchmark with about 600 training steps.

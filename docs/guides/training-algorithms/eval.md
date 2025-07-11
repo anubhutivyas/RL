@@ -25,7 +25,7 @@ Once the conversion is complete, you can override the `generation.model_name` to
 ### Prepare the Evaluation Configuration
 **Override with Custom Settings**
 
-To run the evaluation, you can use the [default configuration file](../../examples/configs/eval.yaml). Alternatively, you can specify a custom one or override some settings via the command line.
+To run the evaluation, you can use the [default configuration file](../../../examples/configs/eval.yaml). Alternatively, you can specify a custom one or override some settings via the command line.
 
 The default configuration employs greedy sampling to evaluate Qwen2.5-Math-1.5B-Instruct on AIME-2024.
 

@@ -1,123 +1,138 @@
 # Why NeMo RL?
 
-NeMo RL is a comprehensive, open-source framework designed for reinforcement learning and supervised fine-tuning of large language models. Built for scalability, efficiency, and ease of use, it provides researchers and practitioners with the tools needed to train, evaluate, and deploy RL-enhanced language models at scale.
+**NeMo RL** is an open-source, scalable post-training library developed by NVIDIA for applying **reinforcement learning (RL)** to large language models (LLMs). It supports models ranging from compact architectures to 100B+ parameters and scales from single-GPU setups to thousand-GPU clusters. NeMo RL is part of the broader [NVIDIA NeMo framework](https://docs.nvidia.com/nemo/rl/latest/index.html), which focuses on training and aligning generative AI.
 
-## Key Benefits
+Built for scalability, efficiency, and ease of use, NeMo RL provides researchers and practitioners with the tools needed to train, evaluate, and deploy RL-enhanced language models at scale.
 
-### **Scalable Training**
-- **Multi-GPU & Multi-Node Support**: Scale from single GPU to 64+ GPUs across multiple nodes
-- **Ray-Based Distributed Computing**: Leverage Ray's proven distributed computing capabilities
-- **Memory-Efficient Training**: Advanced memory management for large model training
+## Architecture & Design Principles
 
-### **Unified Algorithm Support**
-- **SFT (Supervised Fine-Tuning)**: Traditional supervised learning for language models
-- **GRPO (Group Relative Policy Optimization)**: Advanced RL algorithm for policy optimization
-- **DPO (Direct Preference Optimization)**: RL-free alignment using preference data
+- **Modular and Backend-Agnostic**  
+  Separation between algorithm logic and backend execution—supports PyTorch Native, Megatron Core, and vLLM
+- **Ray-Based Orchestration**  
+  Rollouts and training components (actors, critics, reward models) run in isolated Ray processes
+- **Environment Isolation**  
+  Avoids global state conflicts by isolating training components in their own containers/processes
+- **Unified Interfaces**  
+  Training, rollout, and generation backends conform to standardized APIs for plug-and-play extensibility
 
-### **Flexible Model Integration**
-- **Hugging Face Models**: Seamless integration with the Hugging Face ecosystem
-- **Megatron-LM Support**: High-performance training backend for large models with pipeline parallelism
-- **DTensor Support**: Advanced distributed tensor capabilities
+## Supported Algorithms
 
-### **Built-in Environments**
-- **Math Environment**: Mathematical problem-solving tasks
-- **Game Environments**: Sliding puzzle and other interactive games
-- **Custom Environment Framework**: Easy creation of new RL environments
+| Algorithm | Purpose                    | Highlights                                |
+|----------|-----------------------------|-------------------------------------------|
+| **GRPO** | Reasoning-focused RL        | No critic needed, stable updates, memory-efficient |
+| **DPO**  | Human preference alignment  | Uses pairwise comparisons, no reward model |
+| **SFT**  | Initial supervised alignment| Prepares models for RL fine-tuning         |
+
+NeMo RL also supports **multi-turn RL**, enabling training for agentic tasks like games or tool use.
+
+## Backend Support
+
+| Backend         | Best Use Case              | Key Features                                   |
+|----------------|----------------------------|------------------------------------------------|
+| **PyTorch Native** | Broad model support         | FSDP2, TP, SP, activation checkpointing        |
+| **Megatron Core**  | Extremely large models      | Supports long context, MoE, deep parallelism   |
+| **vLLM**           | High-speed generation       | Optimized inference, tensor parallelism        |
+
+Backends are configurable and interchangeable without altering core algorithm logic.
+
+## Integration Ecosystem
+
+- **Hugging Face**: For model loading, datasets, tokenizer management
+- **Ray**: Distributed rollout generation, process isolation, fault tolerance
+- **uv**: Python environment management for reproducibility
+- **Weights & Biases**: Logging and training visualization support
+
+## Scalability & Performance
+
+- **Rollout Generation**: Distributed across Ray actors using either Hugging Face or vLLM
+- **Training Execution**: Supports various forms of parallelism including FSDP2 and DeepSpeed-style optimization
+- **Multi-node Compatibility**: Works seamlessly with Slurm, Kubernetes, and bare-metal clusters
+- **Checkpoint Flexibility**: Converts between Hugging Face and Torch-native formats
+
+Benchmark highlights include GRPO achieving **3.2× faster convergence** compared to PPO on math-based tasks.
 
 ## Use Cases
 
-### **Research & Development**
-- **RLHF Research**: Explore reinforcement learning from human feedback
-- **LLM Alignment**: Align language models with human preferences
-- **Algorithm Development**: Test and benchmark new RL algorithms
-- **Model Evaluation**: Comprehensive evaluation and benchmarking tools
+NeMo RL supports a wide range of real-world applications for reinforcement learning with large language models. Each use case includes architectural patterns, implementation details, and production considerations.
 
-### **Enterprise Applications**
-- **Domain Adaptation**: Fine-tune models for specific business domains
-- **Large-Scale Training**: Production-ready distributed training pipelines
-- **Custom Task Development**: Build specialized RL environments for business needs
-- **Model Optimization**: Optimize models for specific use cases
+### **Code Generation**
+Train models to generate, debug, and optimize code across multiple programming languages. Includes syntax validation, multi-language support, and production deployment strategies.
 
-### **Cloud & On-Premises Deployment**
-- **Cloud Training**: Scale training across cloud infrastructure
-- **On-Premises Clusters**: Deploy on existing HPC infrastructure
-- **Hybrid Environments**: Mix cloud and on-premises resources
-- **Containerized Deployment**: Docker support for consistent environments
+• **Key Applications**: Code completion, bug fixing, code optimization, documentation generation  
+• **Techniques**: Supervised fine-tuning on code datasets, preference learning for code quality  
+• **Production**: Integration with IDEs, code review systems, automated testing
 
-## Competitive Advantages
+### **Mathematical Reasoning**
+Build models that can solve complex mathematical problems with step-by-step reasoning, proof generation, and advanced mathematical concepts.
 
-### **Open Source Excellence**
-- **Fully Open Source**: MIT license for maximum flexibility
-- **Active Development**: Backed by NVIDIA and the open-source community
-- **Extensible Architecture**: Modular design for easy customization
-- **Community Driven**: Regular updates and community contributions
+• **Key Applications**: Math tutoring, problem solving, theorem proving, educational AI  
+• **Techniques**: Step-by-step reasoning, symbolic manipulation, proof generation  
+• **Production**: Educational platforms, research tools, automated grading systems
 
-### **Developer Experience**
-- **Fast Onboarding**: Get started in minutes with comprehensive documentation
-- **Intuitive APIs**: Clean, well-documented interfaces
-- **Rich Ecosystem**: Extensive examples and tutorials
-- **Production Ready**: Built for both research and production use
+### **Human Preference Alignment**
+Use DPO or RLHF to align LLM output with human feedback and preferences.
 
-### **Research Focus**
-- **State-of-the-Art Algorithms**: Latest RL and alignment techniques
-- **Reproducible Results**: Comprehensive logging and evaluation
-- **Academic Friendly**: Designed with research workflows in mind
-- **Benchmarking Tools**: Built-in evaluation and comparison capabilities
+• **Key Applications**: Content moderation, style adaptation, safety alignment  
+• **Techniques**: Direct preference optimization, reinforcement learning from human feedback  
+• **Production**: Content generation systems, conversational AI, safety filters
 
-## Technical Advantages
+### **Multi-Turn RL**
+Train models for agentic behavior over multiple interactions, enabling complex task completion and tool use.
 
-### **Modern Architecture**
-- **PyTorch 2.0+**: Latest PyTorch features and optimizations
-- **Transformers**: Cutting-edge transformer model support
-- **Ray**: Proven distributed computing framework
-- **CUDA**: Optimized GPU acceleration
+• **Key Applications**: Game playing, tool use, multi-step problem solving  
+• **Techniques**: Multi-turn reinforcement learning, environment interaction  
+• **Production**: Gaming AI, automation systems, interactive assistants
 
-### **Advanced Features**
-- **Gradient Checkpointing**: Memory-efficient training for large models
-- **Mixed Precision**: Automatic mixed precision for faster training
-- **Advanced Logging**: Comprehensive training monitoring and visualization
-- **Checkpoint Management**: Robust checkpointing and recovery
+For detailed implementation guides, architectural patterns, and production considerations, see the comprehensive [Use Cases](../tutorials-examples/use-cases/index) documentation.
 
-### **Developer Tools**
-- **Type Hints**: Full type annotation for better development experience
-- **Comprehensive Testing**: Extensive unit and functional test suites
-- **Debugging Support**: Advanced debugging tools for distributed training
-- **Performance Profiling**: Built-in profiling and optimization tools
+**Example**: DeepScaleR (Qwen1.5B) trained with GRPO beat OpenAI's O1 on the AIME24 benchmark for mathematical reasoning tasks.
 
 ## Get Started
 
 Ready to begin your NeMo RL journey? Here's how to get started:
 
 ### **Installation**
-- [Installation Guide](../get-started/installation) - Complete setup instructions
-- [Local Workstation](../get-started/local-workstation) - Development environment setup
-- [Docker Setup](../get-started/docker) - Containerized installation
+• [Installation Guide](../get-started/installation) - Complete setup instructions
+• [Local Workstation](../get-started/local-workstation) - Development environment setup
+• [Docker Setup](../get-started/docker) - Containerized installation
+• [Cluster Setup](../get-started/cluster) - Multi-node environment configuration
 
 ### **Quick Start**
-- [Quickstart Tutorial](../get-started/quickstart) - Run your first training job
-- [Cluster Setup](../get-started/cluster) - Distributed training configuration
+• [Quickstart Tutorial](../get-started/quickstart) - Run your first training job
+• [Configuration Reference](../configuration-cli/configuration-reference) - YAML configuration options
+• [CLI Reference](../configuration-cli/cli-reference) - Command-line interface guide
+• [Examples](../tutorials-examples/index) - Ready-to-run training examples
 
-### **Training Guides**
-- See the [SFT Training](../guides/training-algorithms/sft) for SFT training.
-- See the [GRPO Training](../guides/training-algorithms/grpo) for GRPO training.
-- See the [DPO Training](../guides/training-algorithms/dpo) for DPO training.
-- See the [Evaluation](../guides/training-algorithms/eval) for evaluation.
-- See the [Adding New Models](../guides/model-development/adding-new-models) for adding new models.
-- See the [Environment Development](../guides/environment-data/environment-development) for custom environments.
-- See the [Distributed Training](../guides/environment-data/distributed-training) for distributed training.
-- See the [Packaging](../guides/production-support/packaging) for packaging and deployment.
+### **Core Training Algorithms**
+• [SFT Training](../guides/training-algorithms/sft) - Supervised fine-tuning for initial model alignment
+• [GRPO Training](../guides/training-algorithms/grpo) - Group Relative Policy Optimization for reasoning tasks
+• [DPO Training](../guides/training-algorithms/dpo) - Direct Preference Optimization for human alignment
+
+### **Evaluation & Development**
+• [Evaluation](../guides/training-algorithms/eval) - Model evaluation and benchmarking
+• [Add New Models](../guides/model-development/adding-new-models) - Custom model integration
+• [Debugging](../guides/environment-data/debugging) - Training debugging techniques
+• [Environment Development](../guides/environment-data/environment-development) - Custom environment creation
+
+### **Production & Scaling**
+• [Distributed Training](../advanced/performance/distributed-training) - Multi-node training setup
+• [Production Support](../guides/production-support/index) - Production deployment and monitoring
+• [Performance Benchmarking](../advanced/performance/benchmarking) - Training performance optimization
+• [Testing](../guides/production-support/testing) - Production testing strategies
 
 ### **Reference Documentation**
-- [API Documentation](../api-docs/index) - Complete API documentation
-- [Configuration](../configuration-cli/configuration) - Configuration options
-- [CLI Reference](../configuration-cli/cli) - Command-line interface
-- [Troubleshooting](../configuration-cli/troubleshooting) - Common issues and solutions
+• [API Documentation](../api-docs/index) - Complete API documentation
+• [Configuration & CLI](../configuration-cli/index) - Configuration options and command-line interface
+• [Troubleshooting](../configuration-cli/troubleshooting) - Common issues and solutions
+• [Architecture](../about/architecture) - System architecture and design principles
 
 ### **Advanced Topics**
-- [Adding New Models](../guides/model-development/adding-new-models) - Custom model integration
-- [Create Custom RL Environments](../guides/environment-data/environment-development) - Custom RL environments
-- [Set Up Distributed Training with Ray](../guides/environment-data/distributed-training) - Multi-node training
-- [Packaging](../guides/production-support/packaging) - Production deployment
+• [Add New Models](../guides/model-development/adding-new-models) - Custom model integration
+• [Debugging](../guides/environment-data/debugging) - Debugging techniques
+• [Set Up Distributed Training with Ray](../advanced/performance/distributed-training) - Multi-node training
+• [Testing](../guides/production-support/testing) - Production testing
+• [Custom Loss Functions](../advanced/research/custom-algorithms) - Algorithm customization
+• [Experimental Design](../advanced/research/experimental-design) - Research methodology
 
 ---
 

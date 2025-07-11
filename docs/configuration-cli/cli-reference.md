@@ -1,512 +1,298 @@
 # CLI Reference
 
-This document provides a comprehensive reference for all command-line interface (CLI) commands and options available in NeMo RL.
+This document provides comprehensive reference documentation for all NeMo RL command-line interface tools and utilities.
 
 ## Overview
 
-NeMo RL provides a command-line interface for training, evaluation, and utility operations. The CLI is built on top of the configuration system and provides convenient access to all NeMo RL functionality.
+NeMo RL provides a rich set of CLI tools for training, evaluation, and model management. All commands follow a consistent pattern and provide detailed help information.
 
-## Basic Usage
+## Command Structure
 
 ```bash
-# Basic command structure
-python -m nemo_rl <command> [options] <config_file>
-
-# Example: Run DPO training
-python -m nemo_rl train configs/dpo.yaml
-
-# Example: Run evaluation
-python -m nemo_rl eval configs/eval.yaml
+nemo-rl <command> [subcommand] [options]
 ```
 
-## Commands
+## Main Commands
 
 ### Training Commands
 
-#### `train`
+#### `nemo-rl train`
 
-Run training with the specified algorithm and configuration.
+Start a training job with the specified configuration.
 
 ```bash
-python -m nemo_rl train <config_file> [options]
+nemo-rl train --config path/to/config.yaml [options]
 ```
 
 **Options:**
 - `--config`: Path to configuration file (required)
-- `--checkpoint`: Path to checkpoint to resume from
-- `--output_dir`: Output directory for logs and checkpoints
-- `--num_gpus`: Number of GPUs to use (overrides config)
-- `--num_nodes`: Number of nodes to use (overrides config)
-- `--local_rank`: Local rank for distributed training
-- `--world_size`: World size for distributed training
-- `--master_addr`: Master address for distributed training
-- `--master_port`: Master port for distributed training
-- `--debug`: Enable debug mode
-- `--dry_run`: Validate configuration without running training
+- `--checkpoint`: Path to checkpoint for resuming training
+- `--local`: Run in local mode (single node)
+- `--cluster`: Run on Ray cluster
+- `--debug`: Enable debug mode with verbose logging
 
 **Examples:**
 ```bash
-# Basic DPO training
-python -m nemo_rl train configs/dpo.yaml
+# Basic training
+nemo-rl train --config examples/configs/dpo.yaml
 
 # Resume from checkpoint
-python -m nemo_rl train configs/dpo.yaml --checkpoint checkpoints/step_1000
+nemo-rl train --config examples/configs/dpo.yaml --checkpoint checkpoints/model_1000.pt
 
-# Override GPU count
-python -m nemo_rl train configs/dpo.yaml --num_gpus 4
-
-# Debug mode
-python -m nemo_rl train configs/dpo.yaml --debug
+# Local development
+nemo-rl train --config examples/configs/dpo.yaml --local --debug
 ```
 
-#### `run_dpo`
+#### `nemo-rl eval`
 
-Direct DPO training command with simplified interface.
+Evaluate a trained model.
 
 ```bash
-python -m nemo_rl run_dpo <config_file> [options]
+nemo-rl eval --config path/to/eval_config.yaml [options]
 ```
 
 **Options:**
-- `--config`: Path to configuration file (required)
-- `--model`: Model name or path
-- `--dataset`: Dataset name
-- `--batch_size`: Batch size
-- `--learning_rate`: Learning rate
-- `--max_steps`: Maximum training steps
-- `--beta`: DPO beta parameter
-- `--output_dir`: Output directory
-
-**Examples:**
-```bash
-# Quick DPO training
-python -m nemo_rl run_dpo configs/dpo.yaml
-
-# Custom parameters
-python -m nemo_rl run_dpo configs/dpo.yaml --batch_size 8 --learning_rate 2e-5
-```
-
-#### `run_grpo`
-
-Direct GRPO training command.
-
-```bash
-python -m nemo_rl run_grpo <config_file> [options]
-```
-
-**Options:**
-- `--config`: Path to configuration file (required)
-- `--model`: Model name or path
-- `--environment`: Environment type (math, sliding_puzzle)
-- `--batch_size`: Batch size
-- `--learning_rate`: Learning rate
-- `--max_steps`: Maximum training steps
-- `--gamma`: Discount factor
-- `--lambda_`: GAE parameter
-- `--output_dir`: Output directory
-
-**Examples:**
-```bash
-# GRPO math training
-python -m nemo_rl run_grpo configs/grpo_math.yaml
-
-# Custom environment
-python -m nemo_rl run_grpo configs/grpo_sliding_puzzle.yaml
-```
-
-#### `run_sft`
-
-Direct SFT training command.
-
-```bash
-python -m nemo_rl run_sft <config_file> [options]
-```
-
-**Options:**
-- `--config`: Path to configuration file (required)
-- `--model`: Model name or path
-- `--dataset`: Dataset name
-- `--batch_size`: Batch size
-- `--learning_rate`: Learning rate
-- `--max_steps`: Maximum training steps
-- `--output_dir`: Output directory
-
-**Examples:**
-```bash
-# SFT training
-python -m nemo_rl run_sft configs/sft.yaml
-
-# Custom dataset
-python -m nemo_rl run_sft configs/sft.yaml --dataset custom_dataset
-```
-
-### Evaluation Commands
-
-#### `eval`
-
-Run evaluation on a trained model.
-
-```bash
-python -m nemo_rl eval <config_file> [options]
-```
-
-**Options:**
-- `--config`: Path to configuration file (required)
-- `--checkpoint`: Path to model checkpoint
-- `--dataset`: Evaluation dataset
-- `--batch_size`: Evaluation batch size
-- `--metrics`: Comma-separated list of metrics
-- `--output_file`: Output file for predictions
-- `--num_samples`: Number of samples to evaluate
-- `--seed`: Random seed for reproducibility
+- `--config`: Path to evaluation configuration file (required)
+- `--model`: Path to model checkpoint
+- `--output`: Output directory for results
+- `--metrics`: Comma-separated list of metrics to compute
 
 **Examples:**
 ```bash
 # Basic evaluation
-python -m nemo_rl eval configs/eval.yaml --checkpoint checkpoints/best_model
+nemo-rl eval --config examples/configs/eval.yaml
 
 # Custom metrics
-python -m nemo_rl eval configs/eval.yaml --metrics accuracy,bleu,rouge
-
-# Save predictions
-python -m nemo_rl eval configs/eval.yaml --output_file predictions.json
+nemo-rl eval --config examples/configs/eval.yaml --metrics accuracy,bleu,rouge
 ```
 
-#### `run_eval`
+### Model Management
 
-Direct evaluation command.
-
-```bash
-python -m nemo_rl run_eval <config_file> [options]
-```
-
-**Options:**
-- `--config`: Path to configuration file (required)
-- `--model`: Model name or path
-- `--dataset`: Dataset name
-- `--batch_size`: Batch size
-- `--metrics`: Comma-separated metrics
-- `--output_file`: Output file
-
-**Examples:**
-```bash
-# Quick evaluation
-python -m nemo_rl run_eval configs/eval.yaml
-
-# Custom metrics
-python -m nemo_rl run_eval configs/eval.yaml --metrics accuracy,bleu
-```
-
-### Utility Commands
-
-#### `convert`
+#### `nemo-rl convert`
 
 Convert models between different formats.
 
 ```bash
-python -m nemo_rl convert <source> <target> [options]
+nemo-rl convert --input path/to/model --output path/to/output --format [hf|megatron|vllm]
 ```
 
 **Options:**
-- `--source`: Source model path or format
-- `--target`: Target model path or format
-- `--output_dir`: Output directory
+- `--input`: Input model path (required)
+- `--output`: Output path (required)
+- `--format`: Target format (required)
 - `--config`: Conversion configuration file
 
 **Examples:**
 ```bash
-# Convert Hugging Face to Megatron
-python -m nemo_rl convert huggingface megatron --source model_path --target output_path
+# Convert to HuggingFace format
+nemo-rl convert --input checkpoints/model.pt --output hf_model --format hf
 
-# Convert Megatron to Hugging Face
-python -m nemo_rl convert megatron huggingface --source model_path --target output_path
+# Convert to VLLM format
+nemo-rl convert --input checkpoints/model.pt --output vllm_model --format vllm
 ```
 
-#### `validate`
+#### `nemo-rl export`
+
+Export models for deployment.
+
+```bash
+nemo-rl export --model path/to/model --output path/to/output [options]
+```
+
+**Options:**
+- `--model`: Model checkpoint path (required)
+- `--output`: Output directory (required)
+- `--format`: Export format (onnx, torchscript, etc.)
+- `--quantize`: Enable quantization
+
+### Utility Commands
+
+#### `nemo-rl validate`
 
 Validate configuration files.
 
 ```bash
-python -m nemo_rl validate <config_file> [options]
+nemo-rl validate --config path/to/config.yaml
 ```
 
 **Options:**
-- `--config`: Path to configuration file (required)
-- `--strict`: Strict validation mode
-- `--output`: Output format (json, yaml, text)
+- `--config`: Configuration file to validate (required)
+- `--strict`: Enable strict validation
 
-**Examples:**
-```bash
-# Validate configuration
-python -m nemo_rl validate configs/dpo.yaml
+#### `nemo-rl info`
 
-# Strict validation
-python -m nemo_rl validate configs/dpo.yaml --strict
-```
-
-#### `info`
-
-Display information about models, datasets, or configurations.
+Display information about models and configurations.
 
 ```bash
-python -m nemo_rl info <type> <name> [options]
-```
-
-**Types:**
-- `model`: Model information
-- `dataset`: Dataset information
-- `config`: Configuration information
-
-**Options:**
-- `--type`: Information type (model, dataset, config)
-- `--name`: Name or path to inspect
-- `--format`: Output format (json, yaml, text)
-
-**Examples:**
-```bash
-# Model information
-python -m nemo_rl info model meta-llama/Llama-2-7b-hf
-
-# Dataset information
-python -m nemo_rl info dataset helpsteer3
-
-# Configuration information
-python -m nemo_rl info config configs/dpo.yaml
-```
-
-## Distributed Training Commands
-
-### Ray-based Training
-
-```bash
-# Launch Ray cluster
-ray start --head
-
-# Submit training job
-python -m nemo_rl train configs/dpo.yaml --distributed ray
-
-# Stop Ray cluster
-ray stop
-```
-
-### Multi-node Training
-
-```bash
-# Node 0 (master)
-python -m nemo_rl train configs/dpo.yaml --num_nodes 2 --node_rank 0
-
-# Node 1
-python -m nemo_rl train configs/dpo.yaml --num_nodes 2 --node_rank 1
-```
-
-## Environment Variables
-
-NeMo RL supports configuration through environment variables:
-
-```bash
-# Model configuration
-export NEMO_RL_MODEL_BACKEND=huggingface
-export NEMO_RL_MODEL_NAME=meta-llama/Llama-2-7b-hf
-
-# Training configuration
-export NEMO_RL_TRAINING_ALGORITHM=dpo
-export NEMO_RL_BATCH_SIZE=4
-export NEMO_RL_LEARNING_RATE=1e-5
-
-# Distributed configuration
-export NEMO_RL_DISTRIBUTED_STRATEGY=fsdp2
-export NEMO_RL_NUM_GPUS=8
-export NEMO_RL_NUM_NODES=1
-
-# Logging configuration
-export NEMO_RL_LOG_LEVEL=INFO
-export NEMO_RL_TENSORBOARD=true
-export NEMO_RL_WANDB=false
-```
-
-## Configuration Overrides
-
-You can override configuration values directly from the command line:
-
-```bash
-# Override model settings
-python -m nemo_rl train configs/dpo.yaml model.name=meta-llama/Llama-2-13b-hf
-
-# Override training settings
-python -m nemo_rl train configs/dpo.yaml training.batch_size=8 training.learning_rate=2e-5
-
-# Override distributed settings
-python -m nemo_rl train configs/dpo.yaml distributed.num_gpus=4 distributed.strategy=fsdp1
-
-# Multiple overrides
-python -m nemo_rl train configs/dpo.yaml model.name=meta-llama/Llama-2-13b-hf training.batch_size=8 distributed.num_gpus=4
-```
-
-## Debugging Commands
-
-### `debug`
-
-Debug configuration and setup.
-
-```bash
-python -m nemo_rl debug <config_file> [options]
+nemo-rl info --model path/to/model
+nemo-rl info --config path/to/config.yaml
 ```
 
 **Options:**
-- `--config`: Path to configuration file (required)
-- `--check_model`: Check model loading
-- `--check_data`: Check data loading
-- `--check_distributed`: Check distributed setup
-- `--verbose`: Verbose output
+- `--model`: Model path to inspect
+- `--config`: Configuration file to inspect
+- `--detailed`: Show detailed information
 
-**Examples:**
-```bash
-# Debug configuration
-python -m nemo_rl debug configs/dpo.yaml
+## Configuration Options
 
-# Check specific components
-python -m nemo_rl debug configs/dpo.yaml --check_model --check_data
-```
+### Global Options
 
-### `profile`
+All commands support these global options:
 
-Profile training performance.
+- `--log-level`: Set logging level (DEBUG, INFO, WARNING, ERROR)
+- `--log-file`: Log to file instead of console
+- `--quiet`: Suppress output
+- `--version`: Show version information
+- `--help`: Show help information
 
-```bash
-python -m nemo_rl profile <config_file> [options]
-```
+### Environment Variables
 
-**Options:**
-- `--config`: Path to configuration file (required)
-- `--steps`: Number of steps to profile
-- `--output`: Output file for profile data
-- `--memory`: Profile memory usage
-- `--gpu`: Profile GPU usage
+NeMo RL respects these environment variables:
 
-**Examples:**
-```bash
-# Basic profiling
-python -m nemo_rl profile configs/dpo.yaml --steps 100
+- `NEMO_RL_LOG_LEVEL`: Default logging level
+- `NEMO_RL_CONFIG_PATH`: Default configuration directory
+- `NEMO_RL_CACHE_DIR`: Cache directory for models and data
+- `RAY_ADDRESS`: Ray cluster address
 
-# Memory profiling
-python -m nemo_rl profile configs/dpo.yaml --memory --output profile.json
-```
+## Examples
 
-## Example Workflows
-
-### Complete DPO Training Workflow
+### Complete Training Workflow
 
 ```bash
 # 1. Validate configuration
-python -m nemo_rl validate configs/dpo.yaml
+nemo-rl validate --config examples/configs/dpo.yaml
 
-# 2. Debug setup
-python -m nemo_rl debug configs/dpo.yaml
+# 2. Start training
+nemo-rl train --config examples/configs/dpo.yaml --cluster
 
-# 3. Run training
-python -m nemo_rl train configs/dpo.yaml
+# 3. Evaluate model
+nemo-rl eval --config examples/configs/eval.yaml --model checkpoints/best.pt
 
-# 4. Evaluate model
-python -m nemo_rl eval configs/eval.yaml --checkpoint checkpoints/best_model
+# 4. Export for deployment
+nemo-rl export --model checkpoints/best.pt --output deployed_model
 ```
 
-### GRPO Training Workflow
+### Development Workflow
 
 ```bash
-# 1. Start Ray cluster
-ray start --head
+# Local development with debug
+nemo-rl train --config examples/configs/dpo.yaml --local --debug
 
-# 2. Run GRPO training
-python -m nemo_rl run_grpo configs/grpo_math.yaml
+# Quick evaluation
+nemo-rl eval --config examples/configs/eval.yaml --model checkpoints/latest.pt
 
-# 3. Stop Ray cluster
-ray stop
+# Model inspection
+nemo-rl info --model checkpoints/model.pt --detailed
 ```
 
-### Model Conversion Workflow
+## Troubleshooting
 
-```bash
-# 1. Convert Hugging Face to Megatron
-python -m nemo_rl convert huggingface megatron --source model_path --target megatron_path
-
-# 2. Train with Megatron backend
-python -m nemo_rl train configs/dpo_megatron.yaml
-
-# 3. Convert back to Hugging Face
-python -m nemo_rl convert megatron huggingface --source megatron_path --target hf_path
-```
-
-## Error Handling
-
-### Common Errors and Solutions
+### Common Issues
 
 1. **Configuration Errors**
    ```bash
-   # Validate configuration
-   python -m nemo_rl validate configs/dpo.yaml
+   # Validate configuration first
+   nemo-rl validate --config your_config.yaml
    ```
 
-2. **Model Loading Errors**
+2. **Memory Issues**
    ```bash
-   # Check model loading
-   python -m nemo_rl debug configs/dpo.yaml --check_model
+   # Use local mode for debugging
+   nemo-rl train --config config.yaml --local
    ```
 
-3. **Distributed Training Errors**
+3. **Ray Connection Issues**
    ```bash
-   # Check distributed setup
-   python -m nemo_rl debug configs/dpo.yaml --check_distributed
-   ```
-
-4. **Memory Errors**
-   ```bash
-   # Reduce batch size
-   python -m nemo_rl train configs/dpo.yaml training.batch_size=2
+   # Check Ray status
+   ray status
    
-   # Use gradient accumulation
-   python -m nemo_rl train configs/dpo.yaml training.gradient_accumulation_steps=8
+   # Start local Ray cluster
+   ray start --head
    ```
+
+### Getting Help
+
+```bash
+# General help
+nemo-rl --help
+
+# Command-specific help
+nemo-rl train --help
+nemo-rl eval --help
+
+# Configuration help
+nemo-rl validate --config config.yaml
+```
+
+## Advanced Usage
+
+### Custom Scripts
+
+You can integrate NeMo RL CLI into custom scripts:
+
+```bash
+#!/bin/bash
+# Training script example
+
+CONFIG="examples/configs/dpo.yaml"
+CHECKPOINT_DIR="checkpoints"
+
+# Validate config
+nemo-rl validate --config $CONFIG || exit 1
+
+# Start training
+nemo-rl train --config $CONFIG --cluster
+
+# Wait for completion and evaluate
+if [ -f "$CHECKPOINT_DIR/best.pt" ]; then
+    nemo-rl eval --config examples/configs/eval.yaml --model $CHECKPOINT_DIR/best.pt
+fi
+```
+
+### Batch Processing
+
+```bash
+# Process multiple configurations
+for config in configs/*.yaml; do
+    echo "Processing $config"
+    nemo-rl train --config "$config" --local
+done
+```
+
+## Integration with Other Tools
+
+### Ray Dashboard
+
+When using Ray clusters, access the dashboard at `http://localhost:8265` to monitor training progress.
+
+### TensorBoard
+
+Training logs are automatically saved and can be viewed with TensorBoard:
+
+```bash
+tensorboard --logdir logs/
+```
+
+### MLflow
+
+NeMo RL integrates with MLflow for experiment tracking:
+
+```bash
+# Enable MLflow logging in configuration
+nemo-rl train --config config_with_mlflow.yaml
+```
 
 ## Best Practices
 
-1. **Always validate configurations before training**
-   ```bash
-   python -m nemo_rl validate configs/dpo.yaml
-   ```
+1. **Always validate configurations** before training
+2. **Use local mode** for development and debugging
+3. **Monitor resources** when using clusters
+4. **Save checkpoints regularly** for recovery
+5. **Use descriptive configuration names** for organization
+6. **Log all experiments** for reproducibility
 
-2. **Use debug mode for troubleshooting**
-   ```bash
-   python -m nemo_rl train configs/dpo.yaml --debug
-   ```
+## Reference
 
-3. **Profile performance for optimization**
-   ```bash
-   python -m nemo_rl profile configs/dpo.yaml --steps 100
-   ```
-
-4. **Use environment variables for sensitive settings**
-   ```bash
-   export NEMO_RL_WANDB_API_KEY=your_key
-   ```
-
-5. **Keep configuration files in version control**
-   ```bash
-   git add configs/
-   git commit -m "Add training configurations"
-   ```
-
-## Command Reference Summary
-
-| Command | Description | Usage |
-|---------|-------------|-------|
-| `train` | Run training | `python -m nemo_rl train <config>` |
-| `run_dpo` | Run DPO training | `python -m nemo_rl run_dpo <config>` |
-| `run_grpo` | Run GRPO training | `python -m nemo_rl run_grpo <config>` |
-| `run_sft` | Run SFT training | `python -m nemo_rl run_sft <config>` |
-| `eval` | Run evaluation | `python -m nemo_rl eval <config>` |
-| `run_eval` | Run evaluation | `python -m nemo_rl run_eval <config>` |
-| `convert` | Convert models | `python -m nemo_rl convert <source> <target>` |
-| `validate` | Validate config | `python -m nemo_rl validate <config>` |
-| `info` | Show information | `python -m nemo_rl info <type> <name>` |
-| `debug` | Debug setup | `python -m nemo_rl debug <config>` |
-| `profile` | Profile performance | `python -m nemo_rl profile <config>` | 
+- [Configuration Reference](configuration-reference)
+- [Troubleshooting Guide](troubleshooting)
+- [API Documentation](../api-docs/index) 

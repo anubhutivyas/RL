@@ -95,12 +95,9 @@ Each example can be customized for your specific needs:
 5. **Evaluation**: Assess model performance on test data
 6. **Analysis**: Analyze results and identify areas for improvement
 
-### **Advanced Workflow**
-1. **Distributed Setup**: Configure multi-GPU or multi-node training
-2. **Performance Optimization**: Implement memory and throughput optimizations
-3. **Monitoring**: Set up comprehensive training monitoring
-4. **Checkpointing**: Implement robust checkpointing and recovery
-5. **Production Deployment**: Prepare models for production serving
+### Advanced Workflow
+
+For advanced distributed training, see the [Distributed Training Guide](../../advanced/performance/distributed-training.md).
 
 ## Best Practices
 
@@ -121,6 +118,10 @@ Each example can be customized for your specific needs:
 - **Human Evaluation**: Incorporate human feedback where appropriate
 - **Performance Tracking**: Monitor training progress and identify issues
 - **Reproducibility**: Ensure reproducible results across runs
+
+### **Performance Optimization**
+
+For comprehensive performance optimization strategies, see the [Performance & Optimization Guide](../../advanced/performance/index).
 
 ## Troubleshooting
 

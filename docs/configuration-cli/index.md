@@ -144,9 +144,11 @@ python -m nemo_rl.config --help
 
 ```{toctree}
 :maxdepth: 2
-:caption: Configuration & CLI
+:hidden:
 
-configuration-reference
+cli
+configuration
 cli-reference
+configuration-reference
 troubleshooting
 ``` 

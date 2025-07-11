@@ -9,7 +9,7 @@ Since Ray programs can spawn multiple workers and actors, using the Ray Distribu
 ### Prerequisites
 
 * Install the [Ray Debugger VS Code/Cursor extension](https://docs.ray.io/en/latest/ray-observability/ray-distributed-debugger.html).
-* Launch the [interactive cluster](./cluster.md#interactive-launching) with `ray.sub`.
+* Launch the [interactive cluster](../../get-started/cluster.md) with `ray.sub`.
 * Launch VS Code/Cursor on the SLURM login node (where `squeue`/`sbatch` is available).
 * Add `breakpoint()` in your code under actors & tasks (i.e. classes or functions decorated with `@ray.remote`).
 * **Ensure** `RAY_DEBUG=legacy` is not set since this debugging requires the default distributed debugger.
@@ -48,17 +48,17 @@ bind [::1]:52640: Cannot assign requested address
 
 In VS Code or Cursor, open the Ray Debugger extension by clicking the Ray icon in the activity bar or searching for "View: Show Ray Debugger" in the Command Palette (Ctrl+Shift+P or Cmd+Shift+P).
 
-![Ray Debugger Extension Step 1](./assets/ray-debug-step1.png)
+![Ray Debugger Extension Step 1](../../assets/ray-debug-step1.png)
 
 ### Add the Ray Cluster
 
 Click on the "Add Cluster" button in the Ray Debugger panel.
 
-![Ray Debugger Extension Step 2](./assets/ray-debug-step2.png)
+![Ray Debugger Extension Step 2](../../assets/ray-debug-step2.png)
 
 Enter the address and port you set up in the port forwarding step. If you followed the example above using port 52640, you would enter:
 
-![Ray Debugger Extension Step 3](./assets/ray-debug-step3.png)
+![Ray Debugger Extension Step 3](../../assets/ray-debug-step3.png)
 
 ### Add a Breakpoint and Run Your Program
 
@@ -66,7 +66,7 @@ The Ray Debugger Panel for cluster `127.0.0.1:52640` lists all active breakpoint
 
 Note that you can jump between breakpoints across all workers with this process.
 
-![Ray Debugger Extension Step 4](./assets/ray-debug-step4.png)
+![Ray Debugger Extension Step 4](../../assets/ray-debug-step4.png)
 
 ## Debug the Driver Script
 

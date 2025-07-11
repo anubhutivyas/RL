@@ -34,7 +34,7 @@ Follow this structured learning path to master NeMo RL:
 ### **Advanced Path** (4+ weeks)
 1. **GRPO Tutorial** → [Group Relative Policy Optimization Tutorial](tutorials/grpo-tutorial)
 2. **Advanced Performance** → [Performance & Optimization](../advanced/performance/index)
-3. **Distributed Training** → [Distributed Training Guide](../guides/environment-data/distributed-training)
+3. **Distributed Training** → [Distributed Training Guide](../advanced/performance/distributed-training)
 4. **Production Deployment** → [Production & Support](../guides/production-support/index)
 
 ## Tutorials

@@ -17,9 +17,9 @@ In this tutorial, you'll learn:
 
 Before starting this tutorial, ensure you have:
 
-- **SFT Foundation**: Complete the [SFT Tutorial](sft-tutorial) first
-- **NeMo RL Installation**: Complete installation (see [Installation Guide](../../get-started/installation))
+- **NeMo RL**: Installed and set up (see [Installation Guide](../../get-started/installation))
 - **Python Knowledge**: Basic understanding of Python programming
+- **Machine Learning**: Familiarity with ML concepts (helpful but not required)
 - **Hardware**: GPU with sufficient memory for your chosen model size
 
 ## Tutorial Overview

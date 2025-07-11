@@ -17,10 +17,10 @@ In this tutorial, you'll learn:
 
 Before starting this tutorial, ensure you have:
 
-- **SFT Foundation**: Complete the [SFT Tutorial](sft-tutorial) first
-- **DPO Experience**: Complete the [DPO Tutorial](dpo-tutorial) for preference learning
-- **NeMo RL Installation**: Complete installation (see [Installation Guide](../../get-started/installation))
-- **Advanced Hardware**: Multi-GPU setup recommended for large-scale training
+- **NeMo RL**: Installed and set up (see [Installation Guide](../../get-started/installation))
+- **Python Knowledge**: Basic understanding of Python programming
+- **Machine Learning**: Familiarity with ML concepts (helpful but not required)
+- **Hardware**: GPU with sufficient memory for your chosen model size
 
 ## Tutorial Overview
 
@@ -342,7 +342,7 @@ After completing this tutorial:
 - **[GRPO Algorithm Guide](../../guides/training-algorithms/grpo)**: Detailed technical reference
 - **[SFT Tutorial](sft-tutorial)**: Prerequisite supervised fine-tuning tutorial
 - **[DPO Tutorial](dpo-tutorial)**: Prerequisite preference learning tutorial
-- **[GRPO Example](../../examples/grpo-deepscaler)**: Complete working example
+- **[GRPO Example](../examples/grpo-deepscaler)**: Complete working example
 
 ## Summary
 

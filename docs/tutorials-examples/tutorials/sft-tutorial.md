@@ -17,7 +17,7 @@ In this tutorial, you'll learn:
 
 Before starting this tutorial, ensure you have:
 
-- **NeMo RL Installation**: Complete installation (see [Installation Guide](../../get-started/installation))
+- **NeMo RL**: Installed and set up (see [Installation Guide](../../get-started/installation))
 - **Python Knowledge**: Basic understanding of Python programming
 - **Machine Learning**: Familiarity with ML concepts (helpful but not required)
 - **Hardware**: GPU with sufficient memory for your chosen model size
@@ -315,7 +315,7 @@ After completing this tutorial:
 ## Related Resources
 
 - **[SFT Algorithm Guide](../../guides/training-algorithms/sft)**: Detailed technical reference
-- **[SFT Example](../../examples/sft-openmathinstruct2)**: Complete working example
+- **[SFT Example](../examples/sft-openmathinstruct2)**: Complete working example
 - **[DPO Tutorial](dpo-tutorial)**: Next step in preference learning
 - **[Evaluation Tutorial](evaluation-tutorial)**: Learn comprehensive evaluation techniques
 

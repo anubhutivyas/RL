@@ -7,9 +7,7 @@ This guide covers common issues, error messages, and solutions for NeMo RL. If y
 ::::{grid} 1 2 2 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`warning;1.5em;sd-mr-1` Common Errors
-:link: #common-errors
-:link-type: ref
+:::{grid-item-card} Common Errors
 
 Frequently encountered error messages and solutions.
 
@@ -17,9 +15,7 @@ Frequently encountered error messages and solutions.
 {bdg-warning}`Errors`
 :::
 
-:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Configuration Issues
-:link: #configuration-issues
-:link-type: ref
+:::{grid-item-card} Configuration Issues
 
 Problems with configuration files and parameters.
 
@@ -27,9 +23,7 @@ Problems with configuration files and parameters.
 {bdg-info}`Config`
 :::
 
-:::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Distributed Training
-:link: #distributed-training-issues
-:link-type: ref
+:::{grid-item-card} Distributed Training
 
 Issues with Ray and distributed training.
 
@@ -37,9 +31,7 @@ Issues with Ray and distributed training.
 {bdg-warning}`Distributed`
 :::
 
-:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Model Issues
-:link: #model-issues
-:link-type: ref
+:::{grid-item-card} Model Issues
 
 Problems with model loading and training.
 

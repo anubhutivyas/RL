@@ -54,7 +54,7 @@ In this section we present the results of several reference experiments for the 
 ### train_1M
 Using the above instructions to train a Llama-3.1-8B model for 1 epoch on the `train_1M` version of the OpenMathInstruct-2 dataset, we get the following loss curve:
 
-![image](../assets/sft-openmathinstruct2-train1M-loss.png)
+![image](../../assets/sft-openmathinstruct2-train1M-loss.png)
 
 
 Evaluating the final checkpoint on MATH-500, we get the following result:
@@ -75,7 +75,7 @@ As a reference, using NeMo-Aligner and NeMo-Skills (as is done in the [original 
 ### train
 We also trained a Llama-3.1-8B model for 1 epoch on the full `train` version of the OpenMathInstruct-2 dataset. We obtain the following loss curve:
 
-![image](../assets/sft-openmathinstruct2-train-loss.png)
+![image](../../assets/sft-openmathinstruct2-train-loss.png)
 
 Evaluating the final checkpoint on MATH-500, we get the following result:
 

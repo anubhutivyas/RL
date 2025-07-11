@@ -8,8 +8,6 @@ library for reinforcement learning and supervised fine-tuning of large language 
 ::::{grid} 1 2 2 2
 :gutter: 2 2 2 2
 
-
-
 :::{grid-item-card} {octicon}`rocket;1.5em;sd-mr-1` Get Started
 :link: get-started/index
 :link-type: doc
@@ -89,17 +87,35 @@ Access comprehensive reference documentation including configuration options and
 
 ::::
 
+## Learning Path
 
+Follow this structured progression to master NeMo RL:
 
+### **Beginner Path** (0-2 weeks)
+1. **Installation & Setup** → [Installation Guide](get-started/installation)
+2. **First Training Run** → [Quickstart Guide](get-started/quickstart)
+3. **SFT Tutorial** → [Supervised Fine-Tuning Tutorial](tutorials-examples/tutorials/sft-tutorial)
+4. **Basic Examples** → [SFT on OpenMathInstruct-2](tutorials-examples/examples/sft-openmathinstruct2)
 
+### **Intermediate Path** (2-4 weeks)
+1. **DPO Tutorial** → [Direct Preference Optimization Tutorial](tutorials-examples/tutorials/dpo-tutorial)
+2. **Evaluation Tutorial** → [Model Evaluation Tutorial](tutorials-examples/tutorials/evaluation-tutorial)
+3. **Advanced Examples** → [GRPO on DeepScaleR](tutorials-examples/examples/grpo-deepscaler)
+4. **Use Cases** → [Code Generation](tutorials-examples/use-cases/code-generation) and [Mathematical Reasoning](tutorials-examples/use-cases/mathematical-reasoning)
 
-## Performance & Development
+### **Advanced Path** (4+ weeks)
+1. **GRPO Tutorial** → [Group Relative Policy Optimization Tutorial](tutorials-examples/tutorials/grpo-tutorial)
+2. **Advanced Performance** → [Performance & Optimization](advanced/performance/index)
+3. **Distributed Training** → [Distributed Training Guide](advanced/performance/distributed-training)
+4. **Production Deployment** → [Production & Support](guides/production-support/index)
+
+## Key Resources
 
 ::::{grid} 1 2 2 2
 :gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Distributed Training
-:link: guides/environment-data/distributed-training
+:link: advanced/performance/distributed-training
 :link-type: doc
 
 Scale RL training across multiple GPUs and nodes with Ray clusters.
@@ -108,7 +124,7 @@ Scale RL training across multiple GPUs and nodes with Ray clusters.
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} {octicon}`plus;1.5em;sd-mr-1` Adding New Models
+:::{grid-item-card} {octicon}`plus;1.5em;sd-mr-1` Add New Models
 :link: guides/model-development/adding-new-models
 :link-type: doc
 

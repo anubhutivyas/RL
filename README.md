@@ -38,7 +38,7 @@ What you can expect:
 
 ## News
 * [7/9/2025] [Reinforcement Learning with NVIDIA NeMo-RL: Reproducing a DeepScaleR Recipe Using GRPO](https://developer.nvidia.com/blog/reinforcement-learning-with-nvidia-nemo-rl-reproducing-a-deepscaler-recipe-using-grpo/)
-* [5/14/2025] [Reproduce DeepscaleR with NeMo RL!](docs/guides/examples/grpo-deepscaler.md)
+* [5/14/2025] [Reproduce DeepscaleR with NeMo RL!](docs/tutorials-examples/examples/grpo-deepscaler.md)
 * [5/14/2025] [Release v0.2.1!](https://github.com/NVIDIA-NeMo/RL/releases/tag/v0.2.1)
     * View the release run metrics on [Google Colab](https://colab.research.google.com/drive/1o14sO0gj_Tl_ZXGsoYip3C0r5ofkU1Ey?usp=sharing) to get a head start on your experimentation.
 * [1/8/2025] [Release v0.3.0-rc0!](https://github.com/NVIDIA-NeMo/RL/releases/tag/v0.3.0-rc0)
