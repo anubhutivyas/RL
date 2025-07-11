@@ -51,8 +51,6 @@ def import_model_from_hf_name(hf_model_name: str, output_path: str):
             hf_model_name,
             output_path=output_path,
         )
-    elif "llama" in hf_model_name.lower():
-
     else:
         raise ValueError(f"Unknown model_type: {hf_config.model_type}")
     importer.apply()
