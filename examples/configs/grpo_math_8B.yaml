@@ -28,7 +28,7 @@ policy:
     cpu_offload: false
     sequence_parallel: true
     activation_checkpointing: true
-    tensor_parallel_size: 2
+    tensor_parallel_size: 4
     custom_parallel_plan: null
 
   dynamic_batching:
@@ -73,4 +73,4 @@ policy:
 
 cluster:
   gpus_per_node: 8
-  num_nodes: 8
+  num_nodes: 16
