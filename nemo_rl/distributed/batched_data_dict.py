@@ -251,7 +251,7 @@ class BatchedDataDict(UserDict, Generic[DictT]):
                                           Cannot be passed with sequence_packing_args.
 
             sequence_packing_args (dict): If passed, preprocess batch for sequence packing. This
-                                            dict requires three keys:
+                                            dict requires five keys:
                                             1. max_tokens_per_microbatch (int): the maximum
                                                 number of tokens in a microbatch
                                             2. input_key (str): the key in the batch
@@ -260,6 +260,8 @@ class BatchedDataDict(UserDict, Generic[DictT]):
                                                 which holds the sequence length per value.
                                                 The sequence dim index is assumed to be 1.
                                             4. algorithm (str): the algorithm to use for sequence packing.
+                                            5. sequence_length_pad_multiple (int): the multiple to pad each sequence to.
+                                               With CP enabled, this should be set to a multiple of 2*CP and SP.
                                           Cannot be passed with dynamic_batching_args.
 
         Returns:

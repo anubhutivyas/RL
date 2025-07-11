@@ -152,6 +152,7 @@ class ClippedPGLossFn(LossFunction):
                 inference_only=False,
                 cp_group=context_parallel_group,
             )
+            # slice off to the correct length to remove potential CP padding
             curr_logprobs = curr_logprobs[:, : data["input_ids"].shape[1] - 1]
         elif isinstance(next_token_logits, torch.distributed.tensor.DTensor):
             curr_logprobs = get_logprobs_from_vocab_parallel_logits(
@@ -341,6 +342,7 @@ class NLLLoss(LossFunction):
                 inference_only=False,
                 cp_group=context_parallel_group,
             )
+            # slice off to the correct length to remove potential CP padding
             token_logprobs = token_logprobs[:, : data["input_ids"].shape[1] - 1]
         elif isinstance(next_token_logits, torch.distributed.tensor.DTensor):
             token_logprobs = get_logprobs_from_vocab_parallel_logits(
@@ -492,6 +494,7 @@ class DPOLossFn(LossFunction):
                 inference_only=False,
                 cp_group=context_parallel_group,
             )
+            # slice off to the correct length to remove potential CP padding
             token_logprobs = token_logprobs[:, : data["input_ids"].shape[1] - 1]
         elif isinstance(next_token_logits, torch.distributed.tensor.DTensor):
             token_logprobs = get_logprobs_from_vocab_parallel_logits(

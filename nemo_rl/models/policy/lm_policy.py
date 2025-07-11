@@ -205,6 +205,7 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
             self.sequence_packing_args["max_tokens_per_microbatch"] = self.cfg[
                 "sequence_packing"
             ]["logprob_mb_tokens"]
+            # we just shard into DP shards here as Sequence packing allows for CP.
             sharded_data, unsorted_data_indices = data.shard_by_batch_size(
                 dp_size,
                 batch_size=None,
