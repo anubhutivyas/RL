@@ -282,7 +282,14 @@ def launch_experiment(
         return full_cmd, None
     else:
         result = subprocess.run(full_cmd, shell=True, capture_output=True, text=True)
-        job_id = result.stdout.strip() if result.stdout else None
+        job_id = None
+        if result.stdout:
+            # Extract job ID from sbatch output like "Submitted batch job 4101132"
+            stdout_lines = result.stdout.strip().split('\n')
+            for line in stdout_lines:
+                if 'Submitted batch job' in line:
+                    job_id = line.split()[-1]  # Get the last word (job ID)
+                    break
         return full_cmd, job_id
 
 
