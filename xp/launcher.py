@@ -20,7 +20,6 @@ import subprocess
 from typing import Any, Dict, List, Tuple, Optional
 import time
 import yaml
-import sys # Added for countdown timer
 
 
 # Environment variables
@@ -43,7 +42,6 @@ def parse_args():
     parser.add_argument("--mounts", type=str, default=MOUNTS, help="Mounts to use")
     parser.add_argument("--jobname", type=str, default=None, help="Base name for the job")
     parser.add_argument("--dry", action="store_true", help="Print commands without executing them")
-    parser.add_argument("--sleep", type=int, default=0, help="Sleep time in seconds between jobs")
     parser.add_argument("--chain", type=int, default=1, help="Number of jobs per sweep configuration to chain together")
     args, extra_args = parser.parse_known_args()
     return args, extra_args
@@ -196,6 +194,42 @@ def format_parameter_override(param_dict: Dict[str, Any]) -> str:
     return " ".join(overrides)
 
 
+def wait_for_job_completion(job_id: str, check_interval: int = 30) -> bool:
+    """
+    Wait for a Slurm job to complete.
+    
+    Args:
+        job_id: The job ID to monitor
+        check_interval: How often to check job status (in seconds)
+    
+    Returns:
+        bool: True if job completed (regardless of success/failure), False if job not found
+    """
+    while True:
+        # Check job status using squeue
+        result = subprocess.run(
+            ["squeue", "--job", job_id, "--noheader", "--format=%T"],
+            capture_output=True,
+            text=True
+        )
+        
+        if result.returncode != 0:
+            # Job not found in queue, assume it's completed
+            print(f"Job {job_id} no longer in queue (completed)")
+            return True
+        
+        status = result.stdout.strip()
+        if not status:
+            # Job not found in queue, assume it's completed
+            print(f"Job {job_id} no longer in queue (completed)")
+            return True
+        
+        print(f"Job {job_id} status: {status}")
+        
+        # Job is still running, wait and check again
+        time.sleep(check_interval)
+
+
 def launch_experiment(
     script: str,
     config: Optional[str],
@@ -341,52 +375,38 @@ def main():
     print(f"Jobs per chain: {args.chain}")
     print(f"Total jobs: {total_jobs}\n")
     
+    if args.chain > 1 and not args.dry:
+        print("NOTE: Jobs will be submitted sequentially within each chain.")
+        print("First jobs of each chain will run in parallel.\n")
+    
     # Launch experiments
-    job_counter = 0
-    for i, params in enumerate(param_combinations):
-        # Format parameter overrides
+    def launch_chain(sweep_idx: int, params: Dict[str, Any]):
+        """Launch a complete chain of jobs for a single parameter combination."""
         param_overrides = format_parameter_override(params)
         
-        # Generate base job name if not provided
+        # Generate base job name
         base_job_name = args.jobname or (
             os.path.splitext(os.path.basename(args.sweep))[0] if args.sweep 
             else os.path.splitext(os.path.basename(script_path))[0]
         )
         
-        # Track job IDs for this chain
-        chain_job_ids = []
-        
-        # Launch chain of jobs for this parameter combination
+        # Launch each job in the chain sequentially
         for chain_idx in range(args.chain):
             # Create job name with sweep and chain information
             if len(param_combinations) > 1 and args.chain > 1:
-                job_name = f"{base_job_name}_sweep{i+1}_chain{chain_idx+1}"
-                # Shared log directory for all jobs in this chain
-                log_dir_name = f"{base_job_name}_sweep{i+1}"
+                job_name = f"{base_job_name}_sweep{sweep_idx+1}_chain{chain_idx+1}"
+                log_dir_name = f"{base_job_name}_sweep{sweep_idx+1}"
             elif len(param_combinations) > 1:
-                job_name = f"{base_job_name}_sweep{i+1}"
-                log_dir_name = job_name  # Single job, use job name as log dir
+                job_name = f"{base_job_name}_sweep{sweep_idx+1}"
+                log_dir_name = job_name
             elif args.chain > 1:
                 job_name = f"{base_job_name}_chain{chain_idx+1}"
-                # Shared log directory for all jobs in this chain
                 log_dir_name = base_job_name
             else:
                 job_name = base_job_name
-                log_dir_name = job_name  # Single job, use job name as log dir
+                log_dir_name = job_name
             
-            # Set up dependency for jobs after the first in the chain
-            dependency = None
-            if chain_idx > 0:
-                if not args.dry:
-                    # Previous job in the chain must complete (regardless of success/failure/timeout)
-                    prev_job_id = chain_job_ids[chain_idx - 1]
-                    if prev_job_id:
-                        dependency = f"afterany:{prev_job_id}"
-                else:
-                    # For dry run, show dependency structure even without real job IDs
-                    dependency = f"afterany:<prev_job_id>"
-            
-            # Launch experiment
+            # Launch experiment (no dependency needed since we wait for completion)
             cmd, job_id = launch_experiment(
                 script=script_path,
                 config=config_path,
@@ -400,12 +420,9 @@ def main():
                 job_name=job_name,
                 dry_run=args.dry,
                 extra_args=extra_args,
-                dependency=dependency,
-                log_dir_name=log_dir_name, # Pass log_dir_name for all jobs in the chain
+                dependency=None,  # No dependency needed
+                log_dir_name=log_dir_name,
             )
-            
-            # Store job ID for dependency tracking
-            chain_job_ids.append(job_id)
             
             # Print experiment info
             print_experiment_info(
@@ -414,21 +431,38 @@ def main():
                 cmd=cmd,
                 job_id=job_id,
                 dry_run=args.dry,
-                dependency=dependency,
+                dependency=None,
             )
             
-            job_counter += 1
-            
-        # Sleep between sweeps if specified (but not between chain jobs or after the last job)
-        if args.sleep and job_counter < total_jobs and chain_idx == args.chain - 1:
-            print(f"Submitted {job_counter} of {total_jobs} jobs")
-            print(f"Sleeping for {args.sleep} seconds before the next sweep...")
-            for remaining in range(args.sleep, 0, -1):
-                sys.stdout.write(f"\rTime remaining: {remaining:2d} seconds")
-                sys.stdout.flush()
-                time.sleep(1)
-            sys.stdout.write("\rDone sleeping.                           \n") # Clear the countdown line
-            sys.stdout.flush()
+            # Wait for job completion before submitting the next job in the chain
+            if not args.dry and job_id and chain_idx < args.chain - 1:
+                print(f"Waiting for job {job_id} to complete before submitting next job in chain...")
+                wait_for_job_completion(job_id)
+                print(f"Job {job_id} completed. Submitting next job in chain.\n")
+    
+    # Launch all chains
+    if args.chain == 1 or args.dry:
+        # Simple case: single job per chain or dry run
+        for i, params in enumerate(param_combinations):
+            launch_chain(i, params)
+    else:
+        # Complex case: multiple jobs per chain, need to handle parallelism
+        import threading
+        
+        def run_chain_thread(sweep_idx: int, params: Dict[str, Any]):
+            """Run a chain in a separate thread."""
+            launch_chain(sweep_idx, params)
+        
+        # Launch all chains in parallel (each chain runs sequentially internally)
+        threads = []
+        for i, params in enumerate(param_combinations):
+            thread = threading.Thread(target=run_chain_thread, args=(i, params))
+            threads.append(thread)
+            thread.start()
+        
+        # Wait for all chains to complete
+        for thread in threads:
+            thread.join()
     
     print(f"{total_jobs} jobs submitted: {len(param_combinations)} sweeps, with chain size {args.chain}.")
 
