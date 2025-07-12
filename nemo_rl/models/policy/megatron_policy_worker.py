@@ -1427,7 +1427,7 @@ class MegatronPolicyWorker:
         total_available_bytes = get_free_memory_bytes(device_idx)
         # TODO: setting to low value (10%) since
         # more buckets seems to have better perf
-        total_available_bytes *= 0.1
+        total_available_bytes *= 0.2
 
         return param_info, total_available_bytes
     
@@ -1474,6 +1474,7 @@ class MegatronPolicyWorker:
             type_to_total_size = defaultdict(lambda: 0)
             tensor_metadata = dict()
             
+            list_of_keys = []
             for key, tensor in gathered_hf_params.items():
                 tensor_metadata[key] = (
                     tensor.shape,                       # shape of the tensor
@@ -1483,6 +1484,7 @@ class MegatronPolicyWorker:
                     tensor.numel()                      # size of the tensor
                 )
                 type_to_total_size[tensor.dtype] += tensor.numel()
+                list_of_keys.append(key)
 
             # Allocate consolidated tensors for each dtype
             packed_tensors = {
@@ -1512,9 +1514,10 @@ class MegatronPolicyWorker:
             # Store reference to prevent garbage collection
             self._held_gather_buffer = packed_tensors
             if not pass_weights_metadata:
-                tensor_metadata = list(tensor_metadata.keys())
-
-            serialized = (pack_tensor_for_ipc, all_handles, tensor_metadata)
+                # tensor_metadata = list_of_keys
+                serialized = (pack_tensor_for_ipc, all_handles, list_of_keys)
+            else:
+                serialized = (pack_tensor_for_ipc, all_handles, tensor_metadata)
         else:
             all_handles = []
             for key, tensor in gathered_hf_params.items():

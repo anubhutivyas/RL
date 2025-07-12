@@ -46,7 +46,7 @@ class VllmInternalWorkerExtension:
         from nemo_rl.utils.nvml import get_device_uuid
 
         return get_device_uuid(self.device.index)
-    
+
     def update_weights_ipc_metadata(self, data: dict[str, Any]) -> bool:
         """Update weights IPC metadata.
         """
@@ -96,20 +96,27 @@ class VllmInternalWorkerExtension:
                     tensor = func(*list_args)
                     dtype_to_packed_tensor[dtype] = tensor
 
-                # Unpack tensor to weights. Here we only return a view of the tensor to avoid 
+                # Unpack tensor to weights. Here we only return a view of the tensor to avoid
                 # using extra memory.
                 if isinstance(tensor_metadata, dict):
                     for key, (shape, dtype, offset, size) in tensor_metadata.items():
                         tensor = dtype_to_packed_tensor[dtype][offset:offset+size].view(*shape)
                         weights.append((key, tensor))
                 else:
+                    # This should not happen anymore since metadata is always passed through IPC handles
+                    # when packing is enabled
                     assert isinstance(tensor_metadata, list), "tensor_metadata should be a list"
-                    offset = 0
+                    dtype_offset = {}
                     for key in tensor_metadata:
                         shape, dtype, _, size = self.metadata[key]
-                        tensor = dtype_to_packed_tensor[dtype][offset:offset+size].view(*shape)
+                        # back difference dtype between step 1 and step 2
+                        dtype = torch.float32 if "mlp.gate.e_score_correction_bias" in key else dtype
+                        if dtype not in dtype_offset:
+                            dtype_offset[dtype] = 0
+                        offset = dtype_offset[dtype]
+                        tensor = dtype_to_packed_tensor[dtype][dtype_offset[dtype]:dtype_offset[dtype]+size].view(*shape)
                         weights.append((key, tensor))
-                        offset += size
+                        dtype_offset[dtype] += size
             else:
                 # Process each handle to get the tensor
                 for name, handle in name_and_handle_list:
