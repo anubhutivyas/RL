@@ -12,8 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import os
+import random
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple, TypedDict
+from typing import Any, Dict, Optional, Tuple, TypedDict, List
 
 import numpy as np
 import torch
@@ -71,6 +72,12 @@ class GRPOConfig(TypedDict):
     val_batch_size: int
     val_at_start: bool
     checkpoint_dir: str
+    num_epochs: int
+    max_rollout_turns: int
+    max_val_samples: int
+    # Aggregation stage configuration
+    enable_aggregation: bool  # Whether to enable aggregation stage training
+    aggregation_prompt_template: str  # Template for aggregation prompts
 
 
 class GRPOSaveState(TypedDict):
@@ -287,6 +294,78 @@ def setup(
 # ===============================================================================
 
 
+def create_aggregation_prompts(
+    original_batch: BatchedDataDict[DatumSpec],
+    generation_responses: List[List[str]],
+    aggregation_prompt_template: str,
+) -> BatchedDataDict[DatumSpec]:
+    """Create aggregation prompts by combining original prompts with generation responses.
+    
+    Args:
+        original_batch: Original batch containing the prompts
+        generation_responses: List of lists, where each inner list contains the generation responses for a prompt
+        aggregation_prompt_template: Template string for formatting aggregation prompts
+    
+    Returns:
+        New batch with aggregation prompts
+    """
+    aggregation_batch = original_batch.copy()
+    
+    # Create new message logs for aggregation
+    new_message_logs = []
+    
+    for i, message_log in enumerate(original_batch["message_log"]):
+        # Extract the original user prompt
+        original_prompt = None
+        for message in message_log:
+            if message["role"] == "user":
+                original_prompt = message["content"]
+                break
+        
+        if original_prompt is None:
+            raise ValueError(f"No user message found in message log {i}")
+        
+        # Format the generation responses
+        responses_text = ""
+        for j, response in enumerate(generation_responses[i]):
+            responses_text += f"Response {j+1}: {response}\n"
+        
+        # Create the aggregation prompt using the template
+        aggregation_prompt = aggregation_prompt_template.format(
+            original_prompt=original_prompt,
+            responses=responses_text.strip()
+        )
+        
+        # Create new message log with the aggregation prompt
+        new_message_log = [
+            {
+                "role": "user",
+                "content": aggregation_prompt,
+                "token_ids": torch.tensor([]),  # Will be properly tokenized later
+            }
+        ]
+        new_message_logs.append(new_message_log)
+    
+    aggregation_batch["message_log"] = new_message_logs
+    return aggregation_batch
+
+
+def combine_training_data(
+    generation_train_data: BatchedDataDict[ClippedPGLossDataDict],
+    aggregation_train_data: BatchedDataDict[ClippedPGLossDataDict],
+) -> BatchedDataDict[ClippedPGLossDataDict]:
+    """Combine training data from both generation and aggregation stages."""
+    combined_data = BatchedDataDict[ClippedPGLossDataDict]({
+        "input_ids": torch.cat([generation_train_data["input_ids"], aggregation_train_data["input_ids"]], dim=0),
+        "input_lengths": torch.cat([generation_train_data["input_lengths"], aggregation_train_data["input_lengths"]], dim=0),
+        "advantages": torch.cat([generation_train_data["advantages"], aggregation_train_data["advantages"]], dim=0),
+        "generation_logprobs": torch.cat([generation_train_data["generation_logprobs"], aggregation_train_data["generation_logprobs"]], dim=0),
+        "token_mask": torch.cat([generation_train_data["token_mask"], aggregation_train_data["token_mask"]], dim=0),
+        "sample_mask": torch.cat([generation_train_data["sample_mask"], aggregation_train_data["sample_mask"]], dim=0),
+    })
+    return combined_data
+
+
 def refit_policy_generation(
     policy: PolicyInterface,
     policy_generation: GenerationInterface,
@@ -441,13 +520,89 @@ def grpo_train(
                     max_rollout_turns=master_config["grpo"]["max_rollout_turns"],
                     greedy=False,
                 )
+                
+                # Keep generation active for potential aggregation stage
+                if not master_config["grpo"].get("enable_aggregation", False):
+                    policy_generation.finish_generation()
+
+            # Initialize aggregation stage variables
+            aggregation_batch = None
+            aggregation_rollout_metrics = {}
+            
+            # Aggregation stage training logic
+            if master_config["grpo"].get("enable_aggregation", False):
+                print("▶ Preparing Aggregation stage training...")
+                with timer.time("aggregation_preparation"):
+                    # Extract generation responses grouped by original prompt
+                    num_prompts = len(batch["message_log"])
+                    num_generations = master_config["grpo"]["num_generations_per_prompt"]
+                    
+                    # Group responses by original prompt
+                    generation_responses = []
+                    for i in range(num_prompts):
+                        prompt_responses = []
+                        for j in range(num_generations):
+                            idx = i * num_generations + j
+                            # Extract assistant response from the message log - take the last assistant turn
+                            last_assistant_response = None
+                            for message in repeated_batch["message_log"][idx]:
+                                if message["role"] == "assistant":
+                                    last_assistant_response = message["content"]
+                            if last_assistant_response is not None:
+                                prompt_responses.append(last_assistant_response)
+                            else:
+                                raise ValueError(f"No assistant response found for prompt {i} generation {j} which is {repeated_batch['message_log'][idx]}")
+                        
+                        # Randomly select a subset of responses instead of using all
+                        # Choose a random number of responses to select (between 1 and total available)
+                        num_to_select = random.randint(1, len(prompt_responses))
+                        # Randomly sample that many responses
+                        selected_responses = random.sample(prompt_responses, num_to_select)
+                        generation_responses.append(selected_responses)
+                    
+                    # Create aggregation prompts
+                    aggregation_batch_template = create_aggregation_prompts(
+                        batch, 
+                        generation_responses, 
+                        master_config["grpo"]["aggregation_prompt_template"]
+                    )
+                    
+                    # Repeat aggregation batch for multiple generations
+                    aggregation_repeated_batch = aggregation_batch_template.repeat_interleave(
+                        master_config["grpo"]["num_generations_per_prompt"]
+                    )
+
+                print(f"▶ Generating Aggregation responses for batch of size {aggregation_repeated_batch.size}...")
+                with timer.time("aggregation_generation"):
+                    aggregation_batch, aggregation_rollout_metrics = run_multi_turn_rollout(
+                        policy_generation=policy_generation,
+                        input_batch=aggregation_repeated_batch,
+                        tokenizer=tokenizer,
+                        task_to_env=task_to_env,
+                        max_seq_len=master_config["policy"]["max_total_sequence_length"],
+                        max_rollout_turns=master_config["grpo"]["max_rollout_turns"],
+                        greedy=False,
+                    )
+                    
                 policy_generation.finish_generation()
+
+                # Update metrics with aggregation info
+                rollout_metrics.update({
+                    "generation_" + k: v for k, v in rollout_metrics.items()
+                })
+                rollout_metrics.update({
+                    "aggregation_" + k: v for k, v in aggregation_rollout_metrics.items()
+                })
 
             # Calculate rewards & advantages
             print("▶ Processing rewards...")
             with timer.time("reward_calculation"):
-                # Extract rewards from final_batch
+                # Extract rewards from original generation
                 rewards = repeated_batch["total_reward"]
+                
+                # For aggregation training, also get aggregation rewards
+                if master_config["grpo"].get("enable_aggregation", False):
+                    aggregation_rewards = aggregation_batch["total_reward"]
 
                 print("▶ Computing advantages...")
                 baseline, std, more_rollout_metrics = (
@@ -462,62 +617,98 @@ def grpo_train(
                 )
                 advantages = (rewards - baseline).unsqueeze(-1)
 
+                if master_config["grpo"].get("enable_aggregation", False):
+                    # For aggregation, we need to compute input_ids for the aggregation prompts
+                    aggregation_flat, aggregation_input_lengths = batched_message_log_to_flat_message(
+                        aggregation_repeated_batch["message_log"],
+                        pad_value_dict={"token_ids": tokenizer.pad_token_id},
+                    )
+                    aggregation_input_ids = aggregation_flat["token_ids"]
+                    
+                    aggregation_baseline, aggregation_std, aggregation_more_rollout_metrics = (
+                        calculate_baseline_and_std_per_prompt(
+                            aggregation_input_ids,
+                            aggregation_rewards,
+                            torch.ones_like(aggregation_rewards),
+                            leave_one_out_baseline=master_config["grpo"][
+                                "use_leave_one_out_baseline"
+                            ],
+                        )
+                    )
+                    aggregation_advantages = (aggregation_rewards - aggregation_baseline).unsqueeze(-1)
+                    
+                    # Combine rewards and advantages for metrics
+                    all_rewards = torch.cat([rewards, aggregation_rewards])
+                    all_advantages = torch.cat([advantages.flatten(), aggregation_advantages.flatten()])
+                    
+                    rollout_metrics.update(more_rollout_metrics)
+                    rollout_metrics.update({
+                        "aggregation_" + k: v for k, v in aggregation_more_rollout_metrics.items()
+                    })
+                else:
+                    # Single-stage training
+                    print("▶ Computing advantages...")
+                    baseline, std, more_rollout_metrics = (
+                        calculate_baseline_and_std_per_prompt(
+                            input_ids,
+                            rewards,
+                            torch.ones_like(rewards),
+                            leave_one_out_baseline=master_config["grpo"][
+                                "use_leave_one_out_baseline"
+                            ],
+                        )
+                    )
+                    advantages = (rewards - baseline).unsqueeze(-1)
+                    all_rewards = rewards
+                    all_advantages = advantages.flatten()
+                    rollout_metrics.update(more_rollout_metrics)
+
+                # Normalize rewards if configured
                 if master_config["grpo"]["normalize_rewards"]:
-                    # don't sharpen the ones with no variation
+                    # Generation normalization
                     zero_std_mask = std > 0
                     advantages[zero_std_mask] = (
                         advantages[zero_std_mask] / std.unsqueeze(-1)[zero_std_mask]
                     )
 
+                    # Aggregation normalization (if applicable)
+                    if master_config["grpo"].get("enable_aggregation", False):
+                        zero_std_mask = aggregation_std > 0
+                        aggregation_advantages[zero_std_mask] = (
+                            aggregation_advantages[zero_std_mask] / aggregation_std.unsqueeze(-1)[zero_std_mask]
+                        )
+
+                # Calculate metrics
                 percent_valid_advantages = (
-                    advantages.count_nonzero() / advantages.numel()
+                    all_advantages.count_nonzero() / all_advantages.numel()
                 )
                 percent_zero_advantages = 1 - percent_valid_advantages
 
                 advantages_min, advantages_mean, advantages_max = (
-                    advantages.min(),
-                    advantages.mean(),
-                    advantages.max(),
+                    all_advantages.min(),
+                    all_advantages.mean(),
+                    all_advantages.max(),
                 )
-                baseline_min, baseline_mean, baseline_max = (
-                    baseline.min(),
-                    baseline.mean(),
-                    baseline.max(),
-                )
-                std_min, std_mean, std_max = (
-                    std.min(),
-                    std.mean(),
-                    std.max(),
-                )
-
                 reward_min, reward_mean, reward_max = (
-                    rewards.min(),
-                    rewards.mean(),
-                    rewards.max(),
+                    all_rewards.min(),
+                    all_rewards.mean(),
+                    all_rewards.max(),
                 )
 
                 rollout_metrics.update(
                     {
-                        # "percent_valid_advantages": percent_valid_advantages,
                         "percent_zero_advantages": percent_zero_advantages,
                         "advantages_min": advantages_min,
                         "advantages_mean": advantages_mean,
                         "advantages_max": advantages_max,
-                        "baseline_min": baseline_min,
-                        "baseline_mean": baseline_mean,
-                        "baseline_max": baseline_max,
-                        "std_min": std_min,
-                        "std_mean": std_mean,
-                        "std_max": std_max,
                         "reward_min": reward_min,
                         "reward_mean": reward_mean,
                         "reward_max": reward_max,
                     }
                 )
-                rollout_metrics.update(more_rollout_metrics)
 
             with timer.time("data_processing"):
-                # Add loss mask and advantages to each message in LLMMessageLogType
+                # Create training data for generation (original flow)
                 for i, message_log in enumerate(repeated_batch["message_log"]):
                     for j, message in enumerate(message_log):
                         if message["role"] == "assistant":
@@ -536,7 +727,7 @@ def grpo_train(
                             message["token_ids"].shape
                         )
 
-                # Convert updated LLMMessageLogType to FlatMessagesType for training
+                # Convert to training data (original flow)
                 flat_messages, input_lengths = batched_message_log_to_flat_message(
                     repeated_batch["message_log"],
                     pad_value_dict={"token_ids": tokenizer.pad_token_id},
@@ -545,7 +736,6 @@ def grpo_train(
                     ],
                 )
 
-                # Create training data from flattened messages
                 train_data = BatchedDataDict[ClippedPGLossDataDict](
                     {
                         "input_ids": flat_messages["token_ids"],
@@ -556,6 +746,54 @@ def grpo_train(
                         "sample_mask": repeated_batch["loss_multiplier"],
                     }
                 )
+
+                # Process aggregation data if aggregation training is enabled
+                if master_config["grpo"].get("enable_aggregation", False):
+                    # Create training data for aggregation
+                    for i, message_log in enumerate(aggregation_batch["message_log"]):
+                        for j, message in enumerate(message_log):
+                            if message["role"] == "assistant":
+                                message["token_loss_mask"] = torch.ones_like(
+                                    message["token_ids"]
+                                )
+                            else:
+                                message["token_loss_mask"] = torch.zeros_like(
+                                    message["token_ids"]
+                                )
+                            if "generation_logprobs" not in message:
+                                message["generation_logprobs"] = torch.zeros_like(
+                                    message["token_ids"], dtype=torch.float32
+                                )
+                            message["advantages"] = aggregation_advantages[i].expand(
+                                message["token_ids"].shape
+                            )
+
+                    # Convert aggregation to training data
+                    aggregation_flat_messages, aggregation_input_lengths = batched_message_log_to_flat_message(
+                        aggregation_batch["message_log"],
+                        pad_value_dict={"token_ids": tokenizer.pad_token_id},
+                        make_sequence_length_divisible_by=master_config["policy"][
+                            "make_sequence_length_divisible_by"
+                        ],
+                    )
+
+                    aggregation_train_data = BatchedDataDict[ClippedPGLossDataDict](
+                        {
+                            "input_ids": aggregation_flat_messages["token_ids"],
+                            "input_lengths": aggregation_input_lengths,
+                            "advantages": aggregation_flat_messages["advantages"],
+                            "generation_logprobs": aggregation_flat_messages["generation_logprobs"],
+                            "token_mask": aggregation_flat_messages["token_loss_mask"],
+                            "sample_mask": aggregation_batch["loss_multiplier"],
+                        }
+                    )
+
+                    # Combine training data from both stages
+                    train_data = combine_training_data(
+                        train_data,
+                        aggregation_train_data,
+                    )
+
                 train_data.to("cpu")
 
             print("▶ Preparing for logprob inference...")
@@ -642,11 +880,11 @@ def grpo_train(
                 policy.offload_after_refit()
 
         # Logging
-        # Log training data
+        # Log training data (use generation data for logging since it's more interpretable)
         log_data = {"content": flat_messages["content"]}
         log_data["rewards"] = rewards.tolist()
-        log_data["generation_logprobs"] = train_data["generation_logprobs"].tolist()
-        log_data["prev_logprobs"] = train_data["prev_logprobs"].tolist()
+        log_data["generation_logprobs"] = train_data["generation_logprobs"][:len(rewards)].tolist()
+        log_data["prev_logprobs"] = train_data["prev_logprobs"][:len(rewards)].tolist()
         log_data["input_lengths"] = input_lengths.tolist()
         logger.log_batched_dict_as_jsonl(log_data, f"train_data_step{step}.jsonl")
         table = logger.log_batched_dict_as_table(log_data, prefix="train", step=step)
@@ -656,7 +894,10 @@ def grpo_train(
         rollout_metrics["table"] = table
         timing_metrics = timer.get_timing_metrics(reduction_op="sum")
 
-        print(f"  • Avg Reward: {np.mean(rewards.numpy()):.4f}")
+        print(f"  • Avg Reward: {np.mean(all_rewards.numpy()):.4f}")
+        if master_config["grpo"].get("enable_aggregation", False):
+            print(f"  • Generation Avg Reward: {np.mean(rewards.numpy()):.4f}")
+            print(f"  • Aggregation Avg Reward: {np.mean(aggregation_rewards.numpy()):.4f}")
         print(
             f"  • Mean Generation Length: {rollout_metrics['mean_gen_tokens_per_sample']:.4f}"
         )
