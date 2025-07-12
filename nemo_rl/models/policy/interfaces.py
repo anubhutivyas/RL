@@ -123,3 +123,7 @@ class ColocatablePolicyInterface(PolicyInterface):
     @abstractmethod
     def broadcast_weights_for_collective(self) -> list[ray.ObjectRef]:
         pass
+
+    @abstractmethod
+    def delete_held_gather_buffer(self) -> None:
+        pass

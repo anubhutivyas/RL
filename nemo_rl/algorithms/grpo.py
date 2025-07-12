@@ -426,6 +426,7 @@ def refit_policy_generation(
             update_success = policy_generation.update_weights(ipc_handles)
             if not update_success:
                 break
+        policy.delete_held_gather_buffer()
     else:
         # prepare info for update weights
         state_dict_info = policy.prepare_info_for_collective()

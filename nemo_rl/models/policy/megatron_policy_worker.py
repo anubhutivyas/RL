@@ -1494,7 +1494,7 @@ class MegatronPolicyWorker:
 
             for key, tensor in gathered_hf_params.items():
                 tensor_metadata[key] = (
-                    tensor.shape,  # shape of the tensor
+                    tuple(tensor.shape),  # shape of the tensor
                     tensor.dtype,  # dtype of the tensor
                     type_to_total_size[tensor.dtype],  # offset of the tensor
                     # in packed buffer
@@ -1523,7 +1523,7 @@ class MegatronPolicyWorker:
 
             # Create IPC handles for consolidated tensors
             all_handles = [
-                (dtype, reduce_tensor(tensor.detach()))
+                (dtype, reduce_tensor(tensor.detach())[1])
                 for dtype, tensor in packed_tensors.items()
             ]
 

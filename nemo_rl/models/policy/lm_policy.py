@@ -542,3 +542,8 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
         """Stop GPU profiling."""
         futures = self.worker_group.run_all_workers_single_data("stop_gpu_profiling")
         ray.get(futures)
+
+    def delete_held_gather_buffer(self) -> None:
+        """Delete the held gather buffer."""
+        futures = self.worker_group.run_all_workers_single_data("delete_held_gather_buffer")
+        ray.get(futures)

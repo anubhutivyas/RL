@@ -88,12 +88,13 @@ class VllmInternalWorkerExtension:
                     )
                     weights.append((key, tensor))
             else:
+                from torch.multiprocessing.reductions import rebuild_cuda_tensor
                 # Process each handle to get the tensor
                 for name, handle in name_and_handle_list:
-                    func, args = handle
+                    args = handle
                     list_args = list(args)
                     list_args[6] = device_id
-                    tensor = func(*list_args)
+                    tensor = rebuild_cuda_tensor(*list_args)
                     weights.append((name, tensor))
 
             # Load weights into the model
