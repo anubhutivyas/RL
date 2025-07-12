@@ -687,6 +687,7 @@ class MegatronPolicyWorker:
 
         # refit stuff, will be initialized in prepare_refit_info
         self.refit_param_info = None
+        self.state_dict_info = None
         self.local_key_to_global_keys = None
 
     def is_alive(self):
@@ -1268,7 +1269,7 @@ class MegatronPolicyWorker:
         )
 
         # Collect tensor metadata for refit
-        state_dict_info = {}
+        self.state_dict_info = {}
         for key, _ in self.refit_param_info:
             # gather megatron params
             gathered_megatron_params = gather_params(
@@ -1282,13 +1283,13 @@ class MegatronPolicyWorker:
             )
             # collect tensor metadata
             for name, tensor in gathered_hf_params.items():
-                state_dict_info[name] = (
+                self.state_dict_info[name] = (
                     tensor.shape,
                     tensor.dtype,
                     tensor.numel(),
                 )
 
-        return state_dict_info
+        return self.state_dict_info
 
     def prepare_weights_for_ipc(self) -> tuple[list[tuple[str, int]], float]:
         """Prepare Megatron model weights for IPC transfer to vLLM.
@@ -1354,7 +1355,22 @@ class MegatronPolicyWorker:
 
             # Record offset of the tensor
             for key, tensor in gathered_hf_params.items():
-                tensor_metadata[key] = type_to_total_size[tensor.dtype]
+                # dtype for the 1st and 2nd steps may be different
+                # e.g. model.layers.4.mlp.gate.e_score_correction_bias
+                if tensor.dtype == self.state_dict_info[key][1]:
+                    tensor_metadata[key] = type_to_total_size[tensor.dtype]
+                else:
+                    # also send dtype if it changes
+                    tensor_metadata[key] = (
+                        type_to_total_size[tensor.dtype],
+                        tensor.dtype,
+                    )
+                    # update record
+                    self.state_dict_info[key] = (
+                        tensor.shape,
+                        tensor.dtype,
+                        tensor.numel(),
+                    )
                 type_to_total_size[tensor.dtype] += tensor.numel()
 
             # Allocate consolidated tensors for each dtype
@@ -1371,6 +1387,8 @@ class MegatronPolicyWorker:
             # Copy tensors into consolidated buffers
             for key, tensor in gathered_hf_params.items():
                 offset = tensor_metadata[key]
+                if isinstance(offset, tuple):
+                    offset, _ = offset
                 dtype = tensor.dtype
                 size = tensor.numel()
                 packed_tensors[dtype][offset : offset + size].copy_(
