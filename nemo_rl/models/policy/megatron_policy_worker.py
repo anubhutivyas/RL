@@ -675,7 +675,6 @@ class MegatronPolicyWorker:
         )
         self.final_padded_vocab_size = tokenizer_config.padded_vocab_size
         self.dp_size = worker_sharding_annotations.get_axis_size("data_parallel")
-        self._held_gather_buffer = None
         self.megatron_to_hf_converter = MegatronToHFConverter(hf_model_name, self.model)
 
         self.should_disable_forward_pre_hook = (
@@ -685,9 +684,12 @@ class MegatronPolicyWorker:
             ]
         )
 
-        # refit stuff, will be initialized in prepare_refit_info
-        self.state_dict_info = None
+        # vars used for refit
+        ## will be initialized in prepare_refit_info
+        self.refit_param_info_hf = None
         self.local_key_to_global_keys = None
+        ## used for streaming update inference engine weights
+        self._held_gather_buffer = None
 
     def is_alive(self):
         return True
@@ -1259,19 +1261,19 @@ class MegatronPolicyWorker:
     def prepare_refit_info(self) -> None:
         # Get parameter info for refit
         ## param_info: list of ((name, shape, dtype), size_in_bytes) tuples
-        # Cannot cache refit_param_info since dtype for the 1st and 2nd steps may be different
+        # Cannot cache refit_param_info_mcore since dtype and size_in_bytes for the 1st and 2nd steps may be different
         ## e.g. e_score_correction_bias
-        refit_param_info = get_param_info(self.model, self.dtype)
+        refit_param_info_mcore = get_param_info(self.model, self.dtype)
 
         # Create a map that maps any local parameter name to a list of global parameter names.
         # This map is repeatedly used by parameter gatherring phase during refit of every step.
         self.local_key_to_global_keys = get_local_key_to_global_keys(
-            self.model, state_dict_info=refit_param_info
+            self.model, state_dict_info=refit_param_info_mcore
         )
 
         # Collect tensor metadata for refit
-        self.state_dict_info = {}
-        for key, _ in refit_param_info:
+        self.refit_param_info_hf = {}
+        for key, _ in refit_param_info_mcore:
             # gather megatron params
             gathered_megatron_params = gather_params(
                 self.model,
@@ -1284,13 +1286,13 @@ class MegatronPolicyWorker:
             )
             # collect tensor metadata
             for name, tensor in gathered_hf_params.items():
-                self.state_dict_info[name] = (
+                self.refit_param_info_hf[name] = (
                     tensor.shape,
                     tensor.dtype,
                     tensor.numel(),
                 )
 
-        return self.state_dict_info
+        return self.refit_param_info_hf
 
     @torch.no_grad()
     def prepare_weights_for_ipc(self) -> tuple[list[tuple[str, int]], float]:
@@ -1303,9 +1305,9 @@ class MegatronPolicyWorker:
 
         # Get parameter info for refit
         ## param_info: list of ((name, shape, dtype), size_in_bytes) tuples
-        # Cannot cache refit_param_info since dtype for the 1st and 2nd steps may be different
+        # Cannot cache refit_param_info_mcore since dtype and size_in_bytes for the 1st and 2nd steps may be different
         ## e.g. e_score_correction_bias
-        refit_param_info = get_param_info(self.model, self.dtype)
+        refit_param_info_mcore = get_param_info(self.model, self.dtype)
 
         # Collect current available memory for refit
         ## Get current device index from torch
@@ -1316,7 +1318,7 @@ class MegatronPolicyWorker:
         # more buckets seems to have better perf
         total_available_bytes *= 0.1
 
-        return refit_param_info, total_available_bytes
+        return refit_param_info_mcore, total_available_bytes
 
     # Temporary fix, 'keys' is a kwarg due to some sort of ray bug
     @torch.no_grad()
@@ -1364,7 +1366,7 @@ class MegatronPolicyWorker:
             # Record offset of the tensor
             for key, tensor in gathered_hf_params.items():
                 # dtype for the 1st and 2nd steps may be different (e.g. e_score_correction_bias)
-                if tensor.dtype == self.state_dict_info[key][1]:
+                if tensor.dtype == self.refit_param_info_hf[key][1]:
                     tensor_metadata[key] = type_to_total_size[tensor.dtype]
                 else:
                     # also send dtype if it changes
@@ -1373,7 +1375,7 @@ class MegatronPolicyWorker:
                         tensor.dtype,
                     )
                     # update record
-                    self.state_dict_info[key] = (
+                    self.refit_param_info_hf[key] = (
                         tensor.shape,
                         tensor.dtype,
                         tensor.numel(),
