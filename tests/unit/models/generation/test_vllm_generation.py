@@ -1604,3 +1604,58 @@ def test_vllm_megatron_pipeline_parallel(cluster, tokenizer):
             vllm_policy.shutdown()
         if megatron_policy:
             megatron_policy.shutdown()
+
+
+def test_vllm_megatron_weight_update_with_packing(cluster, test_input_data):
+    megatron_policy = None
+    vllm_generation = None
+
+    try:
+        # Enable packing during test
+        os.environ["NEMO_RL_MEGATRON_IPC_TENSOR_PACKING_THRESHOLD"] = "1"
+
+        # Both policies must use the same model (Qwen2.5-0.5B) for weight transfer compatibility
+        model_name = "Qwen/Qwen2.5-0.5B"
+        tokenizer = get_tokenizer({"name": model_name})
+
+        # Create Policy
+        megatron_config = get_basic_megatron_test_config(
+            tp=1, pp=1, precision="float32"
+        )
+        megatron_config["model_name"] = model_name
+        megatron_config["tokenizer"]["name"] = model_name
+        megatron_policy = Policy(cluster, megatron_config, tokenizer)
+
+        # Create VllmGeneration
+        vllm_config = deepcopy(basic_vllm_test_config)
+        vllm_config = configure_generation_config(vllm_config, tokenizer, is_eval=True)
+        vllm_config["model_name"] = model_name
+        vllm_config["tokenizer"]["name"] = model_name
+        vllm_generation = VllmGeneration(cluster, vllm_config)
+
+        # prepare refit info
+        state_dict_info = megatron_policy.prepare_refit_info()
+        vllm_generation.prepare_refit_info(state_dict_info)
+
+        print("refitting vllm policy...")
+        refit_policy_generation(
+            megatron_policy, vllm_generation, vllm_config["colocated"]["enabled"]
+        )
+
+        # test generate
+        outputs = vllm_generation.generate(test_input_data, greedy=True)
+        output_ids = outputs["output_ids"]
+        generated_texts = tokenizer.batch_decode(output_ids, skip_special_tokens=True)
+        assert generated_texts == [
+            "Hello, my name is John. I am a",
+            "The capital of France is Paris. It is the",
+        ], "Output should be the same as the expected output"
+
+    finally:
+        # Restore the original value
+        os.environ.pop("NEMO_RL_MEGATRON_IPC_TENSOR_PACKING_THRESHOLD", None)
+        # Clean up
+        if megatron_policy:
+            megatron_policy.shutdown()
+        if vllm_generation:
+            vllm_generation.shutdown()
