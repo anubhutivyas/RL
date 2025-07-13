@@ -686,7 +686,6 @@ class MegatronPolicyWorker:
         )
 
         # refit stuff, will be initialized in prepare_refit_info
-        self.refit_param_info = None
         self.state_dict_info = None
         self.local_key_to_global_keys = None
 
@@ -1259,18 +1258,20 @@ class MegatronPolicyWorker:
     @torch.no_grad()
     def prepare_refit_info(self) -> None:
         # Get parameter info for refit
-        # param_info: list of ((name, shape, dtype), size_in_bytes) tuples
-        self.refit_param_info = get_param_info(self.model, self.dtype)
+        ## param_info: list of ((name, shape, dtype), size_in_bytes) tuples
+        # Cannot cache refit_param_info since dtype for the 1st and 2nd steps may be different
+        ## e.g. e_score_correction_bias
+        refit_param_info = get_param_info(self.model, self.dtype)
 
         # Create a map that maps any local parameter name to a list of global parameter names.
         # This map is repeatedly used by parameter gatherring phase during refit of every step.
         self.local_key_to_global_keys = get_local_key_to_global_keys(
-            self.model, state_dict_info=self.refit_param_info
+            self.model, state_dict_info=refit_param_info
         )
 
         # Collect tensor metadata for refit
         self.state_dict_info = {}
-        for key, _ in self.refit_param_info:
+        for key, _ in refit_param_info:
             # gather megatron params
             gathered_megatron_params = gather_params(
                 self.model,
@@ -1291,6 +1292,7 @@ class MegatronPolicyWorker:
 
         return self.state_dict_info
 
+    @torch.no_grad()
     def prepare_weights_for_ipc(self) -> tuple[list[tuple[str, int]], float]:
         """Prepare Megatron model weights for IPC transfer to vLLM.
 
@@ -1298,6 +1300,12 @@ class MegatronPolicyWorker:
         Returns a list of (parameter_name, size_in_bytes) tuples.
         """
         from nemo_rl.utils.nvml import get_free_memory_bytes
+
+        # Get parameter info for refit
+        ## param_info: list of ((name, shape, dtype), size_in_bytes) tuples
+        # Cannot cache refit_param_info since dtype for the 1st and 2nd steps may be different
+        ## e.g. e_score_correction_bias
+        refit_param_info = get_param_info(self.model, self.dtype)
 
         # Collect current available memory for refit
         ## Get current device index from torch
@@ -1308,7 +1316,7 @@ class MegatronPolicyWorker:
         # more buckets seems to have better perf
         total_available_bytes *= 0.1
 
-        return self.refit_param_info, total_available_bytes
+        return refit_param_info, total_available_bytes
 
     # Temporary fix, 'keys' is a kwarg due to some sort of ray bug
     @torch.no_grad()
@@ -1355,8 +1363,7 @@ class MegatronPolicyWorker:
 
             # Record offset of the tensor
             for key, tensor in gathered_hf_params.items():
-                # dtype for the 1st and 2nd steps may be different
-                # e.g. model.layers.4.mlp.gate.e_score_correction_bias
+                # dtype for the 1st and 2nd steps may be different (e.g. e_score_correction_bias)
                 if tensor.dtype == self.state_dict_info[key][1]:
                     tensor_metadata[key] = type_to_total_size[tensor.dtype]
                 else:

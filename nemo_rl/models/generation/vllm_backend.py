@@ -111,8 +111,7 @@ class VllmInternalWorkerExtension:
                 # Unpack tensor to weights. Here we only return a view of the tensor to avoid
                 # using extra memory.
                 for key, metadata in tensor_metadata.items():
-                    # dtype for the 1st and 2nd steps may be different
-                    # e.g. model.layers.4.mlp.gate.e_score_correction_bias
+                    # dtype for the 1st and 2nd steps may be different (e.g. e_score_correction_bias)
                     if isinstance(metadata, tuple):
                         # use dtype of current step
                         offset, dtype = metadata
