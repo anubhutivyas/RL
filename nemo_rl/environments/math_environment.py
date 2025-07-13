@@ -36,6 +36,7 @@ from nemo_rl.environments.utils import chunk_list_to_workers
 class MathEnvConfig(TypedDict):
     num_workers: int
     stop_strings: Optional[List[str]] = None  # Default stop strings for this env
+    reasoning_split_word: Optional[str] = None  # Word to split reasoning from final answer
 
 
 @contextlib.contextmanager
@@ -97,6 +98,7 @@ class HFVerifyWorker:
 
 class MathEnvironmentMetadata(TypedDict):
     ground_truth: str
+    question: Optional[str]  # Added to store the question in metadata
 
 
 @ray.remote

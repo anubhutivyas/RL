@@ -280,12 +280,21 @@ class VllmGenerationWorker:
 
         # Read generation parameters from config
         top_k = self.cfg["top_k"] if self.cfg["top_k"] is not None else -1
+        
+        # Use max_new_tokens override from data if provided, otherwise use config default
+        # max_new_tokens comes as a list (one per sample), but all should be the same value
+        max_new_tokens_override = data.get("max_new_tokens")
+        if max_new_tokens_override is not None:
+            max_new_tokens = max_new_tokens_override[0]  # All samples have the same value
+        else:
+            max_new_tokens = self.cfg["max_new_tokens"]
+        
         sampling_params = self.SamplingParams(
             temperature=self.cfg["temperature"] if not greedy else 0,
             top_p=self.cfg["top_p"],
             # we use a default of -1 if unset so that 'null'/None is a common disable value
             top_k=top_k if not greedy else 1,
-            max_tokens=self.cfg["max_new_tokens"],
+            max_tokens=max_new_tokens,
             logprobs=0,  # Return logprobs for the generated tokens
             stop_token_ids=self.cfg["stop_token_ids"],
             stop=stop_strings,

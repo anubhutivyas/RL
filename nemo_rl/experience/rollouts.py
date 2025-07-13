@@ -15,7 +15,7 @@
 # Generate rollouts for arbitrary environments
 # Supports multi-turn rollouts and many simultaneous environments (E.g. you can train on math, code, multi-turn games and more at once)
 
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Tuple, Optional
 
 import ray
 import torch
@@ -204,6 +204,7 @@ def run_multi_turn_rollout(
     max_seq_len: int,
     max_rollout_turns: int = 999999,
     greedy: bool = False,
+    max_new_tokens: Optional[int] = None,
 ) -> Tuple[BatchedDataDict[DatumSpec], Dict[str, Any]]:
     """Runs a multi-turn rollout loop, interacting with the environment.
 
@@ -270,6 +271,10 @@ def run_multi_turn_rollout(
                 "stop_strings": active_stop_strings,
             }
         )
+        
+        # Add max_new_tokens override if provided (replicate for each sample in batch)
+        if max_new_tokens is not None:
+            generation_input_data["max_new_tokens"] = [max_new_tokens] * len(active_input_lengths)
 
         # generate_responses updates active_batch["message_log"] in-place
         active_batch, generated_ids, gen_metrics = generate_responses(

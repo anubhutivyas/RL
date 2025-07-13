@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 import random
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, TypedDict, List
 
@@ -78,6 +79,7 @@ class GRPOConfig(TypedDict):
     # Aggregation stage configuration
     enable_aggregation: bool  # Whether to enable aggregation stage training
     aggregation_prompt_template: str  # Template for aggregation prompts
+    first_stage_generation_max_seq_len: int  # Max new tokens for first stage generation (controls generation length, not total sequence length)
 
 
 class GRPOSaveState(TypedDict):
@@ -289,6 +291,14 @@ def setup(
     )
 
 
+def get_reasoning_split_word(env_configs: Dict[str, Any]) -> Optional[str]:
+    """Get reasoning_split_word from any enabled environment."""
+    for env_name, env_config in env_configs.items():
+        if env_config.get("enable", False) and "reasoning_split_word" in env_config:
+            return env_config["reasoning_split_word"]
+    return None
+
+
 # ===============================================================================
 # Core Algorithm Functions
 # ===============================================================================
@@ -298,6 +308,7 @@ def create_aggregation_prompts(
     original_batch: BatchedDataDict[DatumSpec],
     generation_responses: List[List[str]],
     aggregation_prompt_template: str,
+    tokenizer,
 ) -> BatchedDataDict[DatumSpec]:
     """Create aggregation prompts by combining original prompts with generation responses.
     
@@ -305,25 +316,34 @@ def create_aggregation_prompts(
         original_batch: Original batch containing the prompts
         generation_responses: List of lists, where each inner list contains the generation responses for a prompt
         aggregation_prompt_template: Template string for formatting aggregation prompts
+        tokenizer: Tokenizer to use for tokenizing the aggregation prompts
     
     Returns:
         New batch with aggregation prompts
     """
-    aggregation_batch = original_batch.copy()
+    aggregation_batch = deepcopy(original_batch)
     
     # Create new message logs for aggregation
     new_message_logs = []
+    new_extra_env_info = []
+    new_loss_multiplier = []
+    new_task_name = []
+    new_dataset = []
+    valid_indices = []
     
     for i, message_log in enumerate(original_batch["message_log"]):
-        # Extract the original user prompt
-        original_prompt = None
-        for message in message_log:
-            if message["role"] == "user":
-                original_prompt = message["content"]
-                break
+        # Skip if no responses for this prompt
+        if len(generation_responses[i]) == 0:
+            print(f"DEBUG: Skipping prompt {i} - no responses available")
+            continue
+            
+        # Extract the original user question from metadata
+        if "extra_env_info" not in original_batch or not original_batch["extra_env_info"][i]:
+            raise ValueError(f"No extra_env_info found in batch for sample {i}")
         
+        original_prompt = original_batch["extra_env_info"][i].get("question")
         if original_prompt is None:
-            raise ValueError(f"No user message found in message log {i}")
+            raise ValueError(f"No question found in metadata for sample {i}")
         
         # Format the generation responses
         responses_text = ""
@@ -336,17 +356,67 @@ def create_aggregation_prompts(
             responses=responses_text.strip()
         )
         
+        # Debug: Print aggregation prompt details
+        print(f"DEBUG: Sample {i} - Using {len(generation_responses[i])} responses")
+        print(f"DEBUG: Original prompt: {original_prompt}...")
+        print(f"DEBUG: Aggregation prompt: {aggregation_prompt}...")
+        
+        # Create a proper message structure for chat template (like in run_grpo.py) 
+        # Caveat: no system prompt is added here
+        aggregation_message = [
+            {
+                "role": "user",
+                "content": aggregation_prompt,
+            }
+        ]
+        
+        # Apply chat template to get properly formatted content and token_ids
+        formatted_content = tokenizer.apply_chat_template(
+            aggregation_message,
+            tokenize=False,
+            add_generation_prompt=True,
+            add_special_tokens=False,
+        )
+        token_ids = tokenizer.apply_chat_template(
+            aggregation_message,
+            tokenize=True,
+            add_generation_prompt=True,
+            add_special_tokens=False,
+            return_tensors="pt",
+        )[0]
+        
         # Create new message log with the aggregation prompt
         new_message_log = [
             {
                 "role": "user",
-                "content": aggregation_prompt,
-                "token_ids": torch.tensor([]),  # Will be properly tokenized later
+                "content": formatted_content,
+                "token_ids": token_ids,
             }
         ]
         new_message_logs.append(new_message_log)
     
+        # Keep track of corresponding metadata for valid prompts
+        new_extra_env_info.append(original_batch["extra_env_info"][i])
+        new_loss_multiplier.append(original_batch["loss_multiplier"][i])
+        new_task_name.append(original_batch["task_name"][i])
+        # TODO: add back dataset
+        # new_dataset.append(original_batch["dataset"][i])
+        valid_indices.append(i)
+    
+    # Ensure we have at least some valid aggregation prompts
+    if len(new_message_logs) == 0:
+        raise ValueError("No valid aggregation prompts could be created from the generation responses")
+    
+    print(f"DEBUG: Created {len(new_message_logs)} aggregation prompts out of {len(original_batch['message_log'])} original prompts")
+    
+    # Update aggregation batch with filtered data
     aggregation_batch["message_log"] = new_message_logs
+    aggregation_batch["extra_env_info"] = new_extra_env_info
+    aggregation_batch["loss_multiplier"] = torch.tensor(new_loss_multiplier)
+    aggregation_batch["task_name"] = new_task_name
+    # TODO: add back dataset
+    # aggregation_batch["dataset"] = new_dataset
+    
     return aggregation_batch
 
 
@@ -354,7 +424,31 @@ def combine_training_data(
     generation_train_data: BatchedDataDict[ClippedPGLossDataDict],
     aggregation_train_data: BatchedDataDict[ClippedPGLossDataDict],
 ) -> BatchedDataDict[ClippedPGLossDataDict]:
-    """Combine training data from both generation and aggregation stages."""
+    """Combine training data from both generation and aggregation stages.
+    
+    Note: Aggregation is always longer than generation, so we pad generation data to match.
+    """
+    
+    # Get sequence lengths (aggregation is always longer)
+    gen_seq_len = generation_train_data["input_ids"].shape[1]
+    agg_seq_len = aggregation_train_data["input_ids"].shape[1]
+    
+    # Pad generation data to match aggregation length
+    pad_size = agg_seq_len - gen_seq_len
+    generation_train_data["input_ids"] = torch.nn.functional.pad(
+        generation_train_data["input_ids"], (0, pad_size), value=0
+    )
+    generation_train_data["advantages"] = torch.nn.functional.pad(
+        generation_train_data["advantages"], (0, pad_size), value=0
+    )
+    generation_train_data["generation_logprobs"] = torch.nn.functional.pad(
+        generation_train_data["generation_logprobs"], (0, pad_size), value=0
+    )
+    generation_train_data["token_mask"] = torch.nn.functional.pad(
+        generation_train_data["token_mask"], (0, pad_size), value=0
+    )
+    
+    # Now concatenate the tensors (both have same sequence length)
     combined_data = BatchedDataDict[ClippedPGLossDataDict]({
         "input_ids": torch.cat([generation_train_data["input_ids"], aggregation_train_data["input_ids"]], dim=0),
         "input_lengths": torch.cat([generation_train_data["input_lengths"], aggregation_train_data["input_lengths"]], dim=0),
@@ -519,6 +613,8 @@ def grpo_train(
                     max_seq_len=master_config["policy"]["max_total_sequence_length"],
                     max_rollout_turns=master_config["grpo"]["max_rollout_turns"],
                     greedy=False,
+                    # First stage uses first_stage_generation_max_seq_len as max_new_tokens
+                    max_new_tokens=master_config["grpo"]["first_stage_generation_max_seq_len"],
                 )
                 
                 # Keep generation active for potential aggregation stage
@@ -537,6 +633,9 @@ def grpo_train(
                     num_prompts = len(batch["message_log"])
                     num_generations = master_config["grpo"]["num_generations_per_prompt"]
                     
+                    # Get reasoning split word from any enabled environment
+                    reasoning_split_word = get_reasoning_split_word(master_config["env"])
+                    
                     # Group responses by original prompt
                     generation_responses = []
                     for i in range(num_prompts):
@@ -549,7 +648,10 @@ def grpo_train(
                                 if message["role"] == "assistant":
                                     last_assistant_response = message["content"]
                             if last_assistant_response is not None:
-                                prompt_responses.append(last_assistant_response)
+                                if reasoning_split_word and reasoning_split_word in last_assistant_response:
+                                    prompt_responses.append(last_assistant_response.split(reasoning_split_word)[-1].lstrip())
+                                else:
+                                    prompt_responses.append("None")
                             else:
                                 raise ValueError(f"No assistant response found for prompt {i} generation {j} which is {repeated_batch['message_log'][idx]}")
                         
@@ -560,13 +662,16 @@ def grpo_train(
                         selected_responses = random.sample(prompt_responses, num_to_select)
                         generation_responses.append(selected_responses)
                     
+                    # print(f"▶ Creating aggregation prompts for {generation_responses[0]}")   
+                    
                     # Create aggregation prompts
                     aggregation_batch_template = create_aggregation_prompts(
                         batch, 
                         generation_responses, 
-                        master_config["grpo"]["aggregation_prompt_template"]
+                        master_config["grpo"]["aggregation_prompt_template"],
+                        tokenizer,
                     )
-                    
+                    # print(f"▶ Aggregation batch template: {aggregation_batch_template}")
                     # Repeat aggregation batch for multiple generations
                     aggregation_repeated_batch = aggregation_batch_template.repeat_interleave(
                         master_config["grpo"]["num_generations_per_prompt"]
@@ -582,8 +687,34 @@ def grpo_train(
                         max_seq_len=master_config["policy"]["max_total_sequence_length"],
                         max_rollout_turns=master_config["grpo"]["max_rollout_turns"],
                         greedy=False,
+                        # Aggregation stage uses default max_new_tokens from policy config
                     )
                     
+                    # Debug: Print first aggregation prompt and responses
+                    # print("\n=== DEBUG: First Aggregation Prompt - All Responses ===")
+                    # if len(aggregation_batch["message_log"]) > 0:
+                    #     # Show all responses for the first aggregation prompt
+                    #     num_generations = master_config["grpo"]["num_generations_per_prompt"]
+                    #     num_to_show = min(num_generations, len(aggregation_batch["message_log"]))
+                        
+                    #     print(f"Showing all {num_to_show} responses for first aggregation prompt:")
+                    #     for i in range(num_to_show):
+                    #         message_log = aggregation_batch["message_log"][i]
+                            
+                    #         # Find the last assistant response
+                    #         last_assistant_response = None
+                    #         for msg in message_log:
+                    #             if msg["role"] == "assistant":
+                    #                 last_assistant_response = msg["content"]
+                            
+                    #         reward = aggregation_batch['total_reward'][i]
+                    #         print(f"Response {i+1}: {last_assistant_response}")
+                    #         print(f"Reward {i+1}: {reward}")
+                    #         print("---")
+                        
+                    #     print(f"All aggregation rewards for first prompt: {aggregation_batch['total_reward'][:num_to_show]}")
+                    # print("=== END DEBUG ===\n")
+
                 policy_generation.finish_generation()
 
                 # Update metrics with aggregation info
@@ -679,24 +810,106 @@ def grpo_train(
                         )
 
                 # Calculate metrics
-                percent_valid_advantages = (
-                    all_advantages.count_nonzero() / all_advantages.numel()
-                )
-                percent_zero_advantages = 1 - percent_valid_advantages
+                if master_config["grpo"].get("enable_aggregation", False):
+                    # Calculate separate generation metrics
+                    generation_advantages_flat = advantages.flatten()
+                    generation_percent_valid_advantages = (
+                        generation_advantages_flat.count_nonzero() / generation_advantages_flat.numel()
+                    )
+                    generation_percent_zero_advantages = 1 - generation_percent_valid_advantages
+                    
+                    generation_advantages_min, generation_advantages_mean, generation_advantages_max = (
+                        generation_advantages_flat.min(),
+                        generation_advantages_flat.mean(),
+                        generation_advantages_flat.max(),
+                    )
+                    generation_reward_min, generation_reward_mean, generation_reward_max = (
+                        rewards.min(),
+                        rewards.mean(),
+                        rewards.max(),
+                    )
+                    
+                    # Calculate separate aggregation metrics
+                    aggregation_advantages_flat = aggregation_advantages.flatten()
+                    aggregation_percent_valid_advantages = (
+                        aggregation_advantages_flat.count_nonzero() / aggregation_advantages_flat.numel()
+                    )
+                    aggregation_percent_zero_advantages = 1 - aggregation_percent_valid_advantages
+                    
+                    aggregation_advantages_min, aggregation_advantages_mean, aggregation_advantages_max = (
+                        aggregation_advantages_flat.min(),
+                        aggregation_advantages_flat.mean(),
+                        aggregation_advantages_flat.max(),
+                    )
+                    aggregation_reward_min, aggregation_reward_mean, aggregation_reward_max = (
+                        aggregation_rewards.min(),
+                        aggregation_rewards.mean(),
+                        aggregation_rewards.max(),
+                    )
+                    
+                    # Calculate combined metrics for overall tracking
+                    percent_valid_advantages = (
+                        all_advantages.count_nonzero() / all_advantages.numel()
+                    )
+                    percent_zero_advantages = 1 - percent_valid_advantages
 
-                advantages_min, advantages_mean, advantages_max = (
-                    all_advantages.min(),
-                    all_advantages.mean(),
-                    all_advantages.max(),
-                )
-                reward_min, reward_mean, reward_max = (
-                    all_rewards.min(),
-                    all_rewards.mean(),
-                    all_rewards.max(),
-                )
+                    advantages_min, advantages_mean, advantages_max = (
+                        all_advantages.min(),
+                        all_advantages.mean(),
+                        all_advantages.max(),
+                    )
+                    reward_min, reward_mean, reward_max = (
+                        all_rewards.min(),
+                        all_rewards.mean(),
+                        all_rewards.max(),
+                    )
+                    
+                    # Update rollout metrics with separate generation and aggregation metrics
+                    rollout_metrics.update({
+                        # Generation metrics
+                        "generation_percent_zero_advantages": generation_percent_zero_advantages,
+                        "generation_advantages_min": generation_advantages_min,
+                        "generation_advantages_mean": generation_advantages_mean,
+                        "generation_advantages_max": generation_advantages_max,
+                        "generation_reward_min": generation_reward_min,
+                        "generation_reward_mean": generation_reward_mean,
+                        "generation_reward_max": generation_reward_max,
+                        # Aggregation metrics
+                        "aggregation_percent_zero_advantages": aggregation_percent_zero_advantages,
+                        "aggregation_advantages_min": aggregation_advantages_min,
+                        "aggregation_advantages_mean": aggregation_advantages_mean,
+                        "aggregation_advantages_max": aggregation_advantages_max,
+                        "aggregation_reward_min": aggregation_reward_min,
+                        "aggregation_reward_mean": aggregation_reward_mean,
+                        "aggregation_reward_max": aggregation_reward_max,
+                        # Combined metrics
+                        "combined_percent_zero_advantages": percent_zero_advantages,
+                        "combined_advantages_min": advantages_min,
+                        "combined_advantages_mean": advantages_mean,
+                        "combined_advantages_max": advantages_max,
+                        "combined_reward_min": reward_min,
+                        "combined_reward_mean": reward_mean,
+                        "combined_reward_max": reward_max,
+                    })
+                else:
+                    # Single-stage training metrics
+                    percent_valid_advantages = (
+                        all_advantages.count_nonzero() / all_advantages.numel()
+                    )
+                    percent_zero_advantages = 1 - percent_valid_advantages
 
-                rollout_metrics.update(
-                    {
+                    advantages_min, advantages_mean, advantages_max = (
+                        all_advantages.min(),
+                        all_advantages.mean(),
+                        all_advantages.max(),
+                    )
+                    reward_min, reward_mean, reward_max = (
+                        all_rewards.min(),
+                        all_rewards.mean(),
+                        all_rewards.max(),
+                    )
+                    
+                    rollout_metrics.update({
                         "percent_zero_advantages": percent_zero_advantages,
                         "advantages_min": advantages_min,
                         "advantages_mean": advantages_mean,
@@ -704,8 +917,7 @@ def grpo_train(
                         "reward_min": reward_min,
                         "reward_mean": reward_mean,
                         "reward_max": reward_max,
-                    }
-                )
+                    })
 
             with timer.time("data_processing"):
                 # Create training data for generation (original flow)
