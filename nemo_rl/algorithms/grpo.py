@@ -357,9 +357,9 @@ def create_aggregation_prompts(
         )
         
         # Debug: Print aggregation prompt details
-        print(f"DEBUG: Sample {i} - Using {len(generation_responses[i])} responses")
-        print(f"DEBUG: Original prompt: {original_prompt}...")
-        print(f"DEBUG: Aggregation prompt: {aggregation_prompt}...")
+        # print(f"DEBUG: Sample {i} - Using {len(generation_responses[i])} responses")
+        # print(f"DEBUG: Original prompt: {original_prompt}...")
+        # print(f"DEBUG: Aggregation prompt: {aggregation_prompt}...")
         
         # Create a proper message structure for chat template (like in run_grpo.py) 
         # Caveat: no system prompt is added here
@@ -427,6 +427,7 @@ def combine_training_data(
     """Combine training data from both generation and aggregation stages.
     
     Note: Aggregation is always longer than generation, so we pad generation data to match.
+    The combined data is shuffled to mix generation and aggregation samples.
     """
     
     # Get sequence lengths (aggregation is always longer)
@@ -457,6 +458,19 @@ def combine_training_data(
         "token_mask": torch.cat([generation_train_data["token_mask"], aggregation_train_data["token_mask"]], dim=0),
         "sample_mask": torch.cat([generation_train_data["sample_mask"], aggregation_train_data["sample_mask"]], dim=0),
     })
+    
+    # Shuffle the combined data to mix generation and aggregation samples
+    total_samples = combined_data["input_ids"].shape[0]
+    shuffle_indices = torch.randperm(total_samples)
+    
+    # Apply shuffle to all tensors
+    combined_data["input_ids"] = combined_data["input_ids"][shuffle_indices]
+    combined_data["input_lengths"] = combined_data["input_lengths"][shuffle_indices]
+    combined_data["advantages"] = combined_data["advantages"][shuffle_indices]
+    combined_data["generation_logprobs"] = combined_data["generation_logprobs"][shuffle_indices]
+    combined_data["token_mask"] = combined_data["token_mask"][shuffle_indices]
+    combined_data["sample_mask"] = combined_data["sample_mask"][shuffle_indices]
+    
     return combined_data
 
 
@@ -676,6 +690,14 @@ def grpo_train(
                     aggregation_repeated_batch = aggregation_batch_template.repeat_interleave(
                         master_config["grpo"]["num_generations_per_prompt"]
                     )
+                    
+                    # Calculate input_ids for aggregation BEFORE rollout (for proper baseline calculation)
+                    # This ensures all samples with same prompt are grouped together
+                    aggregation_flat_pre_rollout, aggregation_input_lengths = batched_message_log_to_flat_message(
+                        aggregation_repeated_batch["message_log"],
+                        pad_value_dict={"token_ids": tokenizer.pad_token_id},
+                    )
+                    aggregation_input_ids = aggregation_flat_pre_rollout["token_ids"]
 
                 print(f"▶ Generating Aggregation responses for batch of size {aggregation_repeated_batch.size}...")
                 with timer.time("aggregation_generation"):
@@ -691,30 +713,30 @@ def grpo_train(
                     )
                     
                     # Debug: Print first aggregation prompt and responses
-                    # print("\n=== DEBUG: First Aggregation Prompt - All Responses ===")
-                    # if len(aggregation_batch["message_log"]) > 0:
-                    #     # Show all responses for the first aggregation prompt
-                    #     num_generations = master_config["grpo"]["num_generations_per_prompt"]
-                    #     num_to_show = min(num_generations, len(aggregation_batch["message_log"]))
+                    print("\n=== DEBUG: First Aggregation Prompt - All Responses ===")
+                    if len(aggregation_batch["message_log"]) > 0:
+                        # Show all responses for the first aggregation prompt
+                        num_generations = master_config["grpo"]["num_generations_per_prompt"]
+                        num_to_show = min(num_generations, len(aggregation_batch["message_log"]))
                         
-                    #     print(f"Showing all {num_to_show} responses for first aggregation prompt:")
-                    #     for i in range(num_to_show):
-                    #         message_log = aggregation_batch["message_log"][i]
+                        print(f"Showing all {num_to_show} responses for first aggregation prompt:")
+                        for i in range(num_to_show):
+                            message_log = aggregation_batch["message_log"][i]
                             
-                    #         # Find the last assistant response
-                    #         last_assistant_response = None
-                    #         for msg in message_log:
-                    #             if msg["role"] == "assistant":
-                    #                 last_assistant_response = msg["content"]
+                            # Find the last assistant response
+                            last_assistant_response = None
+                            for msg in message_log:
+                                if msg["role"] == "assistant":
+                                    last_assistant_response = msg["content"]
                             
-                    #         reward = aggregation_batch['total_reward'][i]
-                    #         print(f"Response {i+1}: {last_assistant_response}")
-                    #         print(f"Reward {i+1}: {reward}")
-                    #         print("---")
+                            reward = aggregation_batch['total_reward'][i]
+                            print(f"Response {i+1}: {last_assistant_response}")
+                            print(f"Reward {i+1}: {reward}")
+                            print("---")
                         
-                    #     print(f"All aggregation rewards for first prompt: {aggregation_batch['total_reward'][:num_to_show]}")
-                    # print("=== END DEBUG ===\n")
-
+                        print(f"All aggregation rewards for first prompt: {aggregation_batch['total_reward'][:num_to_show]}")
+                    print("=== END DEBUG ===\n")
+                    
                 policy_generation.finish_generation()
 
                 # Update metrics with aggregation info
@@ -749,12 +771,7 @@ def grpo_train(
                 advantages = (rewards - baseline).unsqueeze(-1)
 
                 if master_config["grpo"].get("enable_aggregation", False):
-                    # For aggregation, we need to compute input_ids for the aggregation prompts
-                    aggregation_flat, aggregation_input_lengths = batched_message_log_to_flat_message(
-                        aggregation_repeated_batch["message_log"],
-                        pad_value_dict={"token_ids": tokenizer.pad_token_id},
-                    )
-                    aggregation_input_ids = aggregation_flat["token_ids"]
+                    # aggregation_input_ids was already calculated before the rollout above
                     
                     aggregation_baseline, aggregation_std, aggregation_more_rollout_metrics = (
                         calculate_baseline_and_std_per_prompt(
@@ -766,6 +783,7 @@ def grpo_train(
                             ],
                         )
                     )
+                    
                     aggregation_advantages = (aggregation_rewards - aggregation_baseline).unsqueeze(-1)
                     
                     # Combine rewards and advantages for metrics
