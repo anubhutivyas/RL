@@ -118,6 +118,7 @@ from nemo_rl.models.policy.utils import (
     get_gpu_info,
     get_runtime_env_for_policy_worker,
 )
+from nemo_rl.utils.nvml import get_free_memory_bytes
 
 TokenizerType = TypeVar("TokenizerType", bound=PreTrainedTokenizerBase)
 
@@ -683,6 +684,9 @@ class MegatronPolicyWorker:
         self.local_key_to_global_keys = self.get_local_key_to_global_keys(
             state_dict_info=self.prepare_weights_for_ipc()[0]
         )
+        self.cuda_empty_cache_free_memory_threshold = int(
+            os.getenv("NEMO_RL_MEGATRON_POLICY_EMPTY_CACHE_THRESHOLD", "1")
+        ) * 1024**3
         self.should_disable_forward_pre_hook = (
             self.cfg["megatron_cfg"]["optimizer"]["use_distributed_optimizer"]
             and self.cfg["megatron_cfg"]["distributed_data_parallel_config"][
@@ -1316,7 +1320,6 @@ class MegatronPolicyWorker:
         Collects information about weight tensors (names and sizes).
         Returns a list of (parameter_name, size_in_bytes) tuples.
         """
-        from nemo_rl.utils.nvml import get_free_memory_bytes
 
         no_grad = torch.no_grad()
         no_grad.__enter__()
@@ -1459,6 +1462,10 @@ class MegatronPolicyWorker:
         Returns:
             Dict mapping device UUID to list of (mapped_key, handle) tuples
         """
+        if get_free_memory_bytes(torch.cuda.current_device()) < self.cuda_empty_cache_free_memory_threshold:
+            gc.collect()
+            torch.cuda.empty_cache()
+
         if self._held_gather_buffer is not None:
             del self._held_gather_buffer
             self._held_gather_buffer = None
