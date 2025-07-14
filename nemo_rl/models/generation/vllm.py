@@ -1091,9 +1091,18 @@ class VllmGenerationWorker:
                     "update_weights_from_ipc_handles_async can only be used with async_engine=True. Use update_weights_from_ipc_handles instead."
                 )
 
-            result_or_coro = await self.llm.collective_rpc(
-                "update_weights_from_ipc_handles", args=(ipc_handles,)
-            )
+            ray_worker_outputs = []
+            for worker, device_id in zip(
+                self.llm.llm_engine.model_executor.workers, self.vllm_device_ids
+            ):
+                ray_worker_outputs.append(
+                    worker.execute_method.remote(
+                        "update_weights_from_ipc_handles", ipc_handles[device_id]
+                    )
+                )
+
+            # Gather the results
+            result_or_coro = ray.get(ray_worker_outputs)
 
             if asyncio.iscoroutine(result_or_coro):
                 worker_results = await result_or_coro

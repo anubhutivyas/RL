@@ -14,6 +14,7 @@
 from typing import Any
 
 import torch
+from torch.multiprocessing.reductions import rebuild_cuda_tensor
 
 try:
     import vllm  # noqa: F401
@@ -70,6 +71,8 @@ class VllmInternalWorkerExtension:
                 dtype_to_packed_tensor = {}
                 for dtype, tensor_handle in all_handles:
                     func, args = tensor_handle
+                    if func is None:
+                        func = rebuild_cuda_tensor
                     list_args = list(args)
                     list_args[6] = device_id
                     tensor = func(*list_args)
@@ -86,6 +89,8 @@ class VllmInternalWorkerExtension:
                 # Process each handle to get the tensor
                 for name, handle in name_and_handle_list:
                     func, args = handle
+                    if func is None:
+                        func = rebuild_cuda_tensor
                     list_args = list(args)
                     list_args[6] = device_id
                     tensor = func(*list_args)

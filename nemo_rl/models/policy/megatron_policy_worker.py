@@ -1446,7 +1446,7 @@ class MegatronPolicyWorker:
         total_available_bytes = get_free_memory_bytes(device_idx)
         # TODO: setting to low value (10%) since
         # more buckets seems to have better perf
-        total_available_bytes *= 0.1
+        total_available_bytes *= 0.2
 
         return param_info, total_available_bytes
 
@@ -1494,7 +1494,7 @@ class MegatronPolicyWorker:
 
             for key, tensor in gathered_hf_params.items():
                 tensor_metadata[key] = (
-                    tensor.shape,  # shape of the tensor
+                    tuple(tensor.shape),  # shape of the tensor
                     tensor.dtype,  # dtype of the tensor
                     type_to_total_size[tensor.dtype],  # offset of the tensor
                     # in packed buffer
@@ -1523,7 +1523,7 @@ class MegatronPolicyWorker:
 
             # Create IPC handles for consolidated tensors
             all_handles = [
-                (dtype, reduce_tensor(tensor.detach()))
+                (dtype, (None, reduce_tensor(tensor.detach())[1]))
                 for dtype, tensor in packed_tensors.items()
             ]
 
@@ -1534,7 +1534,7 @@ class MegatronPolicyWorker:
         else:
             all_handles = []
             for key, tensor in gathered_hf_params.items():
-                handle = reduce_tensor(tensor.detach())
+                handle = (None, reduce_tensor(tensor.detach())[1])
                 all_handles.append((key, handle))
             self._held_gather_buffer = gathered_hf_params
             serialized = (False, all_handles)

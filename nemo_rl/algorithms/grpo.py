@@ -408,6 +408,9 @@ def refit_policy_generation(
     if colocated_inference:
         policy.offload_before_refit()
         policy_generation.prepare_for_generation(tags=["weights"])
+    import time
+    from collections import defaultdict
+    timers = defaultdict(list)
 
     # update weights
     update_success = False
@@ -422,10 +425,21 @@ def refit_policy_generation(
         )
         # do update
         for keys in grouped_param_keys:
+            start_time = time.time()
+
+            start_ipc_handle = time.time()
             ipc_handles = policy.get_weights_ipc_handles(keys)
+            end_ipc_handle = time.time()
+            timers["get_weights_ipc_handles"].append(end_ipc_handle - start_ipc_handle)
+
+            start_update = time.time()
             update_success = policy_generation.update_weights(ipc_handles)
             if not update_success:
                 break
+            end_update = time.time()
+            timers["update_weights"].append(end_update - start_update)
+        for k, v in timers.items():
+            print(f"TOTAL {k}: {sum(v)}")
     else:
         # prepare info for update weights
         state_dict_info = policy.prepare_info_for_collective()
