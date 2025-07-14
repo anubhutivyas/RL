@@ -139,14 +139,14 @@ class DTensorPolicyWorker:
         init_reference_model: bool = True,
         **kwargs: Any,
     ):
-        # Explicitly set NCCL_CUMEM_ENABLE to 1 to avoid the P2P initialization error for PyNCCLCommunicator.
-        # See https://github.com/NVIDIA-NeMo/RL/issues/564 for more details.
+        # Disable NCCL SHM if training and generation are not co-located: https://github.com/NVIDIA-NeMo/RL/issues/564
         if (
             "generation" in config
             and config["generation"] is not None
             and not config["generation"]["colocated"]["enabled"]
         ):
-            os.environ["NCCL_CUMEM_ENABLE"] = "1"
+            os.environ["NCCL_SHM_DISABLE"] = "1"
+            os.environ["NCCL_P2P_DISABLE"] = "1"
 
         # Only enable expandable_segments on Hopper and newer architectures (compute capability 9.x+)
         configure_expandable_segments()
@@ -391,6 +391,11 @@ class DTensorPolicyWorker:
         """Initialize the collective communication."""
         from vllm.distributed.device_communicators.pynccl import PyNcclCommunicator
         from vllm.distributed.utils import StatelessProcessGroup
+
+        # keep the same behavior as vllm
+        # see https://github.com/vllm-project/vllm/blob/v0.9.0/vllm/env_override.py#L25
+        if not os.path.exists("/dev/nvidia-caps-imex-channels"):
+            os.environ["NCCL_CUMEM_ENABLE"] = "0"
 
         if self.rank == 0:
             pg = StatelessProcessGroup.create(
