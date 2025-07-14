@@ -24,7 +24,7 @@ This guide covers installing NeMo RL on various platforms and environments.
 
 1. **Clone the repository**:
    ```bash
-   git clone git@github.com:NVIDIA-NeMo/RL.git nemo-rl
+   git clone git@github.com:NVIDIA/NeMo-RL.git nemo-rl
    cd nemo-rl
    ```
 
@@ -136,7 +136,7 @@ pip install -e ".[test]"
 
 3. **Install NeMo RL**:
    ```bash
-   git clone git@github.com:NVIDIA-NeMo/RL.git nemo-rl
+   git clone git@github.com:NVIDIA/NeMo-RL.git nemo-rl
    cd nemo-rl
    git submodule update --init --recursive
    uv sync
@@ -156,7 +156,7 @@ pip install -e ".[test]"
 
 3. **Install NeMo RL in WSL2**:
    ```bash
-   git clone git@github.com:NVIDIA-NeMo/RL.git nemo-rl
+   git clone git@github.com:NVIDIA/NeMo-RL.git nemo-rl
    cd nemo-rl
    git submodule update --init --recursive
    uv sync
@@ -177,7 +177,7 @@ pip install -e ".[test]"
 
 3. **Install NeMo RL**:
    ```bash
-   git clone git@github.com:NVIDIA-NeMo/RL.git nemo-rl
+   git clone git@github.com:NVIDIA/NeMo-RL.git nemo-rl
    cd nemo-rl
    git submodule update --init --recursive
    uv sync
@@ -195,7 +195,7 @@ pip install -e ".[test]"
 
 2. **Install in shared directory**:
    ```bash
-   git clone git@github.com:NVIDIA-NeMo/RL.git /shared/nemo-rl
+   git clone git@github.com:NVIDIA/NeMo-RL.git /shared/nemo-rl
    cd /shared/nemo-rl
    git submodule update --init --recursive
    uv sync
@@ -207,7 +207,7 @@ pip install -e ".[test]"
    ```dockerfile
    FROM nvcr.io/nvidia/pytorch:23.12-py3
    
-   RUN git clone https://github.com/NVIDIA-NeMo/RL.git /workspace/nemo-rl
+   RUN git clone https://github.com/NVIDIA/NeMo-RL.git /workspace/nemo-rl
    WORKDIR /workspace/nemo-rl
    RUN git submodule update --init --recursive
    RUN pip install -e .
@@ -267,7 +267,7 @@ uv run python run_sft.py --config configs/sft.yaml cluster.gpus_per_node=1
 
 ### Getting Help
 
-- **GitHub Issues**: [NeMo RL Issues](https://github.com/NVIDIA-NeMo/RL/issues)
+- **GitHub Issues**: [NeMo RL Issues](https://github.com/NVIDIA/NeMo-RL/issues)
 - **Documentation**: Check the [troubleshooting guide](../configuration-cli/troubleshooting)
 - **Community**: Join the [NeMo Discord](https://discord.gg/nvidia-nemo)
 

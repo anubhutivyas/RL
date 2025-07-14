@@ -153,7 +153,7 @@ Use proper cross-references to link related content:
 
 ```markdown
 # Internal links
-See the [Configuration Guide](../configuration-cli/configuration.md) for details.
+See the [Configuration Reference](../configuration-cli/configuration-reference.md) for details.
 
 # API references
 Use the [DPOTrainer](../../api-docs/nemo_rl.algorithms.dpo.md) class.

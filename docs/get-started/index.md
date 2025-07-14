@@ -123,7 +123,7 @@ After completing your first training run:
 - [Troubleshooting](../configuration-cli/troubleshooting) - Common issues and solutions
 - [API Documentation](../api-docs/index) - Complete API documentation
 - [Configuration Guide](../configuration-cli/configuration-reference) - Understand training parameters
-- [Community Support](https://github.com/NVIDIA-NeMo/RL/issues) - GitHub issues and discussions
+- [Community Support](https://github.com/NVIDIA/NeMo-RL/issues) - GitHub issues and discussions
 
 ---
 

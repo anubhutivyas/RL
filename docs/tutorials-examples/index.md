@@ -72,8 +72,6 @@ Advanced reinforcement learning with Group Relative Policy Optimization.
 {bdg-warning}`Advanced`
 :::
 
-
-
 ::::
 
 ## Examples
@@ -149,8 +147,6 @@ Build models that can solve complex mathematical problems with step-by-step reas
 - **Multi-Agent Scenarios**: Learn to handle complex multi-agent training
 - **Performance Optimization**: Master techniques for large-scale GRPO training
 - **Production Deployment**: Understand how to deploy GRPO models in production
-
-
 
 ## Advanced Tutorials
 
@@ -303,4 +299,4 @@ Start with the learning path that matches your experience level, and gradually w
 tutorials/index
 examples/index
 use-cases/index
-``` 
+```

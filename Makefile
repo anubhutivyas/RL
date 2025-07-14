@@ -104,7 +104,7 @@ docs-clean:
 
 docs-live:
 	@echo "Starting live-reload server (sphinx-autobuild)..."
-	cd docs && $(DOCS_PYTHON_IN_DOCS) -m sphinx_autobuild $(if $(DOCS_ENV),-t $(DOCS_ENV)) . _build/html
+	cd docs && $(DOCS_PYTHON_IN_DOCS) -m sphinx_autobuild $(if $(DOCS_ENV),-t $(DOCS_ENV)) --port 8001 . _build/html
 
 docs-env:
 	@echo "Setting up docs virtual environment with uv..."

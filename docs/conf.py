@@ -29,7 +29,7 @@ sys.path.insert(0, os.path.abspath('_extensions'))
 project = "NeMo RL"
 copyright = "2025, NVIDIA Corporation"
 author = "NVIDIA Corporation"
-release = "0.0.1"
+release = "0.3.0-rc0"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -110,14 +110,14 @@ myst_heading_anchors = 5  # Generates anchor links for headings up to level 5
 
 # MyST substitutions for reusable variables across documentation
 myst_substitutions = {
-    "product_name": "NVIDIA NeMo Run",
-    "product_name_short": "NeMo Run",
+    "product_name": "NVIDIA NeMo RL",
+    "product_name_short": "NeMo RL",
     "company": "NVIDIA",
     "version": release,
     "current_year": "2025",
-    "github_repo": "[https://github.com/NVIDIA/Run](https://github.com/NVIDIA/Run)",
-    "docs_url": "[https://docs.nvidia.com/nemo-run](https://docs.nvidia.com/nemo-run)",
-    "support_email": "nemo-run-support@nvidia.com",
+    "github_repo": "[https://github.com/NVIDIA/NeMo-RL](https://github.com/NVIDIA/NeMo-RL)",
+    "docs_url": "[https://docs.nvidia.com/nemo-rl](https://docs.nvidia.com/nemo-rl)",
+    "support_email": "nemo-rl-support@nvidia.com",
     "min_python_version": "3.9",
     "recommended_cuda": "12.0+",
 }

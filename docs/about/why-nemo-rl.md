@@ -137,7 +137,7 @@ Ready to begin your NeMo RL journey? Here's how to get started:
 ---
 
 **Join the NeMo RL Community**
-- [GitHub Repository](https://github.com/NVIDIA-NeMo/RL) - Source code and issues
+- [GitHub Repository](https://github.com/NVIDIA/NeMo-RL) - Source code and issues
 - [Discord Community](https://discord.gg/nvidia-nemo) - Get help and share ideas
 - [Documentation](https://docs.nvidia.com/nemo-rl/) - Complete documentation
 

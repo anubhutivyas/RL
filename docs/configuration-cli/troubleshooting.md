@@ -2,45 +2,9 @@
 
 This guide covers common issues, error messages, and solutions for NeMo RL. If you encounter a problem not covered here, please check the [GitHub Issues](https://github.com/your-repo/issues) or create a new one.
 
-## Quick Navigation
 
-::::{grid} 1 2 2 2
-:gutter: 2 2 2 2
 
-:::{grid-item-card} Common Errors
-
-Frequently encountered error messages and solutions.
-
-+++
-{bdg-warning}`Errors`
-:::
-
-:::{grid-item-card} Configuration Issues
-
-Problems with configuration files and parameters.
-
-+++
-{bdg-info}`Config`
-:::
-
-:::{grid-item-card} Distributed Training
-
-Issues with Ray and distributed training.
-
-+++
-{bdg-warning}`Distributed`
-:::
-
-:::{grid-item-card} Model Issues
-
-Problems with model loading and training.
-
-+++
-{bdg-secondary}`Models`
-:::
-
-::::
-
+(common-errors)=
 ## Common Errors
 
 ### CUDA Out of Memory
@@ -118,6 +82,7 @@ ValidationError: Invalid configuration parameter
    python -m nemo_rl.config template --algorithm dpo --output dpo.yaml
    ```
 
+(configuration-issues)=
 ## Configuration Issues
 
 ### Missing Required Parameters
@@ -181,6 +146,7 @@ Invalid value for learning_rate: must be positive
 
 3. **Restart terminal after setting variables**
 
+(distributed-training-issues)=
 ## Distributed Training Issues
 
 ### Ray Connection Errors
@@ -261,6 +227,7 @@ NCCL error: unhandled cuda error
 
 3. **Reduce batch size and workers**
 
+(model-issues)=
 ## Model Issues
 
 ### Model Loading Failures

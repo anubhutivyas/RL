@@ -4,7 +4,7 @@ This guide explains how to run NeMo RL with Ray on Slurm or Kubernetes.
 
 ## Use Slurm for Batched and Interactive Jobs
 
- The following code provides instructions on how to use Slurm to run batched job submissions and run jobs interactively.
+The following code provides instructions on how to use Slurm to run batched job submissions and run jobs interactively.
 
 ### Batched Job Submission
 

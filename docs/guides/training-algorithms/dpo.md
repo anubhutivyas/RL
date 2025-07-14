@@ -66,7 +66,7 @@ def format_helpsteer3(data):
     }
 ```
 
-We also provide a [DPODataset](../../../nemo_rl/data/hf_datasets/dpo.py) class that is compatible with jsonl-formatted preference datsets. This class assumes train and validation datasets have been split and processed into the expected format offline. The jsonl files should consist of examples with `prompt`, `chosen_response`, and `rejected_response` keys.
+We also provide a [DPODataset](../../../nemo_rl/data/hf_datasets/dpo.py) class that is compatible with jsonl-formatted preference datasets. This class assumes train and validation datasets have been split and processed into the expected format offline. The jsonl files should consist of examples with `prompt`, `chosen_response`, and `rejected_response` keys.
 
 ## Adding Custom DPO Datasets
 

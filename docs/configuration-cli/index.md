@@ -146,8 +146,6 @@ python -m nemo_rl.config --help
 :maxdepth: 2
 :hidden:
 
-cli
-configuration
 cli-reference
 configuration-reference
 troubleshooting

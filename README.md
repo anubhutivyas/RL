@@ -39,9 +39,9 @@ What you can expect:
 ## News
 * [7/9/2025] [Reinforcement Learning with NVIDIA NeMo-RL: Reproducing a DeepScaleR Recipe Using GRPO](https://developer.nvidia.com/blog/reinforcement-learning-with-nvidia-nemo-rl-reproducing-a-deepscaler-recipe-using-grpo/)
 * [5/14/2025] [Reproduce DeepscaleR with NeMo RL!](docs/tutorials-examples/examples/grpo-deepscaler.md)
-* [5/14/2025] [Release v0.2.1!](https://github.com/NVIDIA-NeMo/RL/releases/tag/v0.2.1)
+* [5/14/2025] [Release v0.2.1!](https://github.com/NVIDIA/NeMo-RL/releases/tag/v0.2.1)
     * View the release run metrics on [Google Colab](https://colab.research.google.com/drive/1o14sO0gj_Tl_ZXGsoYip3C0r5ofkU1Ey?usp=sharing) to get a head start on your experimentation.
-* [1/8/2025] [Release v0.3.0-rc0!](https://github.com/NVIDIA-NeMo/RL/releases/tag/v0.3.0-rc0)
+* [1/8/2025] [Release v0.3.0-rc0!](https://github.com/NVIDIA/NeMo-RL/releases/tag/v0.3.0-rc0)
     * Major documentation improvements and enhanced user experience
     * Improved navigation structure and comprehensive guides
     * Better code examples and error handling throughout
@@ -71,7 +71,7 @@ What you can expect:
 
 Clone **NeMo RL**.
 ```sh
-git clone git@github.com:NVIDIA-NeMo/RL.git nemo-rl
+git clone git@github.com:NVIDIA/NeMo-RL.git nemo-rl
 cd nemo-rl
 
 # If you are using the Megatron backend, download the pinned versions of Megatron-LM and NeMo submodules 
@@ -414,7 +414,7 @@ If you use NeMo RL in your research, please cite it using the following BibTeX e
 ```bibtex
 @misc{nemo-rl,
 title = {NeMo RL: A Scalable and Efficient Post-Training Library},
-howpublished = {\url{https://github.com/NVIDIA-NeMo/RL}},
+howpublished = {\url{https://github.com/NVIDIA/NeMo-RL}},
 year = {2025},
 note = {GitHub repository},
 }
@@ -422,8 +422,8 @@ note = {GitHub repository},
 
 ## Contributing
 
-We welcome contributions to NeMo RL! Please see our [Contributing Guidelines](https://github.com/NVIDIA-NeMo/RL/blob/main/CONTRIBUTING.md) for more information on how to get involved.
+We welcome contributions to NeMo RL! Please see our [Contributing Guidelines](https://github.com/NVIDIA/NeMo-RL/blob/main/CONTRIBUTING.md) for more information on how to get involved.
 
 ## Licenses
 
-NVIDIA NeMo RL is licensed under the [Apache License 2.0](https://github.com/NVIDIA-NeMo/RL/blob/main/LICENSE).
+NVIDIA NeMo RL is licensed under the [Apache License 2.0](https://github.com/NVIDIA/NeMo-RL/blob/main/LICENSE).
