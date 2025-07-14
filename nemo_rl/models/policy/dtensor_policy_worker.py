@@ -196,6 +196,22 @@ class DTensorPolicyWorker:
             ],
         )
 
+        # Handle tied word embeddings after loading the state dict
+        # We need to actually tie the parameters at the model level
+        is_tied_lm_head = getattr(
+            getattr(self.model, "config", {}), "tie_word_embeddings", False
+        )
+        if is_tied_lm_head:
+            embed_tokens_weight = None
+            for name, param in self.model.named_parameters():
+                if "embed_tokens" in name and name.endswith(".weight"):
+                    embed_tokens_weight = param
+                    break
+
+            if embed_tokens_weight is not None:
+                self.model.lm_head.weight = embed_tokens_weight
+
+
         if self.cpu_offload:
             self.model = self.move_buffer_to_device(self.model, "cpu")
 
