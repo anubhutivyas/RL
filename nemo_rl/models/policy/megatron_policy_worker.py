@@ -1608,9 +1608,17 @@ class MegatronPolicyWorker:
         )
         no_grad.__exit__(None, None, None)
 
+    def _delete_held_gather_buffer(self):
+        if self._held_gather_buffer is not None:
+            del self._held_gather_buffer
+            self._held_gather_buffer = None
+
     def offload_after_refit(self):
         no_grad = torch.no_grad()
         no_grad.__enter__()
+        # delete the held gather buffer
+        self._delete_held_gather_buffer()
+
         # Offload as much as possible on the CPU
         self.model = self.move_model(self.model, "cpu")
         self.model.eval()
