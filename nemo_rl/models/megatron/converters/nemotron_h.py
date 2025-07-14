@@ -31,7 +31,7 @@ def concat_tp_dim_0(ctx: io.TransformCTX, param: torch.Tensor):
     target_key="backbone.layers.*.mixer.conv1d.weight",
 )
 def correct_xBC_tp_order(ctx: io.TransformCTX, param: torch.Tensor):
-    """Correct tensor parallel order for xBC parameters (conv1d weight/bias).
+    """Correct tensor parallel order for xBC parameters (conv1d weight).
     
     This function reorders the tensor parallel chunks to match the expected format
     where x, B, and C components are interleaved across tensor parallel ranks.
@@ -41,13 +41,26 @@ def correct_xBC_tp_order(ctx: io.TransformCTX, param: torch.Tensor):
 
     # Get configuration from context
     megatron_config = ctx.source.config
-    hidden_size = megatron_config.hidden_size
-    max_input_len = 1024 # couldn't use megatron_config.seq_length=8192  # Using seq_length as max_input_len
     
-    # Calculate local sizes for each component
-    x_local_size = 2 * hidden_size // tp_size
-    B_local_size = max_input_len // tp_size
-    C_local_size = max_input_len // tp_size
+    # Match exact Megatron-LM calculations
+    # From MambaMixer.__init__: self.d_inner = int(self.expand * self.d_model)
+    # But if mamba_num_heads is provided: self.d_inner = self.nheads * self.headdim
+    if hasattr(megatron_config, 'mamba_num_heads') and megatron_config.mamba_num_heads is not None:
+        d_inner = megatron_config.mamba_num_heads * megatron_config.mamba_head_dim
+    else:
+        # Default expand is 2 in Megatron-LM
+        expand = 2
+        d_inner = int(expand * megatron_config.hidden_size)
+    
+    # From MambaMixer.__init__: self.d_inner_local = self.d_inner // self.tensor_model_parallel_size
+    d_inner_local = d_inner // tp_size
+    # From MambaMixer.__init__: self.ngroups_local = self.ngroups // self.tensor_model_parallel_size
+    ngroups_local = megatron_config.mamba_num_groups // tp_size
+    
+    # From MambaMixer forward: x, B, C = torch.split(xBC, [self.d_inner_local, self.ngroups_local * self.d_state, self.ngroups_local * self.d_state], dim=-1)
+    x_local_size = d_inner_local
+    B_local_size = ngroups_local * megatron_config.mamba_state_dim
+    C_local_size = ngroups_local * megatron_config.mamba_state_dim
 
     # Split parameter into tensor parallel chunks
     param_chunks = param.chunk(tp_size)
@@ -80,15 +93,30 @@ def correct_zxBCdt_tp_order(ctx: io.TransformCTX, param: torch.Tensor):
 
     # Get configuration from context
     megatron_config = ctx.source.config
-    hidden_size = megatron_config.hidden_size
-    max_input_len = 1024 # couldn't use megatron_config.seq_length=8192  # Using seq_length as max_input_len
     
-    # Calculate local sizes for each component
-    z_local_size = 2 * hidden_size // tp_size
-    x_local_size = 2 * hidden_size // tp_size
-    B_local_size = max_input_len // tp_size
-    C_local_size = max_input_len // tp_size
-    dt_local_size = max_input_len // tp_size
+    # Match exact Megatron-LM calculations
+    # From MambaMixer.__init__: self.d_inner = int(self.expand * self.d_model)
+    # But if mamba_num_heads is provided: self.d_inner = self.nheads * self.headdim
+    if hasattr(megatron_config, 'mamba_num_heads') and megatron_config.mamba_num_heads is not None:
+        d_inner = megatron_config.mamba_num_heads * megatron_config.mamba_head_dim
+    else:
+        # Default expand is 2 in Megatron-LM
+        expand = 2
+        d_inner = int(expand * megatron_config.hidden_size)
+    
+    # From MambaMixer.__init__: self.d_inner_local = self.d_inner // self.tensor_model_parallel_size
+    d_inner_local = d_inner // tp_size
+    # From MambaMixer.__init__: self.ngroups_local = self.ngroups // self.tensor_model_parallel_size
+    ngroups_local = megatron_config.mamba_num_groups // tp_size
+    # From MambaMixer.__init__: self.nheads_local = self.nheads // self.tensor_model_parallel_size
+    nheads_local = megatron_config.mamba_num_heads // tp_size
+    
+    # From MambaMixer forward: z, xBC, dt = torch.split(xz, [self.d_inner_local, self.d_inner_local + 2 * self.ngroups_local * self.d_state, self.nheads_local], dim=-1)
+    z_local_size = d_inner_local
+    x_local_size = d_inner_local
+    B_local_size = ngroups_local * megatron_config.mamba_state_dim
+    C_local_size = ngroups_local * megatron_config.mamba_state_dim
+    dt_local_size = nheads_local
 
     # Split parameter into tensor parallel chunks
     param_chunks = param.chunk(tp_size)
@@ -125,13 +153,26 @@ def correct_xBC_tp_order_bias(ctx: io.TransformCTX, param: torch.Tensor):
 
     # Get configuration from context
     megatron_config = ctx.source.config
-    hidden_size = megatron_config.hidden_size
-    max_input_len = 1024 # couldn't use megatron_config.seq_length=8192  # Using seq_length as max_input_len
     
-    # Calculate local sizes for each component
-    x_local_size = 2 * hidden_size // tp_size
-    B_local_size = max_input_len // tp_size
-    C_local_size = max_input_len // tp_size
+    # Match exact Megatron-LM calculations
+    # From MambaMixer.__init__: self.d_inner = int(self.expand * self.d_model)
+    # But if mamba_num_heads is provided: self.d_inner = self.nheads * self.headdim
+    if hasattr(megatron_config, 'mamba_num_heads') and megatron_config.mamba_num_heads is not None:
+        d_inner = megatron_config.mamba_num_heads * megatron_config.mamba_head_dim
+    else:
+        # Default expand is 2 in Megatron-LM
+        expand = 2
+        d_inner = int(expand * megatron_config.hidden_size)
+    
+    # From MambaMixer.__init__: self.d_inner_local = self.d_inner // self.tensor_model_parallel_size
+    d_inner_local = d_inner // tp_size
+    # From MambaMixer.__init__: self.ngroups_local = self.ngroups // self.tensor_model_parallel_size
+    ngroups_local = megatron_config.mamba_num_groups // tp_size
+    
+    # From MambaMixer forward: x, B, C = torch.split(xBC, [self.d_inner_local, self.ngroups_local * self.d_state, self.ngroups_local * self.d_state], dim=-1)
+    x_local_size = d_inner_local
+    B_local_size = ngroups_local * megatron_config.mamba_state_dim
+    C_local_size = ngroups_local * megatron_config.mamba_state_dim
 
     # Split parameter into tensor parallel chunks
     param_chunks = param.chunk(tp_size)

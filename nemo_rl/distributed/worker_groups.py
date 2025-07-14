@@ -177,7 +177,7 @@ class RayWorkerBuilder:
                 placement_group_bundle_index=placement_group_bundle_index,
                 placement_group_capture_child_tasks=True,
             )
-            options["num_gpus"] = num_gpus - 0.01 * 5
+            options["num_gpus"] = max(num_gpus - 0.01 * 5, 0)
             worker = worker_class.options(**options).remote(
                 *self.init_args, **worker_kwargs
             )

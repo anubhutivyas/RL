@@ -117,6 +117,22 @@ from nemo_rl.models.policy.utils import get_gpu_info
 TokenizerType = TypeVar("TokenizerType", bound=PreTrainedTokenizerBase)
 
 
+def get_megatron_checkpoint_dir() -> str:
+    """
+    Megatron initial checkpoint should be saved to a path available on all nodes. The directory used will take this order of precendence:
+    1. $NRL_MEGATRON_CHECKPOINT_DIR (if set)
+    2. $HF_HOME/nemo_rl (if HF_HOME is set)
+    3. ~/.cache/huggingface/nemo_rl
+    """
+    if os.environ.get("NRL_MEGATRON_CHECKPOINT_DIR") is not None:
+        checkpoint_dir = os.environ["NRL_MEGATRON_CHECKPOINT_DIR"]
+    elif os.environ.get("HF_HOME") is not None:
+        checkpoint_dir = os.path.join(os.environ["HF_HOME"], "nemo_rl")
+    else:
+        checkpoint_dir = os.path.join(os.path.expanduser("~"), ".cache", "huggingface", "nemo_rl")
+    print(f"Using default megatron checkpoint dir: {checkpoint_dir}")
+    return checkpoint_dir
+
 def setup_megatron_model(
     policy_cfg: PolicyConfig,
     cfg: ConfigContainer,
@@ -352,7 +368,7 @@ class MegatronPolicyWorker:
         *,
         worker_sharding_annotations: NamedSharding,
         pre_init_communication_queue: Queue,
-        megatron_checkpoint_home: Optional[str] = None,
+        megatron_checkpoint_home: Optional[str] = get_megatron_checkpoint_dir(),
         **kwargs: Any,
     ):
         self.cfg = config

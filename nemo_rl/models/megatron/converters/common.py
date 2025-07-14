@@ -227,7 +227,7 @@ class MegatronToHFConverter:
             self.get_source_fn = lambda source_state_dict, _: _ModelState(
                 source_state_dict
             )
-        elif "nemotron-h" in hf_model_name.lower():
+        elif config.model_type == "nemotron_h":
             self.export_mapping = nemotron_h_converter.get_export_mapping(megatron_model)
             self.export_transforms = nemotron_h_converter.get_export_transforms(config)
             self.get_source_fn = lambda source_state_dict, _: _ModelState(

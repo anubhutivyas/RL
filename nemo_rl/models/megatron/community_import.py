@@ -12,10 +12,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import torch
+from transformers import AutoConfig
 
 
 def import_model_from_hf_name(hf_model_name: str, output_path: str):
-    if "llama" in hf_model_name.lower():
+    hf_config = AutoConfig.from_pretrained(hf_model_name, trust_remote_code=True)
+
+    if hf_config.model_type == "llama":
         from nemo.tron.converter.llama import HFLlamaImporter
 
         print(f"Importing model {hf_model_name} to {output_path}...")
@@ -24,7 +27,7 @@ def import_model_from_hf_name(hf_model_name: str, output_path: str):
             output_path=output_path,
         )
         importer.apply()
-    elif "qwen" in hf_model_name.lower():
+    elif hf_config.model_type == "qwen":
         from nemo.tron.converter.qwen import HFQwen2Importer
 
         print(f"Importing model {hf_model_name} to {output_path}...")
@@ -33,7 +36,7 @@ def import_model_from_hf_name(hf_model_name: str, output_path: str):
             output_path=output_path,
         )
         importer.apply()
-    elif "nemotron-h" in hf_model_name.lower():
+    elif hf_config.model_type == "nemotron_h":
         from nemo.tron.converter.ssm import HFNemotronHImporter
 
         print(f"Importing model {hf_model_name} to {output_path}...")
@@ -48,7 +51,7 @@ def import_model_from_hf_name(hf_model_name: str, output_path: str):
         #importer.apply(dtype=torch.float32)
         importer.apply(dtype=torch.bfloat16)
     else:
-        raise ValueError(f"Unknown model: {hf_model_name}")
+        raise ValueError(f"Unknown model_type: {hf_config.model_type}")
     # resetting mcore state
     import megatron.core.rerun_state_machine
 

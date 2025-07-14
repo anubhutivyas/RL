@@ -7,7 +7,6 @@ arguments, then outputs them in a YAML format suitable for NeMo-RL training.
 
 Usage:
     uv run --extra mcore tools/convert-mcore-to-tron-yaml.py <checkpoint_path> [--output <output_file>] [--base-config <config_name>]
-    uv run --extra mcore tools/convert-mcore-to-tron-yaml.py /lustre/fsw/portfolios/llmservice/users/ksanthanam/nemotron5/8b_hybrid/checkpoints/phase3/
 """
 
 import argparse

@@ -21,6 +21,7 @@ requires-python = ">=3.12"
 license = {text = "Apache 2.0"}
 dependencies = [
     "setuptools",
+    "setuptools_scm",  # vllm
     "torch==2.7.0",
     "flash-attn==2.7.3",
     "colored==2.2.3",
@@ -47,7 +48,11 @@ dependencies = [
 
 [project.optional-dependencies]
 vllm = [
-    "vllm==0.9.1",
+    #"vllm==0.9.1",
+    "vllm",
+    # Libraries for ssm
+    "mamba-ssm",
+    "causal-conv1d",
 ]
 mcore = [
     # also need cudnn (https://developer.nvidia.com/cudnn-downloads?target_os=Linux&target_arch=x86_64&Distribution=Ubuntu&target_version=20.04&target_type=deb_network)
@@ -110,6 +115,7 @@ nemo_run = { git = "https://github.com/NVIDIA/NeMo-Run", rev = "414f0077c648fde2
 causal-conv1d = { git = "https://github.com/Dao-AILab/causal-conv1d", tag = "v1.5.0.post8" }
 # Has roger's fix
 mamba-ssm = { git = "https://github.com/state-spaces/mamba.git", rev = "2e16fc3062cdcd4ebef27a9aa4442676e1c7edf4" }
+vllm = { path = "3rdparty/vllm", editable = true }  # <-- ADD AN ENTRY
 
 [tool.uv.workspace]
 members = [
@@ -119,7 +125,7 @@ members = [
 
 [tool.uv]
 # Currently, TE must be built with no build-isolation b/c it requires torch
-no-build-isolation-package = ["transformer-engine-torch", "transformer-engine", "flash-attn", "megatron-core", "mamba-ssm", "causal-conv1d"]
+no-build-isolation-package = ["transformer-engine-torch", "transformer-engine", "flash-attn", "megatron-core", "mamba-ssm", "causal-conv1d", "vllm"]
 # Always apply the build group since dependencies like TE/mcore/nemo-run require build dependencies
 # and this lets us assume they are implicitly installed with a simply `uv sync`. Ideally, we'd
 # avoid including these in the default dependency set, but for now it's required.
