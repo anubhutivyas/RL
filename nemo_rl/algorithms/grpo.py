@@ -65,7 +65,7 @@ from nemo_rl.utils.logger import (
 )
 from nemo_rl.utils.nsys import maybe_gpu_profile_step
 from nemo_rl.utils.timer import Timer
-from nemo_rl.utils.memory import report_memory_usage
+from nemo_rl.utils.memory import MemoryLogStore
 
 # ===============================================================================
 # Configuration
@@ -396,6 +396,7 @@ def refit_policy_generation(
     policy_generation: GenerationInterface,
     colocated_inference: bool,
     _refit_buffer_size_gb: Optional[int] = None,
+    memory_log_store: Optional[MemoryLogStore] = None,
 ) -> None:
     """Refit the policy generation interface with the latest policy weights.
 
@@ -406,12 +407,12 @@ def refit_policy_generation(
             If it is None, the buffer size will be computed by the remaining memory.
             This parameter is primarily used for testing.
     """
-    report_memory_usage("before refit", policy, policy_generation)
+    memory_log_store.add_memory_log("before refit", policy, policy_generation)
     if colocated_inference:
         policy.offload_before_refit()
-        report_memory_usage("after offload_before_refit", policy, policy_generation)
+        memory_log_store.add_memory_log("after offload_before_refit", policy, policy_generation)
         policy_generation.prepare_for_generation(tags=["weights"])
-        report_memory_usage("after prepare_for_generation", policy, policy_generation)
+        memory_log_store.add_memory_log("after prepare_for_generation", policy, policy_generation)
 
     # update weights
     update_success = False
@@ -420,7 +421,7 @@ def refit_policy_generation(
         grouped_param_keys = policy.prepare_weights_for_ipc(
             _refit_buffer_size_gb=_refit_buffer_size_gb
         )
-        report_memory_usage("after prepare_weights_for_ipc", policy, policy_generation)
+        memory_log_store.add_memory_log("after prepare_weights_for_ipc", policy, policy_generation)
         total_num_keys = sum(len(k) for k in grouped_param_keys)
         print(
             f"[Refit] Split {total_num_keys} keys into {len(grouped_param_keys)} groups"
@@ -431,9 +432,8 @@ def refit_policy_generation(
             update_success = policy_generation.update_weights(ipc_handles)
             if not update_success:
                 break
-        report_memory_usage("after update_weights", policy, policy_generation)
+        memory_log_store.add_memory_log("after update_weights", policy, policy_generation)
         policy.delete_held_gather_buffer()
-        report_memory_usage("after delete_held_gather_buffer", policy, policy_generation)
     else:
         # prepare info for update weights
         state_dict_info = policy.prepare_info_for_collective()
@@ -459,9 +459,9 @@ def refit_policy_generation(
 
     if colocated_inference:
         policy.offload_after_refit()
-        report_memory_usage("after offload_after_refit", policy, policy_generation)
+        memory_log_store.add_memory_log("after offload_after_refit", policy, policy_generation)
         policy_generation.prepare_for_generation(tags=["kv_cache"])
-        report_memory_usage("after prepare_for_generation", policy, policy_generation)
+        memory_log_store.add_memory_log("after prepare_for_generation", policy, policy_generation)
 
 
 # ===============================================================================
@@ -485,6 +485,7 @@ def grpo_train(
 ) -> None:
     """Run GRPO training algorithm."""
     timer = Timer()
+    memory_log_store = MemoryLogStore()
     NEED_REFIT = True
     # If policy_generation is None, use the policy as the generation interface (megatron framework backend)
     if policy_generation is None:
@@ -504,7 +505,7 @@ def grpo_train(
     if val_at_start and step == 0:
         print("\n🔍 Running initial validation...")
         if NEED_REFIT and POLICY_GENERATION_STALE:
-            refit_policy_generation(policy, policy_generation, colocated_inference)
+            refit_policy_generation(policy, policy_generation, colocated_inference, memory_log_store=memory_log_store)
             POLICY_GENERATION_STALE = False
         else:
             policy_generation.prepare_for_generation()
@@ -551,13 +552,13 @@ def grpo_train(
             with timer.time("prepare_for_generation"):
                 if NEED_REFIT and POLICY_GENERATION_STALE:
                     refit_policy_generation(
-                        policy, policy_generation, colocated_inference
+                        policy, policy_generation, colocated_inference, memory_log_store=memory_log_store
                     )
                     POLICY_GENERATION_STALE = False
                 else:
                     policy_generation.prepare_for_generation()
 
-            report_memory_usage("before generation", policy, policy_generation)
+            memory_log_store.add_memory_log("before generation", policy, policy_generation)
             with timer.time("generation"):
                 # Use async rollouts if vLLM async engine is enabled
                 if _should_use_async_rollouts(master_config):
@@ -589,7 +590,7 @@ def grpo_train(
                     )
                 policy_generation.finish_generation()
 
-            report_memory_usage("before reward calculation", policy, policy_generation)
+            memory_log_store.add_memory_log("before reward calculation", policy, policy_generation)
             # Calculate rewards & advantages
             print("▶ Processing rewards...")
             with timer.time("reward_calculation"):
@@ -614,7 +615,7 @@ def grpo_train(
                         advantages[zero_std_mask] / std.unsqueeze(-1)[zero_std_mask]
                     )
 
-            report_memory_usage("before data processing", policy, policy_generation)
+            memory_log_store.add_memory_log("before data processing", policy, policy_generation)
             with timer.time("data_processing"):
                 # Add loss mask and advantages to each message in LLMMessageLogType
                 for i, message_log in enumerate(repeated_batch["message_log"]):
@@ -657,7 +658,7 @@ def grpo_train(
                 )
                 train_data.to("cpu")
 
-            report_memory_usage("before logprob inference", policy, policy_generation)
+            memory_log_store.add_memory_log("before logprob inference", policy, policy_generation)
             print("▶ Preparing for logprob inference...")
             with timer.time("logprob_inference_prep"):
                 policy.prepare_for_lp_inference()
@@ -671,13 +672,13 @@ def grpo_train(
                 train_data["prev_logprobs"] = fprop_logprobs
                 train_data["reference_policy_logprobs"] = reference_logprobs
 
-            report_memory_usage("before training prep", policy, policy_generation)
+            memory_log_store.add_memory_log("before training prep", policy, policy_generation)
             print("▶ Preparing for training...")
             with timer.time("training_prep"):
                 policy.prepare_for_training()  # set model train and reload optim to GPU
                 POLICY_GENERATION_STALE = True
 
-            report_memory_usage("before training", policy, policy_generation)
+            memory_log_store.add_memory_log("before training", policy, policy_generation)
             print("▶ Training policy...")
             with timer.time("policy_training"):
                 train_results = policy.train(train_data, loss_fn)
@@ -690,7 +691,7 @@ def grpo_train(
             if val_period > 0 and (step + 1) % val_period == 0:
                 if NEED_REFIT and POLICY_GENERATION_STALE:
                     refit_policy_generation(
-                        policy, policy_generation, colocated_inference
+                        policy, policy_generation, colocated_inference, memory_log_store=memory_log_store
                     )
                     POLICY_GENERATION_STALE = False
                 else:
@@ -806,6 +807,8 @@ def grpo_train(
         # Display total time first, separately
         total_time = timing_metrics.get("total_step_time", 0)
         print(f"  • Total step time: {total_time:.2f}s")
+
+        memory_log_store.dump_memory_log(f"memory_log_step_{step}.json")
 
         # Display all other timing metrics
         for k, v in sorted(
