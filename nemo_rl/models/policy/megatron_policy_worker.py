@@ -1424,9 +1424,6 @@ class MegatronPolicyWorker:
         )
         all_param_infos = [x for y in ep_gathered_param_infos for x in y]
 
-        if get_rank_safe() == 0:
-            print(f"all_param_infos param names: {[x[0][0] for x in all_param_infos]}")
-
         # Merge all parameter infos, keeping only unique parameter names
         merged_param_info = []
         seen_params = set()
@@ -1466,29 +1463,15 @@ class MegatronPolicyWorker:
             del self._held_gather_buffer
             self._held_gather_buffer = None
         
-        if get_rank_safe() == 0:
-            print("Before gather_params gpu memory: ", torch.cuda.memory_allocated() / (1024**3))
-
         gathered_megatron_params = gather_params(
             self.model,
             keys,
             key_to_global_keys=self.local_key_to_global_keys,
         )
 
-        if get_rank_safe() == 0:
-            print("After gather_params gpu memory: ", torch.cuda.memory_allocated() / (1024**3))
-
         gathered_hf_params = self.megatron_to_hf_converter.convert(
             gathered_megatron_params, self.model.config
         )
-
-        if get_rank_safe() == 0:
-            print("After convert gpu memory: ", torch.cuda.memory_allocated() / (1024**3))
-
-        del gathered_megatron_params
-
-        if get_rank_safe() == 0:
-            print("After del gathered_megatron_params gpu memory: ", torch.cuda.memory_allocated() / (1024**3))
 
         # Get device UUID for IPC handles
         device_uuid = self.report_device_id()
@@ -1555,9 +1538,6 @@ class MegatronPolicyWorker:
                 all_handles.append((key, handle))
             self._held_gather_buffer = gathered_hf_params
             serialized = (False, all_handles)
-
-        if get_rank_safe() == 0:
-            print("After get_weights_ipc_handles gpu memory: ", torch.cuda.memory_allocated() / (1024**3))
 
         return {device_uuid: serialized}
 

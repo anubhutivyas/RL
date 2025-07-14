@@ -70,14 +70,15 @@ class VllmInternalWorkerExtension:
             device_id = self.device.index
             weights = []
 
+            from torch.multiprocessing.reductions import rebuild_cuda_tensor
             if is_tensor_packed:
                 # Extract packed tensor from IPC handle
                 dtype_to_packed_tensor = {}
                 for dtype, tensor_handle in all_handles:
-                    func, args = tensor_handle
+                    args = tensor_handle
                     list_args = list(args)
                     list_args[6] = device_id
-                    tensor = func(*list_args)
+                    tensor = rebuild_cuda_tensor(*list_args)
                     dtype_to_packed_tensor[dtype] = tensor
 
                 # Unpack tensor to weights. Here we only return a view of the tensor to avoid
@@ -88,13 +89,12 @@ class VllmInternalWorkerExtension:
                     )
                     weights.append((key, tensor))
             else:
-                from torch.multiprocessing.reductions import rebuild_cuda_tensor
                 # Process each handle to get the tensor
                 for name, handle in name_and_handle_list:
-                    args = handle
+                    func, args = handle
                     list_args = list(args)
                     list_args[6] = device_id
-                    tensor = rebuild_cuda_tensor(*list_args)
+                    tensor = func(*list_args)
                     weights.append((name, tensor))
 
             # Load weights into the model
