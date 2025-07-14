@@ -1300,6 +1300,16 @@ class VllmGenerationWorker:
         """Stop GPU profiling."""
         torch.cuda.profiler.stop()
 
+    def get_memory_usage(self) -> list[Any]:
+        """Get the memory usage of the model."""
+        if self.llm is None:
+            return []
+        else:
+            worker_result = self.llm.collective_rpc("get_memory_usage", args=())
+            if not worker_result[0]:
+                print(f"Error: Worker failed to get memory usage. Result: {worker_result}")
+                return []
+            return worker_result
 
 class VllmGeneration(GenerationInterface):
     def __init__(
@@ -1958,6 +1968,16 @@ class VllmGeneration(GenerationInterface):
         """Stop GPU profiling."""
         futures = self.worker_group.run_all_workers_single_data("stop_gpu_profiling")
         ray.get(futures)
+
+    def get_memory_usage(self) -> Any:
+        """Get the memory usage of the model."""
+        futures = self.worker_group.run_all_workers_single_data("get_memory_usage")
+        results = ray.get(futures)
+        flattened_results = [item for sublist in results for item in sublist]
+        ret = {}
+        for d in flattened_results:
+            ret.update(d)
+        return ret
 
     def __del__(self) -> None:
         """Shuts down the worker groups when the object is deleted or is garbage collected.

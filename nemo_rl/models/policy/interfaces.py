@@ -127,3 +127,7 @@ class ColocatablePolicyInterface(PolicyInterface):
     @abstractmethod
     def delete_held_gather_buffer(self) -> None:
         pass
+
+    @abstractmethod
+    def get_memory_usage(self) -> Any:
+        pass

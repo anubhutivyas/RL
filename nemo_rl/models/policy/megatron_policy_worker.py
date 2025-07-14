@@ -1771,3 +1771,14 @@ class MegatronPolicyWorker:
         if self._held_gather_buffer is not None:
             del self._held_gather_buffer
             self._held_gather_buffer = None
+
+    def get_memory_usage(self) -> Any:
+        """Get the memory usage of the model."""
+        return {
+            self.report_device_id(): {
+                "current_memory_allocated": torch.cuda.memory_allocated(),
+                "current_memory_reserved": torch.cuda.memory_reserved(),
+                "max_memory_allocated": torch.cuda.max_memory_allocated(),
+                "max_memory_reserved": torch.cuda.max_memory_reserved(),
+            }
+        }

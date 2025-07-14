@@ -237,3 +237,8 @@ class GenerationInterface(ABC):
     ) -> list[ray.ObjectRef]:
         """Update the model weights from collective communication."""
         raise NotImplementedError
+
+    @abstractmethod
+    def get_memory_usage(self) -> Any:
+        """Get the memory usage of the model."""
+        raise NotImplementedError

@@ -547,3 +547,12 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
         """Delete the held gather buffer."""
         futures = self.worker_group.run_all_workers_single_data("delete_held_gather_buffer")
         ray.get(futures)
+
+    def get_memory_usage(self) -> Any:
+        """Get the memory usage of the model."""
+        futures = self.worker_group.run_all_workers_single_data("get_memory_usage")
+        results = ray.get(futures)
+        ret = {}
+        for d in results:
+            ret.update(d)
+        return ret
