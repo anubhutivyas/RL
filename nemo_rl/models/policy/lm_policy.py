@@ -157,8 +157,8 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
                 "algorithm": config["sequence_packing"]["algorithm"],
                 "input_key": "input_ids",
                 "input_lengths_key": "input_lengths",
-                "sequence_length_pad_multiple": (self.cp_size * 2 * tp_size)
-                if self.cp_size > 1
+                "sequence_length_pad_multiple": (cp_size * 2 * tp_size)
+                if cp_size > 1
                 else tp_size,
             }
         else:
