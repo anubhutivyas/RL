@@ -53,10 +53,10 @@ from nemo_rl.utils.logger import (
     print_message_log_samples,
 )
 from nemo_rl.utils.timer import Timer
-from nemo_rl.algorithms.utils import _calculate_single_majority_at_k, calculate_math_majority_at_k, calculate_majority_at_k_advantages
+from nemo_rl.algorithms.utils import _calculate_single_majority_at_k, calculate_math_majority_at_k, calculate_majority_at_k_advantages, calculate_pass_at_k_advantages
 
 
-def majority_at_k_train(
+def pass_at_k_train(
     policy: PolicyInterface,
     policy_generation: Optional[GenerationInterface],
     dataloader: StatefulDataLoader,
@@ -172,7 +172,7 @@ def majority_at_k_train(
                 rewards = repeated_batch["total_reward"]
 
                 print("▶ Computing majority@K advantages...")
-                advantages, majority_metrics = calculate_majority_at_k_advantages(
+                advantages, majority_metrics = calculate_pass_at_k_advantages(
                     repeated_batch["message_log"],
                     input_ids,
                     rewards,

@@ -24,6 +24,9 @@ from transformers import AutoTokenizer
 from nemo_rl.data import hf_datasets
 from nemo_rl.models.policy import TokenizerConfig
 
+import re
+from collections import Counter, defaultdict
+
 
 def calculate_kl_penalty_joschu2020(
     logprobs_policy: torch.Tensor, logprobs_reference: torch.Tensor
@@ -363,8 +366,6 @@ def calculate_majority_at_k_advantages(message_logs, prompts, rewards, valid_mas
         torch.Tensor: Advantages for each response (b,)
         dict: Dictionary of metrics including 'pass_at_k' and 'majority_at_k'
     """
-    import re
-    from collections import Counter, defaultdict
     
     unique_prompts = torch.unique(prompts, dim=0)
     reward_device = rewards.get_device()
@@ -410,9 +411,7 @@ def calculate_majority_at_k_advantages(message_logs, prompts, rewards, valid_mas
             prompt_rewards_list.append(rewards[idx].item())
             valid_indices.append(idx)
         
-        if len(answers) == 0:
-            continue
-            
+
         # Calculate pass@k and majority@k for the prompt
         prompt_rewards_tensor = torch.tensor(prompt_rewards_list, device=reward_device)
         pass_at_k_for_prompt = (prompt_rewards_tensor > 0).any().float()
@@ -427,13 +426,110 @@ def calculate_majority_at_k_advantages(message_logs, prompts, rewards, valid_mas
             subset_answers = answers[:j] + answers[j+1:]
             subset_rewards = prompt_rewards_list[:j] + prompt_rewards_list[j+1:]
             
-            if len(subset_answers) == 0:
-                # If removing this response leaves no responses, advantage is the full score
-                advantage = full_majority_score
-            else:
-                # Calculate majority@K without current response
-                subset_majority_score = _calculate_single_majority_at_k(subset_answers, subset_rewards)
-                advantage = full_majority_score - subset_majority_score
+            subset_majority_score = _calculate_single_majority_at_k(subset_answers, subset_rewards)
+            advantage = full_majority_score - subset_majority_score
+            
+            advantages[idx] = advantage
+    
+    if variance_reduction:
+        for i in range(len(unique_prompts)):
+            is_matching_prompt = (prompts == unique_prompts[i]).all(1)
+            prompt_idx = torch.arange(len(prompts), device=reward_device)[is_matching_prompt]
+            prompt_valid_mask = valid_mask[prompt_idx].bool()
+
+            if prompt_valid_mask.sum() <= 1:
+                continue
+            
+            valid_advantages = advantages[prompt_idx][prompt_valid_mask]
+            mean_advantage = valid_advantages.mean()
+            advantages[prompt_idx][prompt_valid_mask] -= mean_advantage
+
+    final_metrics = {
+        k: torch.as_tensor(v, device=reward_device).mean().item() if v else 0.0
+        for k, v in metrics.items()
+    }
+        
+    return advantages, final_metrics
+
+
+def calculate_pass_at_k_advantages(message_logs, prompts, rewards, valid_mask, variance_reduction=False):
+    """Calculate pass@K advantages for each response.
+    
+    For each response y, the advantage is:
+    pass@k(all responses) - pass@k(all responses except y)
+    
+    Args:
+        message_logs: List of message logs containing the conversations
+        prompts: tensor (b, s) Tensor of prompts 
+        rewards: tensor (b,) Float-valued rewards
+        valid_mask: tensor (b,) Vector of 0/1, where 0 is to ignore and 1 is to keep
+        variance_reduction: bool Whether to subtract the mean advantage per prompt (variance reduction)
+        
+    Returns:
+        torch.Tensor: Advantages for each response (b,)
+        dict: Dictionary of metrics including 'pass_at_k' and 'majority_at_k'
+    """
+    
+    unique_prompts = torch.unique(prompts, dim=0)
+    reward_device = rewards.get_device()
+    if reward_device == -1:
+        reward_device = torch.device("cpu")
+    
+    advantages = torch.zeros_like(rewards, dtype=torch.float32)
+    metrics = defaultdict(list)
+    
+    for i in range(len(unique_prompts)):
+        is_matching_prompt = (prompts == unique_prompts[i]).all(1)
+        prompt_idx = torch.arange(len(prompts), device=reward_device)[is_matching_prompt]
+        
+        if valid_mask[prompt_idx].sum() <= 1:
+            # Not enough samples for majority@K, set advantages to 0
+            advantages[prompt_idx] = 0.0
+            continue
+            
+        # Extract answers and rewards for this prompt
+        answers = []
+        prompt_rewards_list = []
+        valid_indices = []
+        
+        for idx in prompt_idx:
+            if valid_mask[idx] == 0:
+                continue
+                
+            # Extract answer from message log
+            message_log = message_logs[idx.item()]
+            extracted_answer = ""
+            
+            # Find last assistant response and extract answer
+            for message in reversed(message_log):
+                if message["role"] == "assistant":
+                    response = message["content"]
+                    # Try to extract from \boxed{}
+                    boxed_match = re.search(r'\\boxed\{([^}]*)\}', response)
+                    if boxed_match:
+                        extracted_answer = boxed_match.group(1).strip()
+                    break
+            
+            answers.append(extracted_answer)
+            prompt_rewards_list.append(rewards[idx].item())
+            valid_indices.append(idx)
+        
+
+        # Calculate pass@k and majority@k for the prompt
+        prompt_rewards_tensor = torch.tensor(prompt_rewards_list, device=reward_device)
+        pass_at_k_for_prompt = (prompt_rewards_tensor > 0).any().float()
+        metrics["average_pass_at_k_per_prompt"].append(pass_at_k_for_prompt)
+
+        full_majority_score = _calculate_single_majority_at_k(answers, prompt_rewards_list)
+        metrics["math_majority_at_k"].append(full_majority_score)
+        
+        # Calculate advantage for each response
+        for j, (answer, reward, idx) in enumerate(zip(answers, prompt_rewards_list, valid_indices)):
+            # Create subset without current response
+            subset_rewards = torch.tensor(prompt_rewards_list[:j] + prompt_rewards_list[j+1:], device=reward_device)
+            
+            subset_pass_at_k = (subset_rewards > 0).any().float()
+            advantage = pass_at_k_for_prompt - subset_pass_at_k
             
             advantages[idx] = advantage
     

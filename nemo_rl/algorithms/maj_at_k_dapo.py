@@ -263,7 +263,7 @@ def majority_at_k_train_dapo(
                     "reward_mean": reward_mean,
                     "reward_max": reward_max,
                 }
-                rollout_metrics.update(more_rollout_metrics)
+                rollout_metrics.update(majority_metrics)
                 
                 # Calculate mean_gen_tokens_per_sample for the filtered batch
                 total_gen_tokens = 0
@@ -434,58 +434,3 @@ def majority_at_k_train_dapo(
 
         if step >= max_num_steps:
             break
-
-
-def _calculate_math_majority_at_k(message_logs, prompts, rewards, valid_mask):
-    """Calculate the overall majority@K score across all prompts for logging."""
-    import re
-    from collections import Counter
-    
-    unique_prompts = torch.unique(prompts, dim=0)
-    reward_device = rewards.get_device()
-    if reward_device == -1:
-        reward_device = torch.device("cpu")
-    
-    total_score = 0.0
-    num_prompts = 0
-    
-    for i in range(len(unique_prompts)):
-        is_matching_prompt = (prompts == unique_prompts[i]).all(1)
-        prompt_idx = torch.arange(len(prompts), device=reward_device)[is_matching_prompt]
-        
-        if valid_mask[prompt_idx].sum() <= 1:
-            continue
-            
-        # Extract answers for this prompt
-        answers = []
-        prompt_rewards = []
-        
-        for idx in prompt_idx:
-            if valid_mask[idx] == 0:
-                continue
-                
-            # Extract answer from message log
-            message_log = message_logs[idx.item()]
-            extracted_answer = ""
-            
-            # Find last assistant response and extract answer
-            for message in reversed(message_log):
-                if message["role"] == "assistant":
-                    response = message["content"]
-                    # Try to extract from \boxed{}
-                    boxed_match = re.search(r'\\boxed\{([^}]*)\}', response)
-                    if boxed_match:
-                        extracted_answer = boxed_match.group(1).strip()
-                    break
-            
-            answers.append(extracted_answer)
-            prompt_rewards.append(rewards[idx].item())
-        
-        if len(answers) == 0:
-            continue
-            
-        num_prompts += 1
-        majority_score = _calculate_single_majority_at_k(answers, prompt_rewards)
-        total_score += majority_score
-    
-    return total_score / num_prompts if num_prompts > 0 else 0.0 
