@@ -1314,9 +1314,9 @@ class MegatronPolicyWorker:
         device_idx = torch.cuda.current_device()
         ## Get device free memory using NVML
         total_available_bytes = get_free_memory_bytes(device_idx)
-        # TODO: setting to low value (10%) since
-        # more buckets seems to have better perf
-        total_available_bytes *= 0.1
+        ## default to 20% to get some more speedup than 10%, OOM if set to 30%
+        memory_ratio = os.getenv("NRL_REFIT_BUFFER_MEMORY_RATIO", "0.2")
+        total_available_bytes *= float(memory_ratio)
 
         return refit_param_info_mcore, total_available_bytes
 

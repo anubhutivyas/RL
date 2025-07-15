@@ -946,7 +946,8 @@ class DTensorPolicyWorker:
         ## Get device free memory using NVML
         total_available_bytes = get_free_memory_bytes(device_idx)
         ## Use 80% of the free memory for safety
-        total_available_bytes *= 0.8
+        memory_ratio = os.getenv("NRL_REFIT_BUFFER_MEMORY_RATIO", "0.8")
+        total_available_bytes *= float(memory_ratio)
 
         return self.refit_param_info, total_available_bytes
 
