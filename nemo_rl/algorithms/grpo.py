@@ -808,7 +808,7 @@ def grpo_train(
         total_time = timing_metrics.get("total_step_time", 0)
         print(f"  • Total step time: {total_time:.2f}s")
 
-        memory_log_store.dump_memory_log(f"memory_log_step_{step}.json")
+        memory_log_store.print_memory_log()
 
         # Display all other timing metrics
         for k, v in sorted(
