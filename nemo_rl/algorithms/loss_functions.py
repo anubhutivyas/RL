@@ -406,6 +406,7 @@ class PreferenceLoss(LossFunction):
         self.loss_type = LossType.SEQUENCE_LEVEL
 
     def split_output_tensor(self, tensor: Tensor) -> tuple[Tensor, Tensor]:
+        # tensor is of shape (2*micro_batch_size,)
         return tensor[::2], tensor[1::2]
 
     def _preference_loss(
@@ -454,6 +455,8 @@ class PreferenceLoss(LossFunction):
         global_valid_toks: Tensor | None,
     ) -> tuple[torch.Tensor, dict[str, Any]]:
         sample_mask = data["sample_mask"]
+
+        rewards = rewards.squeeze(-1)
 
         (
             preference_loss,
