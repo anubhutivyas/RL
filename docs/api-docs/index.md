@@ -1,3 +1,13 @@
+---
+description: "Comprehensive API documentation for NeMo RL framework including distributed computing, models, algorithms, and data interfaces"
+categories: ["api-reference"]
+tags: ["api", "reference", "distributed", "models", "algorithms", "data-interfaces", "python-api"]
+personas: ["mle-focused", "researcher-focused"]
+difficulty: "reference"
+content_type: "reference"
+modality: "universal"
+---
+
 # API Documentation
 
 Welcome to the NeMo RL API documentation! This section provides comprehensive reference documentation for all the APIs, interfaces, and components that make up the NeMo RL framework.

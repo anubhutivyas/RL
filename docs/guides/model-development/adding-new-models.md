@@ -1,3 +1,13 @@
+---
+description: "Complete guide to integrating and validating new models within NeMo RL including compatibility tests and diagnostic scripts"
+categories: ["model-development"]
+tags: ["model-integration", "model-validation", "compatibility-tests", "diagnostics", "huggingface", "megatron"]
+personas: ["mle-focused", "researcher-focused"]
+difficulty: "advanced"
+content_type: "tutorial"
+modality: "universal"
+---
+
 # Add New Models
 
 This guide outlines how to integrate and validate a new model within NeMo RL. Each new model must pass a standard set of compatibility tests before being considered ready to be used in RL pipelines. The guide also details diagnostic scripts to help identify and resolve common issues during model integration.

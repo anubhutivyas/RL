@@ -1,7 +1,11 @@
 ---
-description: "Explore NeMo RL's design documents, architectural decisions, and technical specifications for understanding the framework's internals."
-tags: ["design", "architecture", "technical", "specifications", "internals"]
-categories: ["design"]
+description: "Explore NeMo RL's design documents, architectural decisions, and technical specifications for understanding the framework's internals"
+categories: ["concepts-architecture"]
+tags: ["design", "architecture", "technical", "specifications", "internals", "core-architecture"]
+personas: ["mle-focused", "researcher-focused"]
+difficulty: "advanced"
+content_type: "concept"
+modality: "universal"
 ---
 
 (design-overview)=

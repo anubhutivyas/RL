@@ -1,3 +1,13 @@
+---
+description: "Comprehensive collection of guides for mastering reinforcement learning with large language models using NeMo RL"
+categories: ["training-algorithms"]
+tags: ["guides", "training-algorithms", "model-development", "environment-data", "production-support", "reference"]
+personas: ["mle-focused", "researcher-focused", "admin-focused"]
+difficulty: "intermediate"
+content_type: "concept"
+modality: "universal"
+---
+
 # Guides
 
 Welcome to the NeMo RL Guides! This comprehensive collection provides everything you need to master reinforcement learning with large language models using NeMo RL.

@@ -1,3 +1,13 @@
+---
+description: "Step-by-step guide to Direct Preference Optimization for training language models using preference learning techniques with NeMo RL"
+categories: ["training-algorithms"]
+tags: ["dpo", "preference-learning", "model-alignment", "data-preparation", "training-execution", "evaluation"]
+personas: ["mle-focused", "researcher-focused"]
+difficulty: "intermediate"
+content_type: "tutorial"
+modality: "universal"
+---
+
 # DPO Tutorial: Direct Preference Optimization
 
 Welcome to the Direct Preference Optimization (DPO) tutorial! This step-by-step guide will teach you how to train language models using preference learning techniques with NeMo RL.

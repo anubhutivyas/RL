@@ -1,3 +1,13 @@
+---
+description: "Comprehensive guide to model evaluation and benchmarking for NeMo RL models using various metrics and evaluation techniques"
+categories: ["training-algorithms"]
+tags: ["evaluation", "benchmarking", "metrics", "human-evaluation", "model-assessment", "quality-assurance"]
+personas: ["mle-focused", "researcher-focused"]
+difficulty: "intermediate"
+content_type: "tutorial"
+modality: "universal"
+---
+
 # Evaluation Tutorial: Model Evaluation and Benchmarking
 
 Welcome to the Model Evaluation tutorial! This comprehensive guide will teach you how to evaluate and benchmark your NeMo RL models using various metrics and techniques.

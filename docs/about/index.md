@@ -1,7 +1,11 @@
 ---
-description: "Learn about NeMo RL's core concepts, key features, and fundamental architecture for reinforcement learning with large language models."
-tags: ["overview", "concepts", "architecture", "features", "reinforcement learning", "distributed training"]
-categories: ["concepts"]
+description: "Learn about NeMo RL's core concepts, key features, and fundamental architecture for reinforcement learning with large language models"
+categories: ["concepts-architecture"]
+tags: ["overview", "concepts", "architecture", "features", "reinforcement-learning", "distributed", "large-language-models"]
+personas: ["mle-focused", "researcher-focused", "admin-focused"]
+difficulty: "beginner"
+content_type: "concept"
+modality: "universal"
 ---
 
 (about-overview)=

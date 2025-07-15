@@ -1,3 +1,13 @@
+---
+description: "Step-by-step guide to supervised fine-tuning of language models using NeMo RL with data preparation, model setup, and training execution"
+categories: ["training-algorithms"]
+tags: ["sft", "supervised-fine-tuning", "data-preparation", "model-setup", "training-execution", "evaluation"]
+personas: ["mle-focused", "researcher-focused"]
+difficulty: "beginner"
+content_type: "tutorial"
+modality: "universal"
+---
+
 # SFT Tutorial: Supervised Fine-Tuning
 
 Welcome to the Supervised Fine-Tuning (SFT) tutorial! This step-by-step guide will teach you how to fine-tune language models using supervised learning techniques with NeMo RL.

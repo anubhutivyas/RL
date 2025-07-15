@@ -1,3 +1,13 @@
+---
+description: "Complete installation guide for NeMo RL across different platforms including Ubuntu, Windows, macOS, and cluster environments"
+categories: ["getting-started"]
+tags: ["installation", "setup", "docker", "conda", "gpu-accelerated", "configuration"]
+personas: ["mle-focused", "admin-focused", "devops-focused"]
+difficulty: "beginner"
+content_type: "tutorial"
+modality: "universal"
+---
+
 # Install NeMo RL
 
 This guide covers installing NeMo RL on various platforms and environments.

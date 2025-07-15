@@ -1,3 +1,13 @@
+---
+description: "Comprehensive guide to distributed training techniques for scaling NeMo RL across multiple GPUs and nodes using Ray and FSDP"
+categories: ["performance-optimization"]
+tags: ["distributed", "ray", "fsdp", "gpu-accelerated", "scaling", "model-parallelism", "data-parallelism"]
+personas: ["mle-focused", "admin-focused", "devops-focused"]
+difficulty: "advanced"
+content_type: "tutorial"
+modality: "universal"
+---
+
 # Distributed Training
 
 This guide covers distributed training techniques for scaling NeMo RL across multiple GPUs and nodes.

@@ -1,3 +1,13 @@
+---
+description: "Comprehensive collection of tutorials and examples for learning and mastering reinforcement learning with large language models using NeMo RL"
+categories: ["training-algorithms"]
+tags: ["tutorials", "examples", "sft", "dpo", "grpo", "reinforcement-learning", "training-execution"]
+personas: ["mle-focused", "researcher-focused"]
+difficulty: "beginner"
+content_type: "concept"
+modality: "universal"
+---
+
 # Tutorials & Examples
 
 Welcome to the NeMo RL Tutorials & Examples! This comprehensive collection provides everything you need to learn and master reinforcement learning with large language models using NeMo RL.

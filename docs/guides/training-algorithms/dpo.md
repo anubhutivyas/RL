@@ -1,3 +1,13 @@
+---
+description: "Complete guide to Direct Preference Optimization in NeMo RL including configuration, dataset preparation, and parameter tuning"
+categories: ["training-algorithms"]
+tags: ["dpo", "preference-learning", "model-alignment", "configuration", "data-preparation", "training-execution"]
+personas: ["mle-focused", "researcher-focused"]
+difficulty: "intermediate"
+content_type: "tutorial"
+modality: "universal"
+---
+
 # Direct Preference Optimization in NeMo RL
 
 [Direct Preference Optimization (DPO)](https://arxiv.org/pdf/2305.18290) is an RL-free alignment algorithm that operates on preference data. Given a prompt and a pair of chosen and rejected responses, DPO aims

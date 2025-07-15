@@ -47,7 +47,7 @@ extensions = [
     "myst_codeblock_substitutions",  # Our custom MyST substitutions in code blocks
     "json_output",  # Generate JSON output for each page
     "search_assets",  # Enhanced search assets extension
-    "ai_assistant",  # AI Assistant extension for intelligent search responses
+    #"ai_assistant",  # AI Assistant extension for intelligent search responses
     "sphinxcontrib.mermaid",  # For Mermaid diagrams
 ]
 
@@ -87,7 +87,7 @@ json_output_settings = {
 
 # -- Options for AI Assistant -------------------------------------------------
 # Configure the AI Assistant extension for intelligent search responses
-ai_assistant_enabled = True
+ai_assistant_enabled = False
 ai_assistant_endpoint = "https://prod-1-data.ke.pinecone.io/assistant/chat/test-assistant"
 ai_assistant_api_key = ""  # Set this to your Pinecone API key
 ai_trigger_threshold = 2  # Trigger AI when fewer than N search results

@@ -1,3 +1,13 @@
+---
+description: "Complete guide to model evaluation in NeMo RL including checkpoint conversion, configuration, and evaluation script usage"
+categories: ["training-algorithms"]
+tags: ["evaluation", "model-assessment", "checkpointing", "configuration", "metrics", "benchmarking"]
+personas: ["mle-focused", "researcher-focused"]
+difficulty: "intermediate"
+content_type: "tutorial"
+modality: "universal"
+---
+
 # Evaluation
 
 This document explains how to use an evaluation script for assessing model capabilities.

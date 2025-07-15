@@ -1,3 +1,13 @@
+---
+description: "Complete Docker setup guide for NeMo RL with three image types: release, hermetic, and base for different use cases"
+categories: ["getting-started"]
+tags: ["docker", "containerization", "gpu-accelerated", "deployment", "configuration"]
+personas: ["devops-focused", "admin-focused", "mle-focused"]
+difficulty: "intermediate"
+content_type: "tutorial"
+modality: "universal"
+---
+
 # Docker Setup
 
 This guide provides three methods for building Docker images:

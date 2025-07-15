@@ -1,3 +1,13 @@
+---
+description: "Comprehensive guide to NeMo RL configuration options, CLI commands, and usage patterns for training, evaluation, and deployment"
+categories: ["api-reference"]
+tags: ["configuration", "cli", "reference", "yaml", "command-line", "python-api"]
+personas: ["mle-focused", "admin-focused", "devops-focused"]
+difficulty: "intermediate"
+content_type: "reference"
+modality: "universal"
+---
+
 # Configuration & CLI
 
 Welcome to the NeMo RL Configuration and Command Line Interface guide! This section covers all configuration options, CLI commands, and usage patterns for NeMo RL.

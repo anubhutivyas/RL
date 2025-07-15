@@ -1,3 +1,13 @@
+---
+description: "Configure and run NeMo RL on your local workstation with GPU control and multi-cluster support"
+categories: ["getting-started"]
+tags: ["local-setup", "gpu-accelerated", "ray", "configuration", "development"]
+personas: ["mle-focused", "researcher-focused"]
+difficulty: "beginner"
+content_type: "tutorial"
+modality: "universal"
+---
+
 # Run on Your Local Workstation
 
 When launching examples locally with `uv`, {py:class}`init_ray() <nemo_rl.distributed.virtual_cluster.init_ray>` will first attempt to connect to an existing cluster. If none is found, it will start a local one and connect to it using all available GPU and CPU resources on your node.

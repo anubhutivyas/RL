@@ -1,3 +1,13 @@
+---
+description: "Get started with NeMo RL in minutes through progressive examples from basic SFT to advanced multi-GPU training"
+categories: ["getting-started"]
+tags: ["quickstart", "sft", "grpo", "training-execution", "gpu-accelerated", "distributed", "configuration"]
+personas: ["mle-focused", "researcher-focused"]
+difficulty: "beginner"
+content_type: "tutorial"
+modality: "universal"
+---
+
 # Quickstart
 
 Get started with NeMo RL in minutes! This guide will walk you through your first training run with progressive complexity.

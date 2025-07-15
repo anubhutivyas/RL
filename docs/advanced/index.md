@@ -1,7 +1,11 @@
 ---
-description: "Advanced topics for AI researchers, performance engineers, and advanced practitioners including mathematical foundations, research methodologies, and optimization techniques."
-tags: ["advanced", "research", "theory", "performance", "optimization", "mathematics"]
-categories: ["advanced"]
+description: "Advanced topics for AI researchers, performance engineers, and advanced practitioners including mathematical foundations, research methodologies, and optimization techniques"
+categories: ["research-advanced"]
+tags: ["advanced", "research", "theory", "performance", "optimization", "mathematics", "reinforcement-learning"]
+personas: ["researcher-focused", "mle-focused"]
+difficulty: "advanced"
+content_type: "concept"
+modality: "universal"
 ---
 
 # Advanced Topics

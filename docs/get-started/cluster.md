@@ -1,3 +1,13 @@
+---
+description: "Set up distributed training clusters for NeMo RL using Slurm for batched and interactive jobs with Ray"
+categories: ["getting-started"]
+tags: ["cluster", "distributed", "slurm", "ray", "gpu-accelerated", "deployment"]
+personas: ["admin-focused", "devops-focused", "mle-focused"]
+difficulty: "intermediate"
+content_type: "tutorial"
+modality: "universal"
+---
+
 # Set Up Clusters
 
 This guide explains how to run NeMo RL with Ray on Slurm or Kubernetes.

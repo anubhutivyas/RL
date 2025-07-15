@@ -1,3 +1,13 @@
+---
+description: "Advanced guide to Group Relative Policy Optimization for training language models using group-based reinforcement learning techniques with NeMo RL"
+categories: ["training-algorithms"]
+tags: ["grpo", "reinforcement-learning", "group-optimization", "advanced-rl", "training-execution", "evaluation"]
+personas: ["researcher-focused", "mle-focused"]
+difficulty: "advanced"
+content_type: "tutorial"
+modality: "universal"
+---
+
 # GRPO Tutorial: Group Relative Policy Optimization
 
 Welcome to the Group Relative Policy Optimization (GRPO) tutorial! This advanced guide will teach you how to train language models using group-based reinforcement learning techniques with NeMo RL.

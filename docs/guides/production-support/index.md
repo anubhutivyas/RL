@@ -1,3 +1,13 @@
+---
+description: "Comprehensive guide to deploying, maintaining, and troubleshooting NeMo RL in production environments including testing, packaging, and monitoring"
+categories: ["deployment-operations"]
+tags: ["production", "deployment", "testing", "packaging", "monitoring", "troubleshooting", "documentation"]
+personas: ["admin-focused", "devops-focused", "mle-focused"]
+difficulty: "advanced"
+content_type: "concept"
+modality: "universal"
+---
+
 # Production & Support
 
 Welcome to the NeMo RL Production & Support guide! This section covers everything you need to deploy, maintain, and troubleshoot NeMo RL in production environments.

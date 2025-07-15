@@ -1,7 +1,11 @@
 ---
-description: "Get started quickly with NeMo RL by following these essential setup steps and choosing the right training approach for your reinforcement learning needs."
-tags: ["quickstart", "setup", "beginner", "onboarding", "reinforcement learning", "distributed training"]
+description: "Get started quickly with NeMo RL by following these essential setup steps and choosing the right training approach for your reinforcement learning needs"
 categories: ["getting-started"]
+tags: ["setup", "beginner", "onboarding", "reinforcement-learning", "distributed", "training-algorithms"]
+personas: ["mle-focused", "researcher-focused", "admin-focused"]
+difficulty: "beginner"
+content_type: "concept"
+modality: "universal"
 ---
 
 (gs-overview)=

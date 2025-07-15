@@ -1,4 +1,14 @@
-﻿# NeMo RL Documentation
+﻿---
+description: "Comprehensive documentation for NeMo RL - a scalable, modular, and efficient post-training library for reinforcement learning and supervised fine-tuning of large language models"
+categories: ["getting-started"]
+tags: ["reinforcement-learning", "supervised-fine-tuning", "large-language-models", "documentation", "overview"]
+personas: ["mle-focused", "researcher-focused", "admin-focused"]
+difficulty: "beginner"
+content_type: "concept"
+modality: "universal"
+---
+
+# NeMo RL Documentation
 
 Welcome to the NeMo RL documentation! NeMo RL is a scalable, modular, and efficient post-training 
 library for reinforcement learning and supervised fine-tuning of large language models.

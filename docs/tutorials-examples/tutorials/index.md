@@ -1,3 +1,13 @@
+---
+description: "Step-by-step learning guides to master reinforcement learning with large language models using NeMo RL"
+categories: ["training-algorithms"]
+tags: ["tutorials", "sft", "dpo", "grpo", "evaluation", "reinforcement-learning", "training-execution"]
+personas: ["mle-focused", "researcher-focused"]
+difficulty: "beginner"
+content_type: "concept"
+modality: "universal"
+---
+
 # Tutorials
 
 Welcome to the NeMo RL Tutorials! These step-by-step learning guides will help you master reinforcement learning with large language models.
