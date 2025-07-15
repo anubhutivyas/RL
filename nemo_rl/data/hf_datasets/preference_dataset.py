@@ -30,7 +30,6 @@ class PreferenceDataset:
         "completions": list of dicts, # The list of completions
             {
                 "rank": int, # The rank of the completion (lowest is preferred)
-                "label": float, # The label of the completion
                 "completion": list of dicts, # The completion message
             }
     }
