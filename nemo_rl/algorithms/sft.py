@@ -647,7 +647,6 @@ def sft_train(
                 "loss": train_results["loss"].numpy(),
                 "grad_norm": train_results["grad_norm"].numpy(),
             }
-
             metrics.update(train_results["all_mb_metrics"])
             for k, v in metrics.items():
                 if k in {"lr", "wd", "global_valid_seqs", "global_valid_toks"}:

@@ -175,8 +175,6 @@ class DTensorPolicyWorker:
         else:
             raise ValueError(f"Unknown precision: {self.cfg['precision']}")
 
-        print(f"[Rank {self.rank}] Loading model {model_name} on CPU...")
-
         model_config = AutoConfig.from_pretrained(
             model_name,
             # Always load the model in float32 to keep master weights in float32.
@@ -221,7 +219,6 @@ class DTensorPolicyWorker:
                 trust_remote_code=True,
                 config=model_config,
             )
-
             full_state_dict = model.state_dict()
             del model
 

@@ -21,7 +21,7 @@ rm -rf $EXP_DIR $LOG_DIR
 mkdir -p $EXP_DIR $LOG_DIR
 
 cd $PROJECT_ROOT
-uv run $PROJECT_ROOT/examples/run_sft.py \
+uv run $PROJECT_ROOT/examples/run_rm.py \
     --config examples/configs/rm.yaml \
     cluster.gpus_per_node=2 \
     sft.max_num_steps=3 \
