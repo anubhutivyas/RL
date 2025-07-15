@@ -29,7 +29,7 @@ class PreferenceDataset:
         "context": list of dicts, # The input message
         "completions": list of dicts, # The list of completions
             {
-                "rank": int, # The rank of the completion (lowest is preferred)
+                "rank": int, # The rank of the completion (lower rank is preferred)
                 "completion": list of dicts, # The completion message
             }
     }

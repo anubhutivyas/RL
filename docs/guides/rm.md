@@ -22,3 +22,32 @@ The YAML config must be specified. It uses the same base template as the SFT con
 ## Datasets
 
 By default, NeMo RL supports the `HelpSteer3` dataset. This dataset is downloaded from Hugging Face and preprocessed on-the-fly, so there's no need to provide a path to any datasets on disk.
+
+You can also use custom preference datasets by configuring as follows:
+```
+data:
+  dataset_name: "PreferenceData:<Name>:<LocalPath>"
+  validation_dataset_name: ["PreferenceData:<Name>:<LocalPath>"]
+```
+
+Each custom preference dataset should be a JSON file formatted as:
+```
+{
+    "context": list of dicts, # The input message
+    "completions": list of dicts, # The list of completions
+        {
+            "rank": int, # The rank of the completion (lower rank is preferred)
+            "completion": list of dicts, # The completion message
+        }
+}
+```
+
+NeMo RL supports using multiple custom validation preference datasets during RM training.
+```
+data:
+  dataset_name: "PreferenceData:<Name>:<LocalPath>"
+  validation_dataset_name: [
+    "PreferenceData:<Name>:<LocalPath>",
+    "PreferenceData:<Name>:<LocalPath>",
+   ]
+```
