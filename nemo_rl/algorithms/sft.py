@@ -176,13 +176,24 @@ def setup(
         )
         train_dataloader.load_state_dict(dataloader_state_dict)
 
-    val_dataloader = StatefulDataLoader(
-        val_dataset,
-        batch_size=sft_config["val_global_batch_size"],
-        shuffle=False,
-        collate_fn=collate_fn,
-        drop_last=True,
-    )
+    if isinstance(val_dataset, dict):
+        val_dataloader = {
+            k: StatefulDataLoader(
+                v,
+                batch_size=sft_config["val_global_batch_size"],
+                shuffle=False,
+                collate_fn=collate_fn,
+                drop_last=True,
+            ) for k, v in val_dataset.items()
+        }
+    else:
+        val_dataloader = StatefulDataLoader(
+            val_dataset,
+            batch_size=sft_config["val_global_batch_size"],
+            shuffle=False,
+            collate_fn=collate_fn,
+            drop_last=True,
+        )
 
     # ==========================
     #          Cluster
@@ -250,8 +261,35 @@ def validate(
     val_batch_size: int,
     val_mbs: int,
     model_type: str,
+    logger: Logger,
 ):
-    """Run validation on the validation dataset."""
+    if isinstance(val_dataloader, dict):
+        for k, v in val_dataloader.items():
+            k_val_metrics, k_validation_timings = validate_one_dataset(policy, v, tokenizer, loss_fn, step, master_config, sft_task_spec, val_batches, val_batch_size, val_mbs, model_type)
+            logger.log_metrics(k_val_metrics, step, prefix=f"validation-{k}")
+            logger.log_metrics(k_validation_timings, step, prefix=f"timing/validation-{k}")
+    else:
+        val_metrics, validation_timings = validate_one_dataset(policy, val_dataloader, tokenizer, loss_fn, step, master_config, sft_task_spec, val_batches, val_batch_size, val_mbs, model_type)
+        logger.log_metrics(val_metrics, step, prefix="validation")
+        logger.log_metrics(validation_timings, step, prefix="timing/validation")
+
+    return None, None
+
+
+def validate_one_dataset(
+    policy: PolicyInterface,
+    val_dataloader: StatefulDataLoader,
+    tokenizer,
+    loss_fn,
+    step: int,
+    master_config: MasterConfig,
+    sft_task_spec: TaskDataSpec,
+    val_batches: int,
+    val_batch_size: int,
+    val_mbs: int,
+    model_type: str,
+):
+    """Run validation on one validation dataset."""
     if val_dataloader is None:
         print("  ⚠️ No validation dataloader provided, skipping validation")
         return
@@ -494,10 +532,8 @@ def sft_train(
             val_batch_size=sft_config["val_global_batch_size"],
             val_mbs=sft_config["val_micro_batch_size"],
             model_type=model_type,
+            logger=logger,
         )
-
-        logger.log_metrics(val_metrics, total_steps, prefix="validation")
-        logger.log_metrics(validation_timings, total_steps, prefix="timing/validation")
 
     policy.prepare_for_training()
 
@@ -582,12 +618,7 @@ def sft_train(
                         val_batch_size=sft_config["val_global_batch_size"],
                         val_mbs=sft_config["val_micro_batch_size"],
                         model_type=model_type,
-                    )
-                    logger.log_metrics(
-                        validation_timings, total_steps + 1, prefix="timing/validation"
-                    )
-                    logger.log_metrics(
-                        val_metrics, total_steps + 1, prefix="validation"
+                        logger=logger,
                     )
 
                 ## Checkpointing

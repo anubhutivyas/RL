@@ -120,6 +120,8 @@ policy:
 data:
   max_input_seq_length: ${policy.max_total_sequence_length}
   dataset_name: "HelpSteer3"
+  # You can optionally specify a list of validation preference datasets:
+  # validation_dataset_name: ["PreferenceData:<Name>:<LocalPath>"]
 
 logger:
   log_dir: "logs"  # Base directory for all logs

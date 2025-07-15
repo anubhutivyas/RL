@@ -56,12 +56,27 @@ def rm_preprocessor(
     idx: int,
 ) -> DatumSpec:
     """Process a datum dictionary for RM training."""
-    messages_chosen = datum_dict["prompt"] + [
-        {"role": "assistant", "content": datum_dict["chosen_response"]}
-    ]
-    messages_rejected = datum_dict["prompt"] + [
-        {"role": "assistant", "content": datum_dict["rejected_response"]}
-    ]
+    # Generic preference dataset format
+    if task_data_spec.task_name == "PreferenceData":
+        assert len(datum_dict["completions"]) == 2  # Currently only supporting 2 responses
+        if datum_dict["completions"][0]["rank"] < datum_dict["completions"][1]["rank"]:
+            chosen_completion = datum_dict["completions"][0]
+            rejected_completion = datum_dict["completions"][1]
+        else:
+            chosen_completion = datum_dict["completions"][1]
+            rejected_completion = datum_dict["completions"][0]
+        messages_chosen = datum_dict["context"] + chosen_completion["completion"]
+        messages_rejected = datum_dict["context"] + rejected_completion["completion"]
+    # Legacy dataset format
+    elif task_data_spec.task_name == "HelpSteer3":
+        messages_chosen = datum_dict["prompt"] + [
+            {"role": "assistant", "content": datum_dict["chosen_response"]}
+        ]
+        messages_rejected = datum_dict["prompt"] + [
+            {"role": "assistant", "content": datum_dict["rejected_response"]}
+        ]
+    else:
+        raise ValueError(f"Unknown task name: {task_data_spec.task_name}")
 
     message_log_chosen = get_formatted_message_log(
         messages_chosen, tokenizer, task_data_spec
@@ -111,16 +126,26 @@ def setup_data(tokenizer: AutoTokenizer, data_config: DataConfig):
     print("\n▶ Setting up data...")
     data_cls = data_config["dataset_name"]
 
-    if data_cls == "HelpSteer3":
+    # Generic preference dataset format
+    if data_cls.startswith("PreferenceData:"):
+        _, _, data_path = data_cls.split(":")
+        data = hf_datasets.PreferenceDataset(data_path)
+        train_dataset = data.formatted_ds["local"]
+        val_dataset = None
+        print(
+            f"  ✓ Training dataset loaded with {len(data.formatted_ds['local'])} samples."
+        )
+    # Legacy dataset format
+    elif data_cls == "HelpSteer3":
         data = hf_datasets.HelpSteer3Dataset()
+        train_dataset = data.formatted_ds["train"]
+        val_dataset = data.formatted_ds["validation"]
+        print(
+            f"  ✓ Training and validation datasets loaded with {len(data.formatted_ds['train'])} and {len(data.formatted_ds['validation'])} samples, respectively."
+        )
     else:
         raise ValueError(f"Unknown dataset class: {data_cls}")
-    print(
-        f"  ✓ Training and validation datasets loaded with {len(data.formatted_ds['train'])} and {len(data.formatted_ds['validation'])} samples, respectively."
-    )
 
-    train_dataset = data.formatted_ds["train"]
-    val_dataset = data.formatted_ds["validation"]
     sft_task_spec = data.task_spec
 
     train_dataset = AllTaskProcessedDataset(
@@ -131,13 +156,41 @@ def setup_data(tokenizer: AutoTokenizer, data_config: DataConfig):
         max_seq_length=data_config["max_input_seq_length"],
     )
 
-    val_dataset = AllTaskProcessedDataset(
-        val_dataset,
-        tokenizer,
-        sft_task_spec,
-        rm_preprocessor,
-        max_seq_length=data_config["max_input_seq_length"],
-    )
+    if "validation_dataset_name" in data_config:
+        # Only supported for generic preference dataset format
+        if isinstance(data_config["validation_dataset_name"], list):
+            val_dataset = {
+                "validation": AllTaskProcessedDataset(
+                    val_dataset,
+                    tokenizer,
+                    sft_task_spec,
+                    rm_preprocessor,
+                    max_seq_length=data_config["max_input_seq_length"],
+                )
+            } if val_dataset else {}
+            for val_data_cls in data_config["validation_dataset_name"]:
+                assert val_data_cls.startswith("PreferenceData:")
+                _, val_dataset_name, val_data_path = val_data_cls.split(":")
+                val_data = hf_datasets.PreferenceDataset(val_data_path)
+                val_dataset.update({
+                    val_dataset_name: AllTaskProcessedDataset(
+                        val_data.formatted_ds["local"],
+                        tokenizer,
+                        val_data.task_spec,
+                        rm_preprocessor,
+                        max_seq_length=data_config["max_input_seq_length"],
+                    )
+                })
+        else:
+            raise ValueError(f"Invalid type for validation_dataset_name: {type(data_config['validation_dataset_name'])}")
+    else:
+        val_dataset = AllTaskProcessedDataset(
+            val_dataset,
+            tokenizer,
+            sft_task_spec,
+            rm_preprocessor,
+            max_seq_length=data_config["max_input_seq_length"],
+        )
 
     return train_dataset, val_dataset, sft_task_spec
 
