@@ -9,7 +9,10 @@ The script, [examples/run_sft.py](../../examples/run_sft.py), is used to train a
 Be sure to launch the job using `uv`. The command to launch a training job is as follows:
 
 ```bash
-uv run examples/run_sft.py --config <PATH TO YAML CONFIG> <OVERRIDES>
+uv run examples/run_rm.py --config examples/configs/rm.yaml
+
+# Can also add overrides on CLI, like changing the model
+uv run examples/run_rm.py --config examples/configs/rm.yaml policy.model_name=Qwen/Qwen2.5-1.5B
 ```
 
 The YAML config must be specified. It uses the same base template as the SFT config but includes a new `reward_model_type` key that triggers Reward Model training. An example RM config file can be found at [examples/configs/rm.yaml](../../examples/configs/rm.yaml).
