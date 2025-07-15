@@ -1237,9 +1237,11 @@ def validate(
                 val_batch,
                 tokenizer,
                 val_task_to_env,
-                max_seq_len=master_config["grpo"].get("first_stage_generation_max_seq_len") or master_config["policy"]["max_total_sequence_length"],
+                max_seq_len=master_config["policy"]["max_total_sequence_length"],
                 max_rollout_turns=master_config["grpo"]["max_rollout_turns"],
                 greedy=False,
+                # First stage uses first_stage_generation_max_seq_len as max_new_tokens
+                max_new_tokens=master_config["grpo"]["first_stage_generation_max_seq_len"],
             )
             rewards = val_batch["total_reward"]
 
