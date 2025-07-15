@@ -1,6 +1,18 @@
-# Documentation File Mapping: Archive to New Structure
+# NeMo RL Documentation: File Mapping
 
 This document maps source files from `archive/docs/` to their new locations in `docs/` and describes the changes made for developer review.
+
+## Table of Contents
+
+- [File Mapping Table](#file-mapping-table)
+- [New Files Created (Not in Archive)](#new-files-created-not-in-archive)
+- [Key Changes Summary](#key-changes-summary)
+  - [Frontmatter Addition](#frontmatter-addition)
+  - [Path Updates](#path-updates)
+  - [Directory Reorganization](#directory-reorganization)
+  - [New Landing Pages](#new-landing-pages)
+
+---
 
 ## File Mapping Table
 
@@ -145,47 +157,3 @@ Added index pages for each major section with:
 - Navigation cards and learning paths
 - Overview content and key resources
 - Logical progression and user workflows
-
-## Developer Review Priorities
-
-### **High Priority (Critical)**
-1. **Path Updates** - Verify all internal links work correctly
-2. **Frontmatter Accuracy** - Ensure metadata matches content
-3. **Navigation Structure** - Check that users can find content
-4. **Code Examples** - Verify all code paths and examples work
-
-### **Medium Priority (Important)**
-1. **Content Organization** - Ensure logical grouping
-2. **Learning Progression** - Verify learning paths make sense
-3. **Cross-references** - Check that related content is properly linked
-4. **Asset References** - Verify images and other assets load correctly
-
-### **Low Priority (Polish)**
-1. **Frontmatter Completeness** - Ensure all metadata is appropriate
-2. **Navigation Consistency** - Check for consistent navigation patterns
-3. **Content Completeness** - Verify no content was lost in migration
-4. **Style Consistency** - Ensure consistent formatting and style
-
-## Review Checklist for Each File
-
-### **For Moved Files:**
-- [ ] Frontmatter added and accurate
-- [ ] Internal links updated correctly
-- [ ] External links still work
-- [ ] Code examples reference correct paths
-- [ ] Asset references updated
-- [ ] Content matches new location context
-
-### **For New Files:**
-- [ ] Content is accurate and complete
-- [ ] Navigation structure is logical
-- [ ] Links point to correct locations
-- [ ] Learning progression makes sense
-- [ ] Overview content is helpful
-
-### **For All Files:**
-- [ ] Frontmatter taxonomy is appropriate
-- [ ] Difficulty level matches content
-- [ ] Personas are correctly identified
-- [ ] Tags are relevant and helpful
-- [ ] Content type classification is accurate 
