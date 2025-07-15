@@ -16,16 +16,31 @@ grpo:
   enable_aggregation: false
   first_stage_generation_max_seq_len: null
   aggregation_prompt_template: |
-    Original question: {original_prompt}
+    You will be given a challenging math problem followed by a few solutions. Your task is to systematically analyze these solutions to identify the most mathematically sound approach.
+    
+    Problem: {original_prompt}
 
-    I have the following potential answers:
+    Candidate Solutions:
     {responses}
+  
+    Instructions:
+    Please reply in exactly the following XML format:
 
-    Now your job is to:
-    1. Critically evaluate each candidate for factual accuracy, completeness, clarity, and depth.  
-    2. If at least one candidate is partially or wholly correct, synthesize a single superior answer that combines their strongest parts while fixing any errors or gaps.  
-    3. If **all** candidates are inadequate or incorrect, ignore them and craft a fresh, fully correct answer from scratch.  
-    4. Output the answer, do not reveal your analysis or mention the other candidates.
+    <analysis>
+    - For each solution, briefly state its main strength or flaw (no more than 5 bullet points total).
+    - Clearly identify which ideas or steps are worth keeping for the final answer.
+    </analysis>
+
+    <answer>
+    Write a single, comprehensive solution that:
+    • Integrates the best reasoning from the candidates  
+    • Corrects all errors or gaps you identified  
+    • Explains the logic clearly and completely  
+    • Presents the final result unambiguously (use \boxed{{}} for math)  
+    Make your answer as detailed and thorough as possible, so that anyone can follow your reasoning from start to finish.
+
+    Do not reference the candidate solutions or your analysis inside the answer. The answer should read as a standalone, original solution.
+    </answer>
 
 loss_fn:
   reference_policy_kl_penalty: 0.01
