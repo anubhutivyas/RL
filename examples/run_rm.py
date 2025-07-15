@@ -13,9 +13,9 @@
 # limitations under the License.
 
 import argparse
+import logging
 import os
 import pprint
-from functools import partial
 from typing import Any
 
 from omegaconf import OmegaConf
@@ -34,7 +34,7 @@ from nemo_rl.utils.logger import get_next_experiment_dir
 
 def parse_args():
     """Parse command line arguments."""
-    parser = argparse.ArgumentParser(description="Run SFT training with configuration")
+    parser = argparse.ArgumentParser(description="Run RM training with configuration")
     parser.add_argument(
         "--config", type=str, default=None, help="Path to YAML config file"
     )
@@ -48,40 +48,58 @@ def parse_args():
 # =======================================================
 # Data Processing
 # =======================================================
-def sft_preprocessor(
+def rm_preprocessor(
     datum_dict: dict[str, Any],
     task_data_spec: TaskDataSpec,
     tokenizer,
     max_seq_length: int,
     idx: int,
-    add_bos: bool = True,
-    add_eos: bool = True,
-    add_generation_prompt: bool = False,
 ) -> DatumSpec:
-    """Process a datum dictionary for SFT training."""
-    message_log = get_formatted_message_log(
-        datum_dict["messages"],
-        tokenizer,
-        task_data_spec,
-        add_bos_token=add_bos,
-        add_eos_token=add_eos,
-        add_generation_prompt=add_generation_prompt,
+    """Process a datum dictionary for RM training."""
+    messages_chosen = datum_dict["prompt"] + [
+        {"role": "assistant", "content": datum_dict["chosen_response"]}
+    ]
+    messages_rejected = datum_dict["prompt"] + [
+        {"role": "assistant", "content": datum_dict["rejected_response"]}
+    ]
+
+    message_log_chosen = get_formatted_message_log(
+        messages_chosen, tokenizer, task_data_spec
+    )
+    message_log_rejected = get_formatted_message_log(
+        messages_rejected, tokenizer, task_data_spec
     )
 
-    length = sum(len(m["token_ids"]) for m in message_log)
+    length_chosen = sum(len(m["token_ids"]) for m in message_log_chosen)
+    length_rejected = sum(len(m["token_ids"]) for m in message_log_rejected)
 
     loss_multiplier = 1.0
-    if length > max_seq_length:
+    if max(length_chosen, length_rejected) > max_seq_length:
         # make smaller and mask out
-        for message in message_log:
+        logging.warning(
+            f"Truncating chosen and rejected messages to {max_seq_length} tokens"
+        )
+        for message in message_log_chosen:
             message["token_ids"] = message["token_ids"][
-                : min(4, max_seq_length // len(message_log))
+                : min(4, max_seq_length // len(message_log_chosen))
+            ]
+        for message in message_log_rejected:
+            message["token_ids"] = message["token_ids"][
+                : min(4, max_seq_length // len(message_log_rejected))
             ]
         loss_multiplier = 0.0
 
+        length_chosen = sum(len(m["token_ids"]) for m in message_log_chosen)
+        length_rejected = sum(len(m["token_ids"]) for m in message_log_rejected)
+
+        # safeguard against edge case where there are too many turns to fit within the max length
+        assert max(length_chosen, length_rejected) <= max_seq_length
+
     output = {
-        "message_log": message_log,
-        "length": length,
+        "message_log_chosen": message_log_chosen,
+        "length_chosen": length_chosen,
+        "message_log_rejected": message_log_rejected,
+        "length_rejected": length_rejected,
         "extra_env_info": None,
         "loss_multiplier": loss_multiplier,
         "idx": idx,
@@ -92,31 +110,9 @@ def sft_preprocessor(
 def setup_data(tokenizer: AutoTokenizer, data_config: DataConfig):
     print("\n▶ Setting up data...")
     data_cls = data_config["dataset_name"]
-    if data_cls == "open_assistant":
-        data = hf_datasets.OasstDataset(output_dir="/tmp/open_assistant")
-    elif data_cls == "squad":
-        data = hf_datasets.SquadDataset()
-    elif data_cls == "prompt_response_dataset":
-        data = hf_datasets.PromptResponseDataset(
-            data_config["train_data_path"],
-            data_config["val_data_path"],
-            data_config["input_key"],
-            data_config["output_key"],
-        )
-    elif data_cls == "openmathinstruct2":
-        data = hf_datasets.OpenMathInstruct2Dataset(
-            split=data_config["split"],
-            output_key=data_config["output_key"],
-            prompt_file=data_config["prompt_file"],
-        )
-    elif data_cls == "openai_format":
-        data = hf_datasets.OpenAIFormatDataset(
-            data_config["train_data_path"],
-            data_config["val_data_path"],
-            data_config["chat_key"],
-            data_config["system_key"],
-            data_config["system_prompt"],
-        )
+
+    if data_cls == "HelpSteer3":
+        data = hf_datasets.HelpSteer3Dataset()
     else:
         raise ValueError(f"Unknown dataset class: {data_cls}")
     print(
@@ -131,12 +127,7 @@ def setup_data(tokenizer: AutoTokenizer, data_config: DataConfig):
         train_dataset,
         tokenizer,
         sft_task_spec,
-        partial(
-            sft_preprocessor,
-            add_bos=data_config["add_bos"],
-            add_eos=data_config["add_eos"],
-            add_generation_prompt=data_config["add_generation_prompt"],
-        ),
+        rm_preprocessor,
         max_seq_length=data_config["max_input_seq_length"],
     )
 
@@ -144,12 +135,7 @@ def setup_data(tokenizer: AutoTokenizer, data_config: DataConfig):
         val_dataset,
         tokenizer,
         sft_task_spec,
-        partial(
-            sft_preprocessor,
-            add_bos=data_config.get("add_bos", True),
-            add_eos=data_config.get("add_eos", True),
-            add_generation_prompt=data_config["add_generation_prompt"],
-        ),
+        rm_preprocessor,
         max_seq_length=data_config["max_input_seq_length"],
     )
 
@@ -162,7 +148,7 @@ def main():
     args, overrides = parse_args()
 
     if not args.config:
-        args.config = os.path.join(os.path.dirname(__file__), "configs", "sft.yaml")
+        args.config = os.path.join(os.path.dirname(__file__), "configs", "rm.yaml")
 
     config = load_config(args.config)
     print(f"Loaded configuration from: {args.config}")
