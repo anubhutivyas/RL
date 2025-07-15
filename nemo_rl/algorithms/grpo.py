@@ -28,7 +28,7 @@ from nemo_rl.algorithms.loss_functions import (
     ClippedPGLossDataDict,
     ClippedPGLossFn,
 )
-from nemo_rl.algorithms.utils import calculate_baseline_and_std_per_prompt
+from nemo_rl.algorithms.utils import calculate_baseline_and_std_per_prompt, calculate_math_majority_at_k
 from nemo_rl.data import DataConfig
 from nemo_rl.data.datasets import AllTaskProcessedDataset, rl_collate_fn
 from nemo_rl.data.interfaces import (
@@ -348,7 +348,7 @@ def create_aggregation_prompts(
         # Format the generation responses
         responses_text = ""
         for j, response in enumerate(generation_responses[i]):
-            responses_text += f"Response {j+1}: {response}\n"
+            responses_text += f"Solution {j+1}:\n{response}\n"
         
         # Create the aggregation prompt using the template
         aggregation_prompt = aggregation_prompt_template.format(
@@ -359,7 +359,7 @@ def create_aggregation_prompts(
         # Debug: Print aggregation prompt details
         # print(f"DEBUG: Sample {i} - Using {len(generation_responses[i])} responses")
         # print(f"DEBUG: Original prompt: {original_prompt}...")
-        # print(f"DEBUG: Aggregation prompt: {aggregation_prompt}...")
+        print(f"DEBUG: Aggregation prompt: {aggregation_prompt}")
         
         # Create a proper message structure for chat template (like in run_grpo.py) 
         # Caveat: no system prompt is added here
@@ -882,6 +882,26 @@ def grpo_train(
                         all_rewards.max(),
                     )
                     
+                    # Calculate majority@k for generation stage
+                    generation_majority_at_k = 0.0
+                    try:
+                        generation_prompts = input_ids
+                        generation_majority_at_k = calculate_math_majority_at_k(
+                            repeated_batch["message_log"], generation_prompts, rewards
+                        )
+                    except Exception as e:
+                        print(f"  ⚠️ Error calculating generation majority@k: {str(e)}")
+                    
+                    # Calculate majority@k for aggregation stage
+                    aggregation_majority_at_k = 0.0
+                    if aggregation_batch is not None:
+                        try:
+                            aggregation_majority_at_k = calculate_math_majority_at_k(
+                                aggregation_batch["message_log"], aggregation_input_ids, aggregation_rewards
+                            )
+                        except Exception as e:
+                            print(f"  ⚠️ Error calculating aggregation majority@k: {str(e)}")
+                    
                     # Update rollout metrics with separate generation and aggregation metrics
                     rollout_metrics.update({
                         # Generation metrics
@@ -892,6 +912,7 @@ def grpo_train(
                         "generation_reward_min": generation_reward_min,
                         "generation_reward_mean": generation_reward_mean,
                         "generation_reward_max": generation_reward_max,
+                        "generation_majority_at_k": generation_majority_at_k,
                         # Aggregation metrics
                         "aggregation_percent_zero_advantages": aggregation_percent_zero_advantages,
                         "aggregation_advantages_min": aggregation_advantages_min,
@@ -900,6 +921,7 @@ def grpo_train(
                         "aggregation_reward_min": aggregation_reward_min,
                         "aggregation_reward_mean": aggregation_reward_mean,
                         "aggregation_reward_max": aggregation_reward_max,
+                        "aggregation_majority_at_k": aggregation_majority_at_k,
                         # Combined metrics
                         "combined_percent_zero_advantages": percent_zero_advantages,
                         "combined_advantages_min": advantages_min,
@@ -927,6 +949,15 @@ def grpo_train(
                         all_rewards.max(),
                     )
                     
+                    # Calculate majority@k for single-stage training
+                    majority_at_k = 0.0
+                    try:
+                        majority_at_k = calculate_math_majority_at_k(
+                            repeated_batch["message_log"], input_ids, all_rewards
+                        )
+                    except Exception as e:
+                        print(f"  ⚠️ Error calculating majority@k: {str(e)}")
+                    
                     rollout_metrics.update({
                         "percent_zero_advantages": percent_zero_advantages,
                         "advantages_min": advantages_min,
@@ -935,6 +966,7 @@ def grpo_train(
                         "reward_min": reward_min,
                         "reward_mean": reward_mean,
                         "reward_max": reward_max,
+                        "majority_at_k": majority_at_k,
                     })
 
             with timer.time("data_processing"):
@@ -1128,6 +1160,10 @@ def grpo_train(
         if master_config["grpo"].get("enable_aggregation", False):
             print(f"  • Generation Avg Reward: {np.mean(rewards.numpy()):.4f}")
             print(f"  • Aggregation Avg Reward: {np.mean(aggregation_rewards.numpy()):.4f}")
+            print(f"  • Generation Majority@K: {rollout_metrics.get('generation_majority_at_k', 0.0):.4f}")
+            print(f"  • Aggregation Majority@K: {rollout_metrics.get('aggregation_majority_at_k', 0.0):.4f}")
+        else:
+            print(f"  • Majority@K: {rollout_metrics.get('majority_at_k', 0.0):.4f}")
         print(
             f"  • Mean Generation Length: {rollout_metrics['mean_gen_tokens_per_sample']:.4f}"
         )

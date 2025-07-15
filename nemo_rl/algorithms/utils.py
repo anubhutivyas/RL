@@ -16,6 +16,8 @@ import warnings
 from collections import defaultdict
 from functools import wraps
 from typing import Optional
+import re
+from collections import Counter
 
 import numpy as np
 import torch
@@ -231,3 +233,88 @@ def get_tokenizer(tokenizer_config: TokenizerConfig) -> AutoTokenizer:
         print("No chat template provided, using tokenizer's default")
 
     return tokenizer
+
+
+def _calculate_single_majority_at_k(answers: list[str], rewards: list[float]) -> float:
+    """Calculate majority@K for a single prompt.
+    
+    Args:
+        answers: List of extracted answers for this prompt
+        rewards: List of corresponding rewards
+        
+    Returns:
+        float: 1.0 if majority answer is correct, 0.0 otherwise
+    """
+    if not answers:
+        return 0.0
+        
+    # Count votes for each answer
+    answer_counts = Counter(answers)
+    
+    # Find the most voted answer
+    most_voted_answer = answer_counts.most_common(1)[0][0]
+    
+    # Check if the most voted answer corresponds to a correct response
+    # Find any response with this answer that has a positive reward
+    for answer, reward in zip(answers, rewards):
+        if answer == most_voted_answer and reward > 0:
+            return 1.0
+    
+    return 0.0
+
+
+def calculate_math_majority_at_k(message_logs, prompts, rewards):
+    """Calculate majority@K for math problems based on extracted answers.
+    
+    For each unique prompt, extract answers from responses, count votes for each answer,
+    find the most voted answer, and check if it's correct.
+    
+    Args:
+        message_logs: List of message logs containing the conversations
+        prompts: tensor (b, s) Tensor of prompts 
+        rewards: tensor (b,) Float-valued rewards
+        
+    Returns:
+        float: Average majority@K score across all prompts
+    """
+    unique_prompts = torch.unique(prompts, dim=0)
+    reward_device = rewards.get_device()
+    if reward_device == -1:
+        reward_device = torch.device("cpu")
+    
+    total_score = 0.0
+    num_prompts = 0
+    
+    for i in range(len(unique_prompts)):
+        is_matching_prompt = (prompts == unique_prompts[i]).all(1)
+        prompt_idx = torch.arange(len(prompts), device=reward_device)[is_matching_prompt]
+        
+        if len(prompt_idx) <= 1:
+            continue  # Skip if not enough samples
+            
+        # Extract answers for this prompt
+        answers = []
+        prompt_rewards = []
+        
+        for idx in prompt_idx:
+            # Extract answer from message log
+            message_log = message_logs[idx.item()]
+            extracted_answer = ""
+            
+            # Find last assistant response and extract answer
+            for message in reversed(message_log):
+                if message["role"] == "assistant":
+                    response = message["content"]
+                    # Try to extract from \boxed{} - get the last one if multiple exist
+                    boxed_matches = re.findall(r'\\boxed\{([^}]*)\}', response)
+                    if boxed_matches:
+                        extracted_answer = boxed_matches[-1].strip()  # Take the last match
+                    break
+            
+            answers.append(extracted_answer)
+            prompt_rewards.append(rewards[idx].item())
+        
+        total_score += _calculate_single_majority_at_k(answers, prompt_rewards)
+        num_prompts += 1
+    
+    return total_score / num_prompts if num_prompts > 0 else 0.0
