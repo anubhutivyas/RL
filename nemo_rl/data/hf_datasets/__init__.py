@@ -12,6 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from nemo_rl.data.hf_datasets.alpaca import AlpacaDataset
 from nemo_rl.data.hf_datasets.chat_templates import COMMON_CHAT_TEMPLATES
 from nemo_rl.data.hf_datasets.dpo import DPODataset
 from nemo_rl.data.hf_datasets.helpsteer3 import HelpSteer3Dataset
@@ -21,7 +22,6 @@ from nemo_rl.data.hf_datasets.openmathinstruct2 import OpenMathInstruct2Dataset
 from nemo_rl.data.hf_datasets.prompt_response_dataset import (
     PromptResponseDataset,
 )
-from nemo_rl.data.hf_datasets.squad import SquadDataset
 
 __all__ = [
     "DPODataset",
@@ -30,6 +30,6 @@ __all__ = [
     "OpenAIFormatDataset",
     "OpenMathInstruct2Dataset",
     "PromptResponseDataset",
-    "SquadDataset",
+    "AlpacaDataset",
     "COMMON_CHAT_TEMPLATES",
 ]

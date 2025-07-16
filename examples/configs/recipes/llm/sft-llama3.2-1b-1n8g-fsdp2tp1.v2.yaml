@@ -50,7 +50,7 @@ policy:
       fused: false
 data:
   max_input_seq_length: 1024
-  dataset_name: squad
+  dataset_name: alpaca
   add_bos: true
   add_eos: true
   add_generation_prompt: false
@@ -63,7 +63,7 @@ logger:
     project: nemo-rl
     name: sft-llama3.2-1b-1n8g-fsdp2tp1
   tensorboard:
-    log_dir: tb_logs-sft-dev-squad
+    log_dir: tb_logs-sft-dev-alpaca
   gpu_monitoring:
     collection_interval: 10
     flush_interval: 10

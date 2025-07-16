@@ -94,8 +94,12 @@ def setup_data(tokenizer: AutoTokenizer, data_config: DataConfig):
     data_cls = data_config["dataset_name"]
     if data_cls == "open_assistant":
         data = hf_datasets.OasstDataset(output_dir="/tmp/open_assistant")
+    elif data_cls == "alpaca":
+        data = hf_datasets.AlpacaDataset()
     elif data_cls == "squad":
-        data = hf_datasets.SquadDataset()
+        raise ValueError(
+            'Squad dataset is deprecated. Please use "alpaca" dataset instead.'
+        )
     elif data_cls == "prompt_response_dataset":
         data = hf_datasets.PromptResponseDataset(
             data_config["train_data_path"],
