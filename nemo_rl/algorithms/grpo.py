@@ -80,6 +80,7 @@ class GRPOConfig(TypedDict):
     enable_aggregation: bool  # Whether to enable aggregation stage training
     aggregation_prompt_template: str  # Template for aggregation prompts
     first_stage_generation_max_seq_len: int  # Max new tokens for first stage generation (controls generation length, not total sequence length)
+    aggregation_format_checking: bool  # Whether to enable format checking for aggregation stage
 
 
 class GRPOSaveState(TypedDict):
@@ -309,6 +310,7 @@ def create_aggregation_prompts(
     generation_responses: List[List[str]],
     aggregation_prompt_template: str,
     tokenizer,
+    aggregation_format_checking: bool = True,
 ) -> BatchedDataDict[DatumSpec]:
     """Create aggregation prompts by combining original prompts with generation responses.
     
@@ -348,7 +350,7 @@ def create_aggregation_prompts(
         # Format the generation responses
         responses_text = ""
         for j, response in enumerate(generation_responses[i]):
-            responses_text += f"Solution {j+1}:\n{response}\n"
+            responses_text += f"<Solution {j+1}>\n{response}\n</Solution {j+1}>\n"
         
         # Create the aggregation prompt using the template
         aggregation_prompt = aggregation_prompt_template.format(
@@ -359,7 +361,7 @@ def create_aggregation_prompts(
         # Debug: Print aggregation prompt details
         # print(f"DEBUG: Sample {i} - Using {len(generation_responses[i])} responses")
         # print(f"DEBUG: Original prompt: {original_prompt}...")
-        print(f"DEBUG: Aggregation prompt: {aggregation_prompt}")
+        # print(f"DEBUG: Aggregation prompt: {aggregation_prompt}")
         
         # Create a proper message structure for chat template (like in run_grpo.py) 
         # Caveat: no system prompt is added here
@@ -396,7 +398,9 @@ def create_aggregation_prompts(
         new_message_logs.append(new_message_log)
     
         # Keep track of corresponding metadata for valid prompts
-        new_extra_env_info.append(original_batch["extra_env_info"][i])
+        aggregation_env_info = deepcopy(original_batch["extra_env_info"][i])
+        aggregation_env_info["format_checking"] = aggregation_format_checking  # Use configurable format checking for aggregation
+        new_extra_env_info.append(aggregation_env_info)
         new_loss_multiplier.append(original_batch["loss_multiplier"][i])
         new_task_name.append(original_batch["task_name"][i])
         # TODO: add back dataset
@@ -664,11 +668,11 @@ def grpo_train(
                             if last_assistant_response is not None:
                                 if reasoning_split_word and reasoning_split_word in last_assistant_response:
                                     prompt_responses.append(last_assistant_response.split(reasoning_split_word)[-1].lstrip())
-                                else:
-                                    prompt_responses.append("None")
                             else:
                                 raise ValueError(f"No assistant response found for prompt {i} generation {j} which is {repeated_batch['message_log'][idx]}")
-                        
+                        # if no assistant response, use the last assistant response from the previous generation
+                        if len(prompt_responses) == 0:
+                            prompt_responses.append(last_assistant_response)
                         # Randomly select a subset of responses instead of using all
                         # Choose a random number of responses to select (between 1 and total available)
                         num_to_select = random.randint(1, len(prompt_responses))
@@ -684,6 +688,7 @@ def grpo_train(
                         generation_responses, 
                         master_config["grpo"]["aggregation_prompt_template"],
                         tokenizer,
+                        master_config["grpo"]["aggregation_format_checking"],
                     )
                     # print(f"▶ Aggregation batch template: {aggregation_batch_template}")
                     # Repeat aggregation batch for multiple generations

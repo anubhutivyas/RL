@@ -99,6 +99,7 @@ class HFVerifyWorker:
 class MathEnvironmentMetadata(TypedDict):
     ground_truth: str
     question: Optional[str]  # Added to store the question in metadata
+    format_checking: Optional[bool]  # Whether to apply format checking (default: False)
 
 
 @ray.remote
@@ -119,6 +120,36 @@ class MathEnvironment(EnvironmentInterface):
         # shutdown all workers
         for worker in self.workers:
             ray.kill(worker)
+
+    def _check_aggregation_format(self, response: str) -> float:
+        """Check if response has required XML tags for aggregation.
+        
+        Args:
+            response: The assistant's response to check
+            
+        Returns:
+            float: 1.0 if <analysis> tags are present in correct order and answer content after analysis is longer, 0.0 otherwise
+        """
+        response_lower = response.lower()
+        
+        # Check analysis tag order
+        analysis_start = response_lower.find("<analysis>")
+        analysis_end = response_lower.find("</analysis>")
+        has_proper_analysis = analysis_start != -1 and analysis_end != -1 and analysis_start < analysis_end
+        
+        if has_proper_analysis:
+            # Extract content between analysis tags
+            analysis_content = response[analysis_start + len("<analysis>"):analysis_end].strip()
+            
+            # Extract answer content as everything after </analysis> tag
+            answer_content = response[analysis_end + len("</analysis>"):].strip()
+            
+            # Answer section should be longer than analysis section
+            answer_longer = len(answer_content) > len(analysis_content)
+            
+            return 1.0 if answer_longer else 0.0
+        else:
+            return 0.0
 
     def step(
         self,
@@ -165,10 +196,39 @@ class MathEnvironment(EnvironmentInterface):
             )
         ]
 
-        results = ray.get(futures)
+        math_results = ray.get(futures)
 
-        # flatten the results
-        results = [item for sublist in results for item in sublist]
+        # flatten the math results
+        math_results = [item for sublist in math_results for item in sublist]
+        
+        # Apply format checking individually to each response based on its metadata
+        final_results = []
+        format_checked_count = 0
+        format_perfect_count = 0
+        
+        for i, (math_score, response, meta) in enumerate(zip(math_results, assistant_response_batch, metadata)):
+            if meta.get("format_checking", False):
+                # Apply format checking to this specific response
+                format_score = self._check_aggregation_format(response)
+                final_reward = math_score if format_score == 1.0 else 0.0
+                final_results.append(final_reward)
+                
+                format_checked_count += 1
+                if format_score == 1.0:
+                    format_perfect_count += 1
+            else:
+                # No format checking for this response - use math result only
+                final_results.append(math_score)
+        
+        # Print format checking summary if any responses were format checked
+        if format_checked_count > 0:
+            math_mean = sum(math_results) / len(math_results)
+            final_mean = sum(final_results) / len(final_results)
+            print(f"Math Environment: Applied format checking to {format_checked_count}/{len(math_results)} responses")
+            print(f"  Math rewards - Mean: {math_mean:.3f}")
+            print(f"  Perfect format responses: {format_perfect_count}/{format_checked_count}")
+            print(f"  Final rewards - Mean: {final_mean:.3f}")
+
         observations = [
             {
                 "role": "environment",
@@ -176,11 +236,11 @@ class MathEnvironment(EnvironmentInterface):
                 if result
                 else "Environment: incorrect",
             }
-            for result in results
+            for result in final_results
         ]
 
         # create a tensor of rewards and done flags
-        rewards = torch.tensor(results).cpu()
+        rewards = torch.tensor(final_results).cpu()
         done = torch.ones_like(rewards).cpu()
 
         next_stop_strings = [None] * len(message_log_batch)
