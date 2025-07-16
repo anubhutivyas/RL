@@ -71,16 +71,11 @@ def generate_responses(
     ):
         generated_ids.append(output_ids[input_length:total_length])
 
-    generated_texts = tokenizer.batch_decode(generated_ids, skip_special_tokens=False)
+    generated_texts = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)
 
     # Append to message log
-    for i, (text, input_length, total_length, is_end) in enumerate(
-        zip(
-            generated_texts,
-            input_lengths,
-            unpadded_sequence_lengths,
-            generation_outputs["is_end"],
-        )
+    for i, (text, input_length, total_length) in enumerate(
+        zip(generated_texts, input_lengths, unpadded_sequence_lengths)
     ):
         message = {
             "role": "assistant",
@@ -94,8 +89,6 @@ def generate_responses(
             ]
 
         batch["message_log"][i].append(message)
-
-    batch["is_end"] = generation_outputs["is_end"].tolist()
 
     metrics = {
         "mean_generation_length": (
@@ -231,10 +224,7 @@ def run_multi_turn_rollout(
     """
     current_batch = input_batch.copy()  # Work on a copy
     batch_size = len(current_batch["message_log"])
-    # do not change this or else is end will not work
     active_indices = torch.arange(batch_size)
-    # do not change this or else is end will not work
-
     total_rewards = torch.zeros(batch_size, dtype=torch.float32)
 
     # Initialize stop_strings from the initial batch if present
@@ -373,7 +363,6 @@ def run_multi_turn_rollout(
 
     # Add total rewards to the final batch
     current_batch["total_reward"] = total_rewards
-    current_batch["is_end"] = torch.as_tensor(active_batch["is_end"], dtype=torch.bool)
 
     # Group sample-level data by dataset for per-dataset metrics
     per_dataset_data = defaultdict(lambda: defaultdict(list))

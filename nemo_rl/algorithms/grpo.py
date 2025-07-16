@@ -493,12 +493,6 @@ def grpo_train(
                 )
                 policy_generation.finish_generation()
 
-            # hack the reward here
-            repeated_batch["total_reward"] = (
-                repeated_batch["is_end"] * repeated_batch["total_reward"]
-            )
-            # hack the reward here
-
             # get dataset specific pass at k
             prompt_based_reward_dict = defaultdict(list)
             idx_dictionary = defaultdict(list)
@@ -627,6 +621,7 @@ def grpo_train(
                         "make_sequence_length_divisible_by"
                     ],
                 )
+
                 # Create training data from flattened messages
                 train_data = BatchedDataDict[ClippedPGLossDataDict](
                     {
