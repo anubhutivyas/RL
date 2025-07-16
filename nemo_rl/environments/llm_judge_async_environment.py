@@ -13,6 +13,7 @@
 # limitations under the License.
 import logging
 import os
+import re
 import uuid
 from typing import Dict, List, Optional, Tuple, TypedDict
 
@@ -76,7 +77,7 @@ Reference Answer:
 Now, evaluate if the response is correct based on the following evaluation criteria:
 {criteria}
 
-Answer yes or no, then give your reasoning.
+Answer yes or no, then give your reasoning. Surround the yes/no with @@@ @@@ so it's easier to parse.
 """
 
     def __init__(
@@ -152,9 +153,9 @@ Answer yes or no, then give your reasoning.
         Returns:
             Tuple of (request_id, score)
         """
-        reference = metadata.get("reference_answer", "")
-        criteria = metadata.get("evaluation_criteria", "")
-        extract_box = metadata.get("extract_box", False)
+        reference = metadata["reference_answer"]
+        criteria = metadata["evaluation_criteria"]
+        extract_box = metadata["extract_box"]
 
         response_to_judge = response_to_judge.split("</think>")[-1].strip()
         response_to_judge = (
@@ -186,15 +187,18 @@ Answer yes or no, then give your reasoning.
             final_output = request_output
 
         score = 0.0
+
         if final_output and not final_output.finished:
             logging.info(
                 f"Request {request_id} did not finish within the token limit, but we will score it anyway. Output: {final_output}"
             )
         elif final_output:
             generated_text = final_output.outputs[0].text.strip()
-            generated_text_lower = generated_text.lower()
+            match = re.search(r"@@@(.+?)@@@", generated_text)
+            if match:
+                result = match.group(1)
 
-            has_yes = "yes" in generated_text_lower
+            has_yes = "yes" in result.lower()
 
             if has_yes:
                 score = 1.0
@@ -210,6 +214,11 @@ Answer yes or no, then give your reasoning.
         else:
             logging.warning(f"No output received from LLM for request {request_id}.")
 
+        if response_to_judge == "None":
+            score = 0.0
+            logging.info(
+                f"Response to judge is 'None' for request {request_id}. so we set the score to : {score}."
+            )
         return request_id, score
 
 
