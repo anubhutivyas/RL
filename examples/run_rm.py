@@ -153,6 +153,9 @@ def main():
     config = load_config(args.config)
     print(f"Loaded configuration from: {args.config}")
 
+    # Uses the same base template as the SFT config but includes a new `reward_model_type` key that triggers Reward Model training
+    config.sft = "${.rm}"
+
     if overrides:
         print(f"Overrides: {overrides}")
         config = parse_hydra_overrides(config, overrides)

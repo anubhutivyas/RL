@@ -318,7 +318,7 @@ class DTensorPolicyWorker:
                     embed_tokens_weight = param
                     break
 
-            if embed_tokens_weight is not None:
+            if embed_tokens_weight is not None and hasattr(self.model, "lm_head"):
                 self.model.lm_head.weight = embed_tokens_weight
 
         # Manually broadcast buffers
