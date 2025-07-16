@@ -292,16 +292,19 @@ class ClippedPGLossFn(LossFunction):
         loss = actor_loss + kl_for_loss
 
         with torch.no_grad():
-            token_level_entropy = masked_mean(
-                compute_token_level_entropy(next_token_logits),
-                mask,
-                global_normalization_factor=global_valid_toks,
-            )
+            # token_level_entropy = masked_mean(
+            #     compute_token_level_entropy(next_token_logits),
+            #     mask,
+            #     global_normalization_factor=global_valid_toks,
+            # )
             probs_ratio = masked_mean(
                 ratios.detach(),
                 mask,
                 global_normalization_factor=global_valid_toks,
-            ).item()
+            )
+            token_level_entropy = torch.zeros_like(probs_ratio)
+
+            probs_ratio = probs_ratio.item()
             probs_ratio_clamped = masked_mean(
                 ratios_clamped.detach(),
                 mask,
