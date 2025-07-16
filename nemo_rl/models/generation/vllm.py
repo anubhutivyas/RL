@@ -300,6 +300,8 @@ class VllmGenerationWorker:
         logprobs_list = []
         generation_lengths = []
         unpadded_sequence_lengths = []
+        is_end = []
+
         max_length = 0
         for output in outputs:
             max_length = max(max_length, len(output.outputs[0].token_ids))
@@ -346,6 +348,8 @@ class VllmGenerationWorker:
             response_length = sequence_length + len(generated_tokens)
             generation_lengths.append(len(generated_tokens))
             unpadded_sequence_lengths.append(response_length)
+            is_end.append(generation.finished())
+
         # Create return data conforming to GenerationOutputSpec
         output_ids = torch.stack(output_ids_list)
         logprobs = torch.stack(logprobs_list)
@@ -360,6 +364,7 @@ class VllmGenerationWorker:
                 "unpadded_sequence_lengths": torch.tensor(
                     unpadded_sequence_lengths, dtype=torch.long
                 ),
+                "is_end": torch.tensor(is_end, dtype=torch.bool),
             }
         )
 
