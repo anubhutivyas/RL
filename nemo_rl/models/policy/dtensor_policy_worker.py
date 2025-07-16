@@ -301,7 +301,7 @@ class DTensorPolicyWorker:
 
         # Handle tied word embeddings after loading the state dict
         # We need to actually tie the parameters at the model level
-        is_tied_lm_head = getattr(
+        is_tied_lm_head = hasattr(self.model, "lm_head") and getattr(
             getattr(self.model, "config", {}), "tie_word_embeddings", False
         )
         if is_tied_lm_head:
@@ -311,7 +311,7 @@ class DTensorPolicyWorker:
                     embed_tokens_weight = param
                     break
 
-            if embed_tokens_weight is not None and hasattr(self.model, "lm_head"):
+            if embed_tokens_weight is not None:
                 self.model.lm_head.weight = embed_tokens_weight
 
         # Manually broadcast buffers
