@@ -119,7 +119,12 @@ from nemo_rl.models.policy.interfaces import (
     LogprobOutputSpec,
     ReferenceLogprobOutputSpec,
 )
-from nemo_rl.models.policy.utils import get_gpu_info, get_runtime_env_for_policy_worker
+from nemo_rl.models.policy.utils import (
+    configure_expandable_segments,
+    get_gpu_info,
+    get_megatron_checkpoint_dir,
+    get_runtime_env_for_policy_worker,
+)
 
 TokenizerType = TypeVar("TokenizerType", bound=PreTrainedTokenizerBase)
 
@@ -358,7 +363,6 @@ class MegatronPolicyWorker:
         *,
         worker_sharding_annotations: NamedSharding,
         pre_init_communication_queue: Queue,
-        megatron_checkpoint_home: Optional[str] = None,
         **kwargs: Any,
     ):
         self.cfg = config
@@ -369,6 +373,9 @@ class MegatronPolicyWorker:
         }
         self.dtype = dtype_map[self.cfg["precision"]]
 
+        # Only enable expandable_segments on Hopper and newer architectures (compute capability 9.x+)
+        configure_expandable_segments()
+
         # cfg["model_name"] is allowed to be either an HF model name or a path to an HF checkpoint
         # check if hf_model_name is a path
         hf_model_name = self.cfg["model_name"]
@@ -377,10 +384,7 @@ class MegatronPolicyWorker:
         if os.path.exists(hf_model_name):
             hf_model_subdir = f"model_{hf_model_subdir.replace('/', '_')}"
 
-        if megatron_checkpoint_home is not None:
-            pretrained_path = f"{megatron_checkpoint_home}/{hf_model_subdir}"
-        else:
-            pretrained_path = f"/opt/checkpoints/tron/{hf_model_subdir}"
+        pretrained_path = f"{get_megatron_checkpoint_dir()}/{hf_model_subdir}"
         pt_checkpoint_exists = os.path.exists(pretrained_path) and os.path.exists(
             os.path.join(pretrained_path, "iter_0000000")
         )
@@ -434,6 +438,11 @@ class MegatronPolicyWorker:
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
+        if not os.path.exists(pretrained_run_config):
+            raise FileNotFoundError(
+                f"Pretrained run config not found at {pretrained_run_config} on rank={get_rank_safe()}. This usually means that the one-time HF->mcore conversion on rank=0 saved to a directory not being mounted on this node. Please check "
+            )
+
         cfg_from_pretrained = ConfigContainer.from_yaml(pretrained_run_config)
         model_cfg = cfg_from_pretrained.model_config
         cfg_from_pretrained.logger_config = LoggerConfig()
@@ -464,19 +473,7 @@ class MegatronPolicyWorker:
         model_cfg.expert_model_parallel_size = self.cfg["megatron_cfg"][
             "expert_model_parallel_size"
         ]
-        model_cfg.sequence_parallel = self.cfg["megatron_cfg"]["sequence_parallel"]
-        model_cfg.bf16 = self.dtype == torch.bfloat16
-        model_cfg.fp16 = self.dtype == torch.float16
-        if model_cfg.fp16:
-            assert not model_cfg.bf16, "fp16 and bf16 cannot be used together"
-            model_cfg.params_dtype = torch.float16
-        elif model_cfg.bf16:
-            assert not model_cfg.fp16, "fp16 and bf16 cannot be used together"
-            model_cfg.params_dtype = torch.bfloat16
-        else:
-            model_cfg.params_dtype = torch.float32
-        model_cfg.pipeline_dtype = dtype_map[self.cfg["megatron_cfg"]["pipeline_dtype"]]
-        model_cfg.parallel_output = True
+
         # Setting moe_router_dtype to higher precision (e.g. fp64) can improve numerical stability,
         # especially when using many experts.
         model_cfg.moe_router_dtype = self.cfg["megatron_cfg"]["moe_router_dtype"]
@@ -493,6 +490,20 @@ class MegatronPolicyWorker:
         model_cfg.moe_router_bias_update_rate = self.cfg["megatron_cfg"][
             "moe_router_bias_update_rate"
         ]
+
+        model_cfg.sequence_parallel = self.cfg["megatron_cfg"]["sequence_parallel"]
+        model_cfg.bf16 = self.dtype == torch.bfloat16
+        model_cfg.fp16 = self.dtype == torch.float16
+        if model_cfg.fp16:
+            assert not model_cfg.bf16, "fp16 and bf16 cannot be used together"
+            model_cfg.params_dtype = torch.float16
+        elif model_cfg.bf16:
+            assert not model_cfg.fp16, "fp16 and bf16 cannot be used together"
+            model_cfg.params_dtype = torch.bfloat16
+        else:
+            model_cfg.params_dtype = torch.float32
+        model_cfg.pipeline_dtype = dtype_map[self.cfg["megatron_cfg"]["pipeline_dtype"]]
+        model_cfg.parallel_output = True
         if self.cfg["megatron_cfg"]["activation_checkpointing"]:
             model_cfg.activations_checkpoint_granularity = "full"
             model_cfg.activations_checkpoint_method = "uniform"
@@ -688,13 +699,6 @@ class MegatronPolicyWorker:
                 "overlap_param_gather"
             ]
         )
-
-    def configure_worker(self, num_gpus: int, bundle_indices: Optional[tuple] = None):
-        USE_EXPANDABLE_SEGMENTS = False  # Disabling this right now as it seems to cause vLLM refit issues with Ampere
-        if USE_EXPANDABLE_SEGMENTS:
-            return None, {"PYTORCH_CUDA_ALLOC_CONF": "expandable_segments:True"}, None
-        else:
-            return None, None, None
 
     def is_alive(self):
         return True

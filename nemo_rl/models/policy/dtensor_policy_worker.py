@@ -60,6 +60,7 @@ from nemo_rl.models.policy.interfaces import (
     ReferenceLogprobOutputSpec,
 )
 from nemo_rl.models.policy.utils import (
+    configure_expandable_segments,
     get_gpu_info,
     get_runtime_env_for_policy_worker,
     import_class_from_path,
@@ -151,6 +152,9 @@ class DTensorPolicyWorker:
             and not config["generation"]["colocated"]["enabled"]
         ):
             os.environ["NCCL_CUMEM_ENABLE"] = "1"
+
+        # Only enable expandable_segments on Hopper and newer architectures (compute capability 9.x+)
+        configure_expandable_segments()
 
         self.cfg = config
         # torch distributed init. Envars for rank, world_size, and master_addr and master_port are set from the ray remote call
@@ -278,6 +282,21 @@ class DTensorPolicyWorker:
                 broadcast_from_rank0=True,
             ),
         )
+
+        # Handle tied word embeddings after loading the state dict
+        # We need to actually tie the parameters at the model level
+        is_tied_lm_head = getattr(
+            getattr(self.model, "config", {}), "tie_word_embeddings", False
+        )
+        if is_tied_lm_head:
+            embed_tokens_weight = None
+            for name, param in self.model.named_parameters():
+                if "embed_tokens" in name and name.endswith(".weight"):
+                    embed_tokens_weight = param
+                    break
+
+            if embed_tokens_weight is not None:
+                self.model.lm_head.weight = embed_tokens_weight
 
         # Manually broadcast buffers
         for _, buf in self.model.named_buffers():
@@ -591,7 +610,12 @@ class DTensorPolicyWorker:
                             "generation" in self.cfg
                             and self.cfg["generation"] is not None
                         ):
-                            logits.div_(self.cfg["generation"]["temperature"])
+                            # The V1 engine returns raw logits before temperature scaling.
+                            # The V0 engine (when VLLM_USE_V1 is not '1') returns scaled logits.
+                            # Therefore, we only divide if we are NOT using the V1 engine.
+                            use_v1_engine = os.environ.get("VLLM_USE_V1") == "1"
+                            if not use_v1_engine:
+                                logits.div_(self.cfg["generation"]["temperature"])
 
                         if self.cp_size > 1:
                             seq_index_dtensor = (
