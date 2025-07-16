@@ -15,23 +15,26 @@ grpo:
   # Aggregation stage configuration (disabled by default)
   enable_aggregation: false
   first_stage_generation_max_seq_len: null
+  aggregation_format_checking: true  # Whether to enable format checking for aggregation stage
   aggregation_prompt_template: |
-    You will be given a challenging math problem followed by a few solutions. Your task is to systematically analyze these solutions to identify the most mathematically sound approach.
+    You are an expert mathematician and a meticulous reviewer. You will be given a challenging math problem followed by a few solutions. Your task is not to solve the problem from scratch, but to analyze the set of candidate solutions and synthesize a final, correct answer from them.
     
-    Problem: {original_prompt}
+    <Problem>
+    {original_prompt}
+    </Problem>
 
-    Candidate Solutions:
+    <Candidate Solutions>
     {responses}
+    </Candidate Solutions>
   
-    Instructions:
-    Please reply in exactly the following XML format:
+    **Instructions:**
+    Please first reply with a brief analysis within <analysis> and </analysis> tags, then provide a detailed solution as follows:
 
     <analysis>
     - For each solution, briefly state its main strength or flaw (no more than 5 bullet points total).
     - Clearly identify which ideas or steps are worth keeping for the final answer.
     </analysis>
 
-    <answer>
     Write a single, comprehensive solution that:
     • Integrates the best reasoning from the candidates  
     • Corrects all errors or gaps you identified  
@@ -40,7 +43,6 @@ grpo:
     Make your answer as detailed and thorough as possible, so that anyone can follow your reasoning from start to finish.
 
     Do not reference the candidate solutions or your analysis inside the answer. The answer should read as a standalone, original solution.
-    </answer>
 
 loss_fn:
   reference_policy_kl_penalty: 0.01
