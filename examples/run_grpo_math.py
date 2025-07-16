@@ -28,6 +28,7 @@ from nemo_rl.data import DataConfig
 from nemo_rl.data.datasets import AllTaskProcessedDataset
 from nemo_rl.data.hf_datasets.deepscaler import DeepScalerDataset
 from nemo_rl.data.hf_datasets.openmathinstruct2 import OpenMathInstruct2Dataset
+from nemo_rl.data.json_datasets.scp import SCPDataset
 from nemo_rl.data.interfaces import (
     DatumSpec,
     LLMMessageLogType,
@@ -150,18 +151,23 @@ def hf_data_processor(
     extra_env_info = {"ground_truth": user_message[1]["content"]}
 
     message_log: LLMMessageLogType = []
+    
+    # Apply prompt formatting if a prompt is provided
+    if task_data_spec.prompt:
+        problem = task_data_spec.prompt.format(problem)
+    
     user_message = {
         "role": "user",
-        "content": task_data_spec.prompt.format(problem),
+        "content": problem,
     }
-    message: list[str] = tokenizer.apply_chat_template(  # type: ignore
+    message = tokenizer.apply_chat_template(  # type: ignore
         [user_message],
         tokenize=False,
         add_generation_prompt=True,
         add_special_tokens=False,
     )
     user_message["token_ids"] = tokenizer(message, return_tensors="pt")["input_ids"][0]
-    user_message["content"] = message[0]
+    user_message["content"] = message
     message_log.append(user_message)
 
     length = sum(len(m["token_ids"]) for m in message_log)
@@ -280,6 +286,9 @@ def setup_data(
             "Loading agentica-org/DeepScaleR-Preview-Dataset for training and validation"
         )
         data: Any = DeepScalerDataset()
+    elif data_config["dataset_name"] == "scp":
+        print("Loading SCP_v2 for training and validation")
+        data: Any = SCPDataset(data_config["data_path"])
     else:
         raise ValueError(f"No processor for dataset {data_config['dataset_name']}.")
 

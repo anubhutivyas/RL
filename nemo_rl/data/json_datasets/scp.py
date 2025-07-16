@@ -28,7 +28,8 @@ def format_scp(data):
                 "role": "assistant",
                 "content": data["generation"],
             },
-        ]
+        ],
+        "task_name": "math",
     }
 
 

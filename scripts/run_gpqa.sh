@@ -28,7 +28,7 @@ fi
 
 set -e
 if [ -n "$MODEL_NAME" ]; then
-    model_family=$(basename "${MODEL_NAME/-size/}") # Qwen2.5-Instruct
+    model_family=$(basename "${MOnpDEL_NAME/-size/}") # Qwen2.5-Instruct
 else
     CHECKPOINT_DIR=$(realpath "$CHECKPOINT_DIR")
     model_family=$(basename "$CHECKPOINT_DIR") # Qwen2.5-3B-sft-xxx
@@ -62,8 +62,8 @@ for model in $models; do
     fi
     output_file="logs/${model_name}${tag}.txt"
     if [ -f "$output_file" ]; then
-        output_line_num=$(grep -Fn "$record" "$output_file" | head -n1 | cut -d: -f1)
-        summary_line_num=$(grep -Fn "$record" "$summary_file" | head -n1 | cut -d: -f1)
+        output_line_num=$(grep -a -Fn "$record" "$output_file" | head -n1 | cut -d: -f1)
+        summary_line_num=$(grep -a -Fn "$record" "$summary_file" | head -n1 | cut -d: -f1)
         if [ -n "$output_line_num" ]; then
             # if output contains a record
             if [ -n "$summary_line_num" ]; then

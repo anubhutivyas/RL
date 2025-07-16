@@ -38,6 +38,8 @@ from nemo_rl.environments.math_environment import MathEnvironment
 from nemo_rl.evals.eval import MasterConfig, run_env_eval, setup
 from nemo_rl.models.generation import configure_generation_config
 
+OmegaConf.register_new_resolver("replace", lambda s, a, b: s.replace(a, b))
+
 
 def parse_args():
     """Parse command line arguments."""

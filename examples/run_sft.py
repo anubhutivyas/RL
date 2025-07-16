@@ -70,7 +70,7 @@ def sft_preprocessor(
         add_generation_prompt=add_generation_prompt,
     )
 
-    length = sum(len(m["token_ids"]) for m in message_log)
+    length = sum(len(m["token_ids"]) for m in message_log[1:])
 
     loss_multiplier = 1.0
     if length > max_seq_length:
@@ -174,6 +174,7 @@ def print_length_distribution(dataset, val_dataset):
         threshold = 2 ** i
         ratio = sum(l <= threshold for l in lengths) / len(lengths)
         print(f"lengths <= {threshold}: {ratio:.2%}")
+    print(f"average length: {sum(lengths) / len(lengths)}")
 
 
 def main():
@@ -216,6 +217,8 @@ def main():
         val_dataset,
         sft_task_spec,
     ) = setup_data(tokenizer, config["data"])
+
+    # print_length_distribution(dataset, val_dataset)
 
     (
         policy,
