@@ -232,14 +232,7 @@ class DTensorPolicyWorker:
             )
 
         if self.model.config.pad_token_id is None:
-            if isinstance(self.model.config.eos_token_id, int):
-                self.model.config.pad_token_id = self.model.config.eos_token_id
-            elif isinstance(self.model.config.eos_token_id, list):
-                self.model.config.pad_token_id = self.model.config.eos_token_id[0]
-            else:
-                raise ValueError(
-                    f"Unknown eos_token_id type: {type(self.model.config.eos_token_id)}"
-                )
+            self.model.config.pad_token_id = tokenizer.pad_token_id
 
         # caching since this property is not always preserved after FSDP
         self.num_tied_weights = len(find_tied_parameters(self.model))
