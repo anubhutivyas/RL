@@ -1791,5 +1791,6 @@ class MegatronPolicyWorker:
                 "current_memory_reserved": torch.cuda.memory_reserved(),
                 "max_memory_allocated": torch.cuda.max_memory_allocated(),
                 "max_memory_reserved": torch.cuda.max_memory_reserved(),
+                "device_free_memory": get_free_memory_bytes(torch.cuda.current_device()),
             }
         }
