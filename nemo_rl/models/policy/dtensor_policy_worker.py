@@ -306,6 +306,21 @@ class DTensorPolicyWorker:
             ),
         )
 
+        # Handle tied word embeddings after loading the state dict
+        # We need to actually tie the parameters at the model level
+        is_tied_lm_head = getattr(
+            getattr(self.model, "config", {}), "tie_word_embeddings", False
+        )
+        if is_tied_lm_head:
+            embed_tokens_weight = None
+            for name, param in self.model.named_parameters():
+                if "embed_tokens" in name and name.endswith(".weight"):
+                    embed_tokens_weight = param
+                    break
+
+            if embed_tokens_weight is not None:
+                self.model.lm_head.weight = embed_tokens_weight
+
         # Manually broadcast buffers
         for _, buf in self.model.named_buffers():
             torch.distributed.broadcast(to_local_if_dtensor(buf), src=0)
@@ -602,7 +617,12 @@ class DTensorPolicyWorker:
                             "generation" in self.cfg
                             and self.cfg["generation"] is not None
                         ):
-                            logits.div_(self.cfg["generation"]["temperature"])
+                            # The V1 engine returns raw logits before temperature scaling.
+                            # The V0 engine (when VLLM_USE_V1 is not '1') returns scaled logits.
+                            # Therefore, we only divide if we are NOT using the V1 engine.
+                            use_v1_engine = os.environ.get("VLLM_USE_V1") == "1"
+                            if not use_v1_engine:
+                                logits.div_(self.cfg["generation"]["temperature"])
 
                         if self.cp_size > 1:
                             seq_index_dtensor = (
