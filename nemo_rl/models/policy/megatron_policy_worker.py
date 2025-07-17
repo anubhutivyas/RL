@@ -199,6 +199,8 @@ def setup_megatron_model(
         model_post_init_fns.append(freeze_moe_router)
         model_post_init_fns.append(re_enable_float32_expert_bias)
 
+    import nemo.tron.model as model_lib
+    print('model_lib.__file__:', model_lib.__file__, flush=True)
     # Model, optimizer, and learning rate.
     model = get_model_from_config(
         cfg.model_config,
