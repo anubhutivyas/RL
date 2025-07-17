@@ -43,7 +43,7 @@ for dataset in HuggingFaceH4/aime_2024 MathArena/aime_2025 zwhe99/gpqa_diamond_m
         solution_key="answer"
         gpus_per_node=5
         num_prompts_per_step=500
-        num_repetitions=5
+        num_repetitions=1
         short_dataset_name="MATH-500"
     elif [ $dataset = "HuggingFaceH4/aime_2024" ]; then
         dataset_key="train"
@@ -51,13 +51,13 @@ for dataset in HuggingFaceH4/aime_2024 MathArena/aime_2025 zwhe99/gpqa_diamond_m
         solution_key="answer"
         gpus_per_node=5
         num_prompts_per_step=30
-        num_repetitions=10
+        num_repetitions=5
         short_dataset_name="AIME2024"
     elif [ $dataset = "MathArena/aime_2025" ]; then
         dataset_key="train"
         problem_key="problem"
         solution_key="answer"
-        num_repetitions=10
+        num_repetitions=5
         gpus_per_node=5
         num_prompts_per_step=30
         num_repetitions=10
@@ -68,7 +68,7 @@ for dataset in HuggingFaceH4/aime_2024 MathArena/aime_2025 zwhe99/gpqa_diamond_m
         solution_key="solution"
         num_prompts_per_step=198
         gpus_per_node=6
-        num_repetitions=10
+        num_repetitions=5
         short_dataset_name="GPQA-D"
     fi
     echo "dataset_key: $dataset_key"

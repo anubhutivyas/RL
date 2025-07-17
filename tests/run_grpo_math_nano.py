@@ -301,7 +301,7 @@ def setup_data(tokenizer: AutoTokenizer, data_config: DataConfig, env_configs):
                     "lower_bound_factor": lower_bound_factor,
                     "upper_bound_factor": upper_bound_factor,
                 }
-                
+                #import pdb; p = pdb.Pdb(); p.prompt='breakpoint-L1_metadata:'; p.set_trace()
         # this will create a new daset resttricted to only those indices that have an expected answer length
         # and will augment the dataset with the expected answer length
         #import pdb; pdb.set_trace()

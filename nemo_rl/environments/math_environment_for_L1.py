@@ -111,11 +111,19 @@ class MathEnvironmentForL1(EnvironmentInterface):
         L1_penalties = torch.zeros(len(results)).cpu()
         for i in range(len(results)):
             #import pdb; p=pdb.Pdb(); p.prompt="debug math environemnt L1"; p.set_trace()
-            baseline_answer_length = metadata[i]["L1_metadata"]["baseline_answer_length"]
-            penalty_factor = metadata[i]["L1_metadata"]["penalty_factor"]
+            #baseline_answer_length = metadata[i]["L1_metadata"]["baseline_answer_length"]
+            penalty_factor_correct = metadata[i]["L1_metadata"]["penalty_factor_correct"]
+            penalty_factor_incorrect = metadata[i]["L1_metadata"]["penalty_factor_incorrect"]
             lower_bound_factor = metadata[i]["L1_metadata"]["lower_bound_factor"]
             upper_bound_factor = metadata[i]["L1_metadata"]["upper_bound_factor"]
             actual_answer_length = 0
+            if results[i] == 0: # incorrect case
+                penalty_factor = penalty_factor_incorrect
+                baseline_answer_length = metadata[i]["L1_metadata"]["av_len_incorrect"]
+            else: # correct case
+                penalty_factor = penalty_factor_correct
+                baseline_answer_length = metadata[i]["L1_metadata"]["av_len_correct"]
+            
             observations[i]["content"] += f"\n\nbaseline_answer_length: {baseline_answer_length}"
             observations[i]["content"] += f"\n\npenalty_factor: {penalty_factor}"
             observations[i]["content"] += f"\n\nlower_bound_factor: {lower_bound_factor}"
