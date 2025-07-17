@@ -67,7 +67,7 @@ from nemo.tron.config import (
     TrainingConfig,
 )
 from nemo.tron.init import initialize_megatron, set_jit_fusion_options
-from nemo.tron.model import get_model_from_config
+from nemo_rl.models.policy.model import get_model_from_config
 from nemo.tron.optim import setup_optimizer
 from nemo.tron.setup import (
     HAVE_FSDP2,
