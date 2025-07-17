@@ -163,30 +163,26 @@ class RewardModelEnvironment(EnvironmentInterface):
         Returns:
             EnvironmentReturn with rewards and termination info
         """
-        # Convert message logs to prompt-response pairs for reward model
-        prompts = []
-        responses = []
-        
+        # Process message logs to extract content after </think> for assistant messages
+        processed_message_logs = []
         for message_log in message_logs:
-            # Extract the last user message as prompt and last assistant message as response
-            user_messages = [msg for msg in message_log if msg["role"] == "user"]
-            assistant_messages = [msg for msg in message_log if msg["role"] == "assistant"]
-            
-            if user_messages and assistant_messages:
-                prompt = user_messages[-1]["content"]
-                response = assistant_messages[-1]["content"]
-            else:
-                # Fallback for incomplete conversations
-                prompt = "No user message found"
-                response = "No assistant response found"
-            
-            prompts.append(prompt)
-            responses.append(response)
+            processed_messages = []
+            for msg in message_log:
+                if msg["role"] == "assistant":
+                    # Extract content after </think> if it exists
+                    content = msg["content"]
+                    if "</think>" in content:
+                        content = content.split("</think>")[-1]
+                    processed_messages.append({"role": "assistant", "content": content})
+                elif msg["role"] == "system":
+                    processed_messages.append({"role": "system", "content": msg["content"].replace("/no_think", "").replace("/think", "")})
+                else:
+                    processed_messages.append(msg)
+            processed_message_logs.append(processed_messages)
         
         # Create data in the format expected by DTensorRewardModelWorker
         reward_data = BatchedDataDict()
-        reward_data["prompts"] = prompts
-        reward_data["responses"] = responses
+        reward_data["messages"] = processed_message_logs
         
         # Deepcopy the reward_data to ensure complete isolation
         reward_data_copy = copy.deepcopy(reward_data)
