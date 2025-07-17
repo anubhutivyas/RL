@@ -484,7 +484,7 @@ class DTensorPolicyWorker:
                             "lr": self.optimizer.param_groups[0]["lr"],
                             "global_valid_seqs": global_valid_seqs.item(),
                             "global_valid_toks": global_valid_toks.item(),
-                            "grad_norm": grad_norm.item(),
+                            "grad_norm": grad_norm.item() if grad_norm is not None else 0.0,
                             "grad_sparsity": grad_sparsity,
                             "grad_sparsity_dict": grad_sparsity_dict,
                         }
