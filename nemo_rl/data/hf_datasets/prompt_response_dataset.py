@@ -46,6 +46,7 @@ class PromptResponseDataset:
     def add_messages_key(self, example):
         return {
             "messages": [
+                {"role": "system", "content": "/no_think"},
                 {"role": "user", "content": example[self.input_key]},
                 {"role": "assistant", "content": example[self.output_key]},
             ]
