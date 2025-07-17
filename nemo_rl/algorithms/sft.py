@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+from collections import defaultdict
 import os
 import warnings
 from pathlib import Path
@@ -302,7 +303,7 @@ def validate_one_dataset(
         # Show a progress indicator for validation
         # val_total = len(val_dataloader)
 
-        list_of_val_metrics = []
+        dict_val_metrics = defaultdict(list)
 
         num_valid_batches = 0
 
@@ -363,25 +364,23 @@ def validate_one_dataset(
                 )
             else:
                 if model_type == "lm":
-                    list_of_val_metrics.append(
-                        SFTValMetrics(val_loss=float(val_results["loss"]))
-                    )
+                    dict_val_metrics["val_loss"].append(float(val_results["loss"]))
                 elif model_type == "reward":
-                    list_of_val_metrics.append(
-                        RMValMetrics(
-                            val_loss=sum(val_results["all_mb_metrics"]["loss"]),
-                            accuracy=sum(val_results["all_mb_metrics"]["accuracy"]),
-                            rewards_chosen_mean=sum(
-                                val_results["all_mb_metrics"]["rewards_chosen_mean"]
-                            ),
-                            rewards_rejected_mean=sum(
-                                val_results["all_mb_metrics"]["rewards_rejected_mean"]
-                            ),
-                            num_valid_samples=sum(
-                                val_results["all_mb_metrics"]["num_valid_samples"]
-                            ),
-                        )
-                    )
+                    sum_num_valid_samples = sum(val_results["all_mb_metrics"]["num_valid_samples"])
+
+                    dict_val_metrics["val_loss"] += [
+                        value * sum_num_valid_samples for value in val_results["all_mb_metrics"]["loss"]
+                    ]
+                    dict_val_metrics["accuracy"] += [
+                        value * sum_num_valid_samples for value in val_results["all_mb_metrics"]["accuracy"]
+                    ]
+                    dict_val_metrics["rewards_chosen_mean"] += [
+                        value * sum_num_valid_samples for value in val_results["all_mb_metrics"]["rewards_chosen_mean"]
+                    ]
+                    dict_val_metrics["rewards_rejected_mean"] += [
+                        value * sum_num_valid_samples for value in val_results["all_mb_metrics"]["rewards_rejected_mean"]
+                    ]
+                    dict_val_metrics["num_valid_samples"] += val_results["all_mb_metrics"]["num_valid_samples"]
                 else:
                     raise NotImplementedError(
                         f"Model type {model_type} not implemented for SFT training."
@@ -395,42 +394,27 @@ def validate_one_dataset(
         if num_valid_batches > 0:
             if model_type == "lm":
                 val_metrics = SFTValMetrics(
-                    val_loss=sum([m["val_loss"] for m in list_of_val_metrics])
+                    val_loss=sum(dict_val_metrics["val_loss"]) / num_valid_batches
                 )
-                val_metrics["val_loss"] /= num_valid_batches
             elif model_type == "reward":
-                sum_num_valid_samples = sum(
-                    [m["num_valid_samples"] for m in list_of_val_metrics]
-                )
+                assert len(dict_val_metrics["val_loss"]) == len(dict_val_metrics["accuracy"]) \
+                == len(dict_val_metrics["rewards_chosen_mean"]) == len(dict_val_metrics["rewards_rejected_mean"]) \
+                == len(dict_val_metrics["num_valid_samples"])
+
+                sum_num_valid_samples = sum(dict_val_metrics["num_valid_samples"])
                 val_metrics = RMValMetrics(
-                    val_loss=sum(
-                        [
-                            m["val_loss"] * m["num_valid_samples"]
-                            for m in list_of_val_metrics
-                        ]
-                    )
-                    / sum_num_valid_samples,
-                    accuracy=sum(
-                        [
-                            m["accuracy"] * m["num_valid_samples"]
-                            for m in list_of_val_metrics
-                        ]
-                    )
-                    / sum_num_valid_samples,
-                    rewards_chosen_mean=sum(
-                        [
-                            m["rewards_chosen_mean"] * m["num_valid_samples"]
-                            for m in list_of_val_metrics
-                        ]
-                    )
-                    / sum_num_valid_samples,
-                    rewards_rejected_mean=sum(
-                        [
-                            m["rewards_rejected_mean"] * m["num_valid_samples"]
-                            for m in list_of_val_metrics
-                        ]
-                    )
-                    / sum_num_valid_samples,
+                    val_loss=sum([
+                        value * weight for value, weight in zip(dict_val_metrics["val_loss"], dict_val_metrics["num_valid_samples"])
+                    ]) / sum_num_valid_samples,
+                    accuracy=sum([
+                        value * weight for value, weight in zip(dict_val_metrics["accuracy"], dict_val_metrics["num_valid_samples"])
+                    ]) / sum_num_valid_samples,
+                    rewards_chosen_mean=sum([
+                        value * weight for value, weight in zip(dict_val_metrics["rewards_chosen_mean"], dict_val_metrics["num_valid_samples"])
+                    ]) / sum_num_valid_samples,
+                    rewards_rejected_mean=sum([
+                        value * weight for value, weight in zip(dict_val_metrics["rewards_rejected_mean"], dict_val_metrics["num_valid_samples"])
+                    ]) / sum_num_valid_samples,
                     num_valid_samples=sum_num_valid_samples,
                 )
         else:
