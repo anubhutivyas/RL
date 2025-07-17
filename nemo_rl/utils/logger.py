@@ -26,7 +26,6 @@ from typing import Any, Callable, Mapping, Optional, TypedDict
 import ray
 import requests
 import torch
-import wandb
 from matplotlib import pyplot as plt
 from prometheus_client.parser import text_string_to_metric_families
 from prometheus_client.samples import Sample
@@ -36,6 +35,7 @@ from rich.logging import RichHandler
 from rich.panel import Panel
 from torch.utils.tensorboard import SummaryWriter
 
+import wandb
 from nemo_rl.data.interfaces import LLMMessageLogType
 from nemo_rl.distributed.batched_data_dict import BatchedDataDict
 
@@ -303,8 +303,8 @@ class RayGpuMonitorLogger:
                 )
                 time.sleep(self.collection_interval)  # Continue despite errors
 
-    def _parse_metric(self, sample: Sample, node_idx: int) -> dict[str, Any]:
-        """Parse a metric sample into a standardized format.
+    def _parse_gpu_metric(self, sample: Sample, node_idx: int) -> dict[str, Any]:
+        """Parse a GPU metric sample into a standardized format.
 
         Args:
             sample: Prometheus metric sample
@@ -313,28 +313,28 @@ class RayGpuMonitorLogger:
         Returns:
             Dictionary with metric name and value
         """
-        metric_name = sample.name
-        labels = sample.labels
-        value = sample.value
+        # Expected labels for GPU metrics
+        expected_labels = ["GpuIndex"]
+        for label in expected_labels:
+            if label not in sample.labels:
+                # This is probably a CPU node
+                return {}
 
+        metric_name = sample.name
+        # Rename known metrics to match wandb naming convention
         if metric_name == "ray_node_gpus_utilization":
-            index = labels["GpuIndex"]
-            metric_name = f"node.{node_idx}.gpu.{index}.util"
+            metric_name = "gpu"
         elif metric_name == "ray_node_gram_used":
-            index = labels["GpuIndex"]
-            metric_name = f"node.{node_idx}.gpu.{index}.mem_gb"
-            # NOTE: It appears their docs say bytes, but it appears to be MB
-            value /= 1024
-        elif metric_name == "ray_node_mem_used":
-            metric_name = f"node.{node_idx}.mem_gb"
-            value /= 1024 * 1024 * 1024
-        elif metric_name == "ray_node_mem_total":
-            metric_name = f"node.{node_idx}.mem_total_gb"
-            value /= 1024 * 1024 * 1024
+            metric_name = "memory"
         else:
             # Skip unexpected metrics
             return {}
 
+        labels = sample.labels
+        index = labels["GpuIndex"]
+        value = sample.value
+
+        metric_name = f"node.{node_idx}.gpu.{index}.{metric_name}"
         return {metric_name: value}
 
     def _parse_gpu_sku(self, sample: Sample, node_idx: int) -> dict[str, str]:
@@ -401,7 +401,7 @@ class RayGpuMonitorLogger:
         assert metrics ^ sku, (
             f"Must collect either metrics or sku, not both: {metrics=}, {sku=}"
         )
-        parser_fn = self._parse_metric if metrics else self._parse_gpu_sku
+        parser_fn = self._parse_gpu_metric if metrics else self._parse_gpu_sku
 
         if not ray.is_initialized():
             print("Ray is not initialized. Cannot collect GPU metrics.")
@@ -426,10 +426,10 @@ class RayGpuMonitorLogger:
             # Process each node's metrics
             collected_metrics = {}
             for node_idx, metric_address in enumerate(unique_metric_addresses):
-                metrics = self._fetch_and_parse_metrics(
+                gpu_metrics = self._fetch_and_parse_metrics(
                     node_idx, metric_address, parser_fn
                 )
-                collected_metrics.update(metrics)
+                collected_metrics.update(gpu_metrics)
 
             return collected_metrics
 
@@ -462,6 +462,13 @@ class RayGpuMonitorLogger:
 
             # Parse the Prometheus format
             for family in text_string_to_metric_families(metrics_text):
+                # Skip non-GPU metrics
+                if family.name not in (
+                    "ray_node_gram_used",
+                    "ray_node_gpus_utilization",
+                ):
+                    continue
+
                 for sample in family.samples:
                     metrics = parser_fn(sample, node_idx)
                     gpu_metrics.update(metrics)
@@ -612,7 +619,11 @@ class Logger(LoggerInterface):
         print(f"Logged data to {filepath}")
 
     def log_plot_token_mult_prob_error(
-        self, data: dict[str, Any], step: int, name: str
+        self,
+        data: dict[str, Any],
+        step: int,
+        name: str,
+        tokenizer,
     ) -> None:
         """Log a plot of log probability errors in samples.
 
@@ -636,6 +647,8 @@ class Logger(LoggerInterface):
 
         mult_prob_error = (torch.exp(diff) * mask).sum(dim=-1) / mask.sum(dim=-1)
 
+        for i, error in enumerate(mult_prob_error):
+            print(f"FOOBAR sample {i} error: {error}")
         sample_idx = torch.argmax(mult_prob_error)
         sample_error = mult_prob_error[sample_idx]
 
@@ -665,6 +678,44 @@ class Logger(LoggerInterface):
         relative_error = torch.abs((gen_prob - prev_prob) / gen_prob)
         max_rel_error_idx = torch.argmax(relative_error).item()
         max_rel_error = relative_error[max_rel_error_idx].item()
+
+        worst_example_tokens = data["input_ids"][
+            sample_idx, : data["full_lengths"][sample_idx]
+        ].tolist()
+        worst_example_str = tokenizer.decode(worst_example_tokens)
+        print(f"DEBUG: {(step, sample_idx, max_abs_error, max_abs_error_idx)=}")
+        print(f"DEBUG: {worst_example_str=}")
+        print(f"DEBUG: {worst_example_tokens=}")
+        print(
+            f"DEBUG: worst_generation_logprobs={repr(generation_logprobs[sample_idx, :].tolist())}"
+        )
+
+        if not hasattr(self, "text_table"):
+            self.text_table = wandb.Table(
+                columns=[
+                    "train_step",
+                    "problematic_idx_in_batch",
+                    "max_abs_error",
+                    "max_abs_error_token_idx",
+                    "problematic_str",
+                    "problematic_tokens",
+                    "problematic_batch_tokens",
+                    "generation_logprobs",
+                ],
+                log_mode="INCREMENTAL",
+            )
+        self.text_table.add_data(
+            step,
+            sample_idx,
+            max_abs_error,
+            max_abs_error_idx,
+            worst_example_str,
+            repr(worst_example_tokens),
+            repr(data["input_ids"].tolist()),
+            repr(generation_logprobs[sample_idx, :].tolist()),
+        )
+        # assume wandb first as hack
+        self.loggers[0].run.log({"problematic_samples": self.text_table}, step=step)
 
         fig = plt.figure()
         step_idx = torch.arange(generation_start_idx, generation_end_idx)

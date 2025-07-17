@@ -21,7 +21,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 #DEFAULT_GIT_URL="https://github.com/terrykong/vllm.git"
 #DEFAULT_BRANCH="ssm-fp32-exp-v1"
 DEFAULT_GIT_URL="https://github.com/vegaluisjose/vllm.git"
-DEFAULT_BRANCH="ssm-fp32-exp"
+DEFAULT_BRANCH="rl-nemotron-h"
 
 DEFAULT_VLLM_COMMIT=a3319f4f04fbea7defe883e516df727711e516cd # use full commit hash from the main branch
 

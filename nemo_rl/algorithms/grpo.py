@@ -726,9 +726,11 @@ def grpo_train(
                     "prev_logprobs": train_data["prev_logprobs"],
                     "token_mask": train_data["token_mask"],
                     "sample_mask": train_data["sample_mask"],
+                    "input_ids": train_data["input_ids"],
                 },
                 step + 1,
                 name="train/token_mult_prob_error_plot_sample",
+                tokenizer=tokenizer,
             )
 
         print("\n📊 Training Results:")
