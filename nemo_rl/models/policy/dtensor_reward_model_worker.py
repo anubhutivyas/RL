@@ -216,18 +216,13 @@ class DTensorRewardModelWorker:
 
         Args:
             data: BatchedDataDict containing:
-                - "prompts": List of prompts (user messages)
-                - "responses": List of responses (assistant messages)
-                OR
-                - "input_ids": Pre-tokenized conversation sequences [batch_size, seq_len]
-                - "attention_mask": Attention mask [batch_size, seq_len]
+                - "messages": List of conversation histories (list of messages with role and content)
 
         Returns:
             BatchedDataDict with "rewards" key containing scalar rewards [batch_size]
         """
         print("🎯 REWARD MODEL INFERENCE STARTING")
         print("=" * 50)
-        
         
         reward_batch_size = (
             micro_batch_size
@@ -241,29 +236,21 @@ class DTensorRewardModelWorker:
         # Process in batches
         with torch.no_grad():
             
-            # Process prompt-response pairs
-            prompts = data.get("prompts")
-            responses = data.get("responses")
+            # Process conversation histories
+            conversations = data.get("messages")
             
-            print(f"🔄 Processing {len(prompts)} prompt-response pairs...")
+            print(f"🔄 Processing {len(conversations)} conversations...")
             
-            for i in range(0, len(prompts), reward_batch_size):
-                batch_prompts = prompts[i:i + reward_batch_size]
-                batch_responses = responses[i:i + reward_batch_size]
+            for i in range(0, len(conversations), reward_batch_size):
+                batch_conversations = conversations[i:i + reward_batch_size]
                 
-                print(f"   Batch {i//reward_batch_size + 1}: samples {i+1}-{min(i+reward_batch_size, len(prompts))}")
+                print(f"   Batch {i//reward_batch_size + 1}: conversations {i+1}-{min(i+reward_batch_size, len(conversations))}")
                 
                 batch_rewards = []
-                for j, (prompt, response) in enumerate(zip(batch_prompts, batch_responses)):
-                    # Create conversation messages
-                    messages = [
-                        {'role': "user", "content": prompt}, 
-                        {'role': "assistant", "content": response}
-                    ]
-                    
+                for j, conversation in enumerate(batch_conversations):
                     # Apply chat template and tokenize
                     tokenized_message = self.tokenizer.apply_chat_template(
-                        messages, 
+                        conversation, 
                         tokenize=True, 
                         add_generation_prompt=False, 
                         return_tensors="pt", 
@@ -306,8 +293,9 @@ class DTensorRewardModelWorker:
                         # Show sample details for first few
                         if i == 0 and j < 2:  # Only show first 2 samples of first batch
                             print(f"     Sample {j+1}: reward = {reward:.4f}")
-                            print(f"       Prompt: {prompt[:100]}{'...' if len(prompt) > 100 else ''}")
-                            print(f"       Response: {response[:100]}{'...' if len(response) > 100 else ''}")
+                            print(f"       Full conversation history:")
+                            for msg in conversation:
+                                print(f"         {msg['role']}: {msg['content'][:100]}{'...' if len(msg['content']) > 100 else ''}")
                 
                 all_rewards.extend(batch_rewards)
                 print(f"     Batch rewards: {[f'{r:.4f}' for r in batch_rewards]}")
