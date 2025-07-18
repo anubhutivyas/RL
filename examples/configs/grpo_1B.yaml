@@ -12,6 +12,9 @@ grpo:
   max_val_samples: 256
   val_batch_size: 256
   
+  # Dynamic sampling configuration (DAPO-style)
+  oversample_ratio: 1.0  # Set to > 1.0 to enable dynamic sampling (e.g., 2.0 means sample 2x more prompts initially)
+  
   # Aggregation stage configuration (disabled by default)
   enable_aggregation: false
   first_stage_generation_max_seq_len: null

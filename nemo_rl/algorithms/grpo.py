@@ -76,6 +76,8 @@ class GRPOConfig(TypedDict):
     num_epochs: int
     max_rollout_turns: int
     max_val_samples: int
+    # Dynamic sampling configuration
+    oversample_ratio: float  # Ratio of prompts to oversample for dynamic sampling (e.g., 2.0 means sample 2x more prompts)
     # Aggregation stage configuration
     enable_aggregation: bool  # Whether to enable aggregation stage training
     aggregation_prompt_template: str  # Template for aggregation prompts
@@ -193,9 +195,13 @@ def setup(
         val_data_generator = torch.Generator()
         val_data_generator.manual_seed(master_config["data"]["val"]["seed"])
 
+    # Calculate oversampled batch size for dynamic sampling
+    oversample_ratio = grpo_config.get("oversample_ratio", 1.0)
+    oversampled_batch_size = int(grpo_config["num_prompts_per_step"] * oversample_ratio)
+
     dataloader = StatefulDataLoader(
         dataset,
-        batch_size=grpo_config["num_prompts_per_step"],
+        batch_size=oversampled_batch_size,
         shuffle=shuffle_train,
         generator=train_data_generator,
         collate_fn=rl_collate_fn,
@@ -298,6 +304,96 @@ def get_reasoning_split_word(env_configs: Dict[str, Any]) -> Optional[str]:
         if env_config.get("enable", False) and "reasoning_split_word" in env_config:
             return env_config["reasoning_split_word"]
     return None
+
+
+def filter_prompts_by_diversity(
+    batch: BatchedDataDict[DatumSpec],
+    rewards: torch.Tensor,
+    num_generations_per_prompt: int,
+    target_num_prompts: int,
+    stage_name: str = "generation"
+) -> Tuple[BatchedDataDict[DatumSpec], torch.Tensor, List[int]]:
+    """Filter prompts to keep only those with diverse responses (some correct, some incorrect).
+    
+    Args:
+        batch: Original batch containing prompts and responses
+        rewards: Rewards for each generation (shape: [num_prompts * num_generations_per_prompt])
+        num_generations_per_prompt: Number of generations per prompt
+        target_num_prompts: Target number of prompts to keep
+        stage_name: Name of the stage for logging purposes
+    
+    Returns:
+        Tuple of (filtered_batch, filtered_rewards, kept_indices)
+    """
+    num_prompts = len(batch["message_log"]) // num_generations_per_prompt  # Calculate original prompts, not total samples
+    print(f"▶ Filtering {stage_name} prompts: {num_prompts} -> {target_num_prompts}")
+    
+    # Group rewards by prompt
+    prompt_rewards = []
+    for i in range(num_prompts):
+        start_idx = i * num_generations_per_prompt
+        end_idx = start_idx + num_generations_per_prompt
+        prompt_rewards.append(rewards[start_idx:end_idx])
+    
+    # Calculate diversity scores for each prompt
+    diversity_scores = []
+    for i, prompt_reward in enumerate(prompt_rewards):
+        # Count correct and incorrect responses
+        correct_count = (prompt_reward > 0).sum().item()
+        incorrect_count = (prompt_reward <= 0).sum().item()
+        
+        # Diversity score: higher when there's a mix of correct and incorrect
+        # We want to avoid prompts where all responses are correct or all are incorrect
+        total_responses = len(prompt_reward)
+        if correct_count == 0 or incorrect_count == 0:
+            # All responses are the same (all correct or all incorrect)
+            diversity_score = 0.0
+        else:
+            diversity_score = 1.0
+            # There's a mix - calculate entropy-like score
+            # p_correct = correct_count / total_responses
+            # p_incorrect = incorrect_count / total_responses
+            # # Use numpy for log calculation to avoid tensor issues
+            # diversity_score = -p_correct * np.log(p_correct) - p_incorrect * np.log(p_incorrect)
+        
+        diversity_scores.append(diversity_score)
+    
+    # Debug: Print diversity statistics
+    diversity_scores_array = np.array(diversity_scores)
+    num_diverse_prompts = (diversity_scores_array > 0).sum()
+    print(f"  ✓ Diversity analysis: {num_diverse_prompts}/{num_prompts} prompts have diversity score > 0")
+    if num_diverse_prompts > 0:
+        print(f"    - Max diversity score: {diversity_scores_array.max():.3f}")
+        print(f"    - Mean diversity score (diverse prompts): {diversity_scores_array[diversity_scores_array > 0].mean():.3f}")
+    
+    # Sort prompts by diversity score (highest first)
+    prompt_indices = list(range(num_prompts))
+    prompt_indices.sort(key=lambda i: diversity_scores[i], reverse=True)
+    
+    # Keep the top target_num_prompts with highest diversity
+    kept_prompt_indices = prompt_indices[:target_num_prompts]
+    
+    # Create indices for the repeated batch (accounting for multiple generations per prompt)
+    kept_indices = []
+    for prompt_idx in kept_prompt_indices:
+        start_idx = prompt_idx * num_generations_per_prompt
+        end_idx = start_idx + num_generations_per_prompt
+        kept_indices.extend(range(start_idx, end_idx))
+    
+    # Filter the batch and rewards
+    filtered_batch = batch.select_indices(kept_indices)
+    filtered_rewards = rewards[kept_indices]
+    
+    # Print statistics
+    kept_prompt_rewards = [prompt_rewards[i] for i in kept_prompt_indices]
+    total_correct = sum((pr > 0).sum().item() for pr in kept_prompt_rewards)
+    total_incorrect = sum((pr <= 0).sum().item() for pr in kept_prompt_rewards)
+    total_responses = len(filtered_rewards)
+    
+    print(f"  ✓ Kept {len(kept_prompt_indices)} prompts with diverse responses")
+    print(f"  ✓ Response breakdown: {total_correct} correct, {total_incorrect} incorrect out of {total_responses} total")
+    
+    return filtered_batch, filtered_rewards, kept_indices
 
 
 # ===============================================================================
@@ -602,12 +698,14 @@ def grpo_train(
                 repeated_batch: BatchedDataDict[DatumSpec] = batch.repeat_interleave(
                     master_config["grpo"]["num_generations_per_prompt"]
                 )
-                # Convert LLMMessageLogType to FlatMessagesType for generation
-                batched_flat, input_lengths = batched_message_log_to_flat_message(
+                # Convert LLMMessageLogType to FlatMessagesType for generation and save prompt ids
+                batched_flat_pre_gen, input_lengths = batched_message_log_to_flat_message(
                     repeated_batch["message_log"],
                     pad_value_dict={"token_ids": tokenizer.pad_token_id},
                 )
-                input_ids = batched_flat["token_ids"]
+                prompt_input_ids_full = batched_flat_pre_gen["token_ids"]  # prompt-only ids (no assistant)
+
+                input_ids = prompt_input_ids_full  # default before filtering
 
             # Generate responses - this updates the LLMMessageLogType in repeated_batch
             print(f"▶ Generating responses for batch of size {repeated_batch.size}...")
@@ -639,6 +737,48 @@ def grpo_train(
                 if not master_config["grpo"].get("enable_aggregation", False):
                     policy_generation.finish_generation()
 
+            # Dynamic sampling: Filter prompts based on response diversity
+            oversample_ratio = master_config["grpo"].get("oversample_ratio", 1.0)
+            original_repeated_batch_for_aggregation = None  # Store original data for aggregation stage use
+            
+            if oversample_ratio > 1.0:
+                print("▶ Applying dynamic sampling filtering...")
+                with timer.time("dynamic_sampling_filtering"):
+                    # Store the original repeated_batch for aggregation stage use
+                    original_repeated_batch_for_aggregation = deepcopy(repeated_batch)
+                    
+                    # Get rewards from generation
+                    generation_rewards = repeated_batch["total_reward"]
+                    
+                    # Filter generation stage prompts
+                    target_num_prompts = master_config["grpo"]["num_prompts_per_step"]
+                    filtered_repeated_batch, filtered_generation_rewards, kept_generation_indices = filter_prompts_by_diversity(
+                        repeated_batch,
+                        generation_rewards,
+                        master_config["grpo"]["num_generations_per_prompt"],
+                        target_num_prompts,
+                        "generation"
+                    )
+                    
+                    # Update the repeated_batch and rewards for downstream processing
+                    repeated_batch = filtered_repeated_batch
+                    repeated_batch["total_reward"] = filtered_generation_rewards
+
+                    # Update input_ids to prompt ids corresponding to kept samples
+                    input_ids = prompt_input_ids_full[kept_generation_indices]
+
+                    # Update input_lengths accordingly (optional, not used in baseline)
+                    
+                    print(f"  ✓ Dynamic sampling: Kept {len(kept_generation_indices)} generations for generation stage")
+                    
+                    # Add dynamic sampling metrics
+                    original_num_prompts = int(len(generation_rewards) / master_config["grpo"]["num_generations_per_prompt"])
+                    rollout_metrics.update({
+                        "dynamic_sampling_original_prompts": original_num_prompts,
+                        "dynamic_sampling_filtered_prompts": len(kept_generation_indices),
+                        "dynamic_sampling_filtering_ratio": len(kept_generation_indices) / original_num_prompts,
+                    })
+
             # Initialize aggregation stage variables
             aggregation_batch = None
             aggregation_rollout_metrics = {}
@@ -648,31 +788,44 @@ def grpo_train(
                 print("▶ Preparing Aggregation stage training...")
                 with timer.time("aggregation_preparation"):
                     # Extract generation responses grouped by original prompt
-                    num_prompts = len(batch["message_log"])
+                    # Use the ORIGINAL unfiltered batch and responses for aggregation
+                    # This gives aggregation access to all generation responses, not just filtered ones
+                    
+                    # Get the original unfiltered repeated_batch for aggregation
+                    # We need to recreate this since repeated_batch was filtered above
+                    if oversample_ratio > 1.0:
+                        # Use the stored original repeated_batch that contains all generation responses
+                        original_repeated_batch = original_repeated_batch_for_aggregation
+                        print("▶ Using unfiltered generation responses for aggregation stage")
+                    else:
+                        # No dynamic sampling was applied, use current repeated_batch
+                        original_repeated_batch = repeated_batch
+                    
+                    num_original_prompts = len(original_repeated_batch["message_log"]) // master_config["grpo"]["num_generations_per_prompt"]
                     num_generations = master_config["grpo"]["num_generations_per_prompt"]
                     
                     # Get reasoning split word from any enabled environment
                     reasoning_split_word = get_reasoning_split_word(master_config["env"])
                     
-                    # Group responses by original prompt
+                    # Group responses by original prompt (using ALL generation responses)
                     generation_responses = []
-                    for i in range(num_prompts):
+                    for i in range(num_original_prompts):
                         prompt_responses = []
                         for j in range(num_generations):
                             idx = i * num_generations + j
                             # Extract assistant response from the message log - take the last assistant turn
                             last_assistant_response = None
-                            for message in repeated_batch["message_log"][idx]:
+                            for message in original_repeated_batch["message_log"][idx]:
                                 if message["role"] == "assistant":
                                     last_assistant_response = message["content"]
                             if last_assistant_response is not None:
                                 if reasoning_split_word and reasoning_split_word in last_assistant_response:
                                     prompt_responses.append(last_assistant_response.split(reasoning_split_word)[-1].lstrip())
                             else:
-                                raise ValueError(f"No assistant response found for prompt {i} generation {j} which is {repeated_batch['message_log'][idx]}")
+                                raise ValueError(f"No assistant response found for prompt {i} generation {j} which is {original_repeated_batch['message_log'][idx]}")
                         # if no assistant response, use the last assistant response from the previous generation
                         if len(prompt_responses) == 0:
-                            prompt_responses.append(last_assistant_response)
+                            prompt_responses.append(last_assistant_response[:5000])
                         # Randomly select a subset of responses instead of using all
                         # Choose a random number of responses to select (between 1 and total available)
                         num_to_select = random.randint(1, len(prompt_responses))
@@ -680,17 +833,17 @@ def grpo_train(
                         selected_responses = random.sample(prompt_responses, num_to_select)
                         generation_responses.append(selected_responses)
                     
-                    # print(f"▶ Creating aggregation prompts for {generation_responses[0]}")   
-                    
-                    # Create aggregation prompts
+                    # Create aggregation prompts using the original unfiltered batch
                     aggregation_batch_template = create_aggregation_prompts(
-                        batch, 
+                        batch,  # Use original unfiltered batch 
                         generation_responses, 
                         master_config["grpo"]["aggregation_prompt_template"],
                         tokenizer,
                         master_config["grpo"]["aggregation_format_checking"],
                     )
-                    # print(f"▶ Aggregation batch template: {aggregation_batch_template}")
+                    
+                    print(f"▶ Created aggregation prompts from {len(batch['message_log'])} original prompts")
+                    
                     # Repeat aggregation batch for multiple generations
                     aggregation_repeated_batch = aggregation_batch_template.repeat_interleave(
                         master_config["grpo"]["num_generations_per_prompt"]
@@ -702,7 +855,8 @@ def grpo_train(
                         aggregation_repeated_batch["message_log"],
                         pad_value_dict={"token_ids": tokenizer.pad_token_id},
                     )
-                    aggregation_input_ids = aggregation_flat_pre_rollout["token_ids"]
+                    aggregation_prompt_input_ids_full = aggregation_flat_pre_rollout["token_ids"]
+                    aggregation_input_ids = aggregation_prompt_input_ids_full
 
                 print(f"▶ Generating Aggregation responses for batch of size {aggregation_repeated_batch.size}...")
                 with timer.time("aggregation_generation"):
@@ -716,6 +870,42 @@ def grpo_train(
                         greedy=False,
                         # Aggregation stage uses default max_new_tokens from policy config
                     )
+                    
+                    # Dynamic sampling: Filter aggregation prompts based on response diversity
+                    if oversample_ratio > 1.0:
+                        print("▶ Applying dynamic sampling filtering for aggregation stage...")
+                        with timer.time("aggregation_dynamic_sampling_filtering"):
+                            # Get rewards from aggregation
+                            aggregation_rewards = aggregation_batch["total_reward"]
+                            
+                            # Filter aggregation stage prompts
+                            target_num_prompts = master_config["grpo"]["num_prompts_per_step"]
+                            filtered_aggregation_batch, filtered_aggregation_rewards, kept_aggregation_indices = filter_prompts_by_diversity(
+                                aggregation_batch,
+                                aggregation_rewards,
+                                master_config["grpo"]["num_generations_per_prompt"],
+                                target_num_prompts,
+                                "aggregation"
+                            )
+                            
+                            # Update the aggregation_batch and rewards for downstream processing
+                            aggregation_batch = filtered_aggregation_batch
+                            aggregation_batch["total_reward"] = filtered_aggregation_rewards
+                            
+                            # Subset aggregation_input_ids to kept indices
+                            aggregation_input_ids = aggregation_prompt_input_ids_full[kept_aggregation_indices]
+                            
+                            # Recalculate aggregation_input_lengths if needed (not used)
+                            
+                            print(f"  ✓ Dynamic sampling: Kept {len(kept_aggregation_indices)} generations for aggregation stage")
+                            
+                            # Add aggregation dynamic sampling metrics
+                            original_agg_num_prompts = int(len(aggregation_rewards) / master_config["grpo"]["num_generations_per_prompt"])
+                            rollout_metrics.update({
+                                "dynamic_sampling_agg_original_prompts": original_agg_num_prompts,
+                                "dynamic_sampling_agg_filtered_prompts": len(kept_aggregation_indices),
+                                "dynamic_sampling_agg_filtering_ratio": len(kept_aggregation_indices) / original_agg_num_prompts,
+                            })
                     
                     # Debug: Print first aggregation prompt and responses
                     print("\n=== DEBUG: First Aggregation Prompt - All Responses ===")
