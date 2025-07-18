@@ -132,6 +132,13 @@ class MathEnvironment(EnvironmentInterface):
         """
         response_lower = response.lower()
         
+        # Check that there's exactly one pair of analysis tags
+        analysis_open_count = response_lower.count("<analysis>")
+        analysis_close_count = response_lower.count("</analysis>")
+        
+        if analysis_open_count != 1 or analysis_close_count != 1:
+            return 0.0
+        
         # Check analysis tag order
         analysis_start = response_lower.find("<analysis>")
         analysis_end = response_lower.find("</analysis>")
