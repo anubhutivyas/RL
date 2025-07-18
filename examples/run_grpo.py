@@ -24,9 +24,9 @@ from nemo_rl.algorithms.utils import get_tokenizer
 from nemo_rl.data import DataConfig
 from nemo_rl.data.datasets import JsonlinesDataset
 from nemo_rl.distributed.virtual_cluster import init_ray
+from nemo_rl.environments.ifeval_environment import IFEvalEnvironment
 from nemo_rl.environments.llm_judge_async_environment import LLMJudgeAsyncEnvironment
 from nemo_rl.environments.math_environment import MathEnvironment
-from nemo_rl.environments.ifeval_environment import IFEvalEnvironment
 from nemo_rl.models.generation.interfaces import configure_generation_config
 from nemo_rl.utils.config import load_config, parse_hydra_overrides
 from nemo_rl.utils.logger import get_next_experiment_dir
@@ -80,7 +80,7 @@ def setup_data(tokenizer: AutoTokenizer, data_config: DataConfig, env_configs):
             }
         ).remote(env_configs["math"])
         task_to_env["math"] = math_env
-    
+
     if "ifeval" in env_configs and env_configs["ifeval"]["enable"]:
         ifeval_env = IFEvalEnvironment.options(
             runtime_env={

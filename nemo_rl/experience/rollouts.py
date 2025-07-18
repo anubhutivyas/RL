@@ -369,6 +369,7 @@ def run_multi_turn_rollout(
 
     # Add total rewards to the final batch
     current_batch["total_reward"] = total_rewards
+    current_batch["sample_truncated"] = sample_truncated
 
     # Group sample-level data by dataset for per-dataset metrics
     per_dataset_data = defaultdict(lambda: defaultdict(list))

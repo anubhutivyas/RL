@@ -493,6 +493,11 @@ def grpo_train(
                 )
                 policy_generation.finish_generation()
 
+            is_end_mask = (~repeated_batch["sample_truncated"]).float()
+            repeated_batch["total_reward"] = (
+                is_end_mask * repeated_batch["total_reward"]
+            )
+
             # get dataset specific pass at k
             prompt_based_reward_dict = defaultdict(list)
             idx_dictionary = defaultdict(list)
@@ -910,6 +915,10 @@ def validate(
             "table": table,
         }
         val_metrics.update(gen_metrics)
+
+        val_batch["total_reward"] = (
+            val_batch["total_reward"] * (~val_batch["sample_truncated"]).float()
+        )
 
         prompt_based_reward_dict = defaultdict(list)
         idx_dictionary = defaultdict(list)
