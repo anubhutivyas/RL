@@ -373,6 +373,96 @@ class NLLLoss(LossFunction):
         }
 
 
+class DiffusionNLLLoss(LossFunction):
+    """Negative Log Likelihood Loss function for Diffusion SFT."""
+
+    loss_type = LossType.TOKEN_LEVEL
+
+    def __call__(
+        self,
+        next_token_logits: Tensor,
+        data: BatchedDataDict[Any],
+        global_valid_seqs: Tensor | None,
+        global_valid_toks: Tensor,
+        vocab_parallel_rank: Optional[int] = None,
+        vocab_parallel_group: Optional[torch.distributed.ProcessGroup] = None,
+        dpo_loss: bool = False,
+        dpo_average_log_probs: bool = False,
+    ) -> tuple[torch.Tensor, dict[str, Any]]:
+        # logits shape: [batch_size, seq_len, vocab_size]
+        # Get the next token logits for each position
+        token_mask = data["token_mask"][:, 1:]
+        sample_mask = data["sample_mask"]
+        masked_indices = data["masked_indices"][:, 1:]
+        p_mask = data["p_mask"][:, 1:]
+        answer_lengths = data["answer_lengths"][:, 1:]
+        #print("*** NExT_TOKEN_LOGITS_SHAPE: ", next_token_logits.shape, flush=True)
+        #print("*** INPUT_SHAPE: ", data["input_ids"].shape, flush=True)
+        #print("*** TOKEN_MASK_SHAPE: ", token_mask.shape, flush=True)
+        #print("*** SAMPLE_MASK_SHAPE: ", sample_mask.shape, flush=True)
+        #print("*** MASKED_INDICES_SHAPE: ", masked_indices.shape, flush=True)
+        #print("*** P_MASK_SHAPE: ", p_mask.shape, flush=True)
+        #print("*** ANSWER_LENGTHS_SHAPE: ", answer_lengths.shape, flush=True)
+        #print("*** GLOBAL_VALID_SEQS: ", global_valid_seqs, flush=True)
+        #print("*** GLOBAL_VALID_TOKS: ", global_valid_toks, flush=True)
+        mask = token_mask * sample_mask.unsqueeze(-1)
+
+        next_token_logits = next_token_logits.to(torch.float32)
+
+        # Gather the logprobs for the actual next tokens
+        if vocab_parallel_group is not None:
+            assert vocab_parallel_rank is not None, (
+                "vocab_parallel_rank must be provided when vocab_parallel_group is provided"
+            )
+            token_logprobs = from_parallel_logits_to_logprobs(
+                next_token_logits,
+                data["input_ids"],
+                vocab_start_index=vocab_parallel_rank * next_token_logits.shape[-1],
+                vocab_end_index=(vocab_parallel_rank + 1) * next_token_logits.shape[-1],
+                tp_group=vocab_parallel_group,
+                inference_only=False,
+            )
+        elif isinstance(next_token_logits, torch.distributed.tensor.DTensor):
+            token_logprobs = get_logprobs_from_vocab_parallel_logits(
+                next_token_logits, data["input_ids"]
+            )
+        else:
+            next_tokens = data["input_ids"][:, 1:].cuda()  # Skip first token
+            next_token_logprobs = torch.nn.functional.log_softmax(
+                next_token_logits, dim=-1
+            )
+            logprobs = next_token_logprobs[:, :-1]  # Remove last position's logits
+            token_logprobs = logprobs.gather(
+                dim=-1, index=next_tokens.unsqueeze(-1)
+            ).squeeze(-1)
+
+        if dpo_loss:
+            ## shape: [batch_size]
+            num_unmasked_tokens = torch.sum(mask, -1)
+            ## multiply by sample_mask to zero out invalid samples
+            loss = -torch.sum(token_logprobs * mask, dim=-1)
+            if dpo_average_log_probs:
+                loss = loss / num_unmasked_tokens.clamp(min=1)
+        else:
+            ## single scalar loss
+            ## scale by the total number of tokens in the batch
+            #print("*** TOKEN_LOGPROBS_SHAPE_A: ", token_logprobs.shape, flush=True)
+            token_logprobs = token_logprobs[masked_indices] / p_mask[masked_indices]
+            token_logprobs = token_logprobs / answer_lengths[masked_indices]
+            #print("*** TOKEN_LOGPROBS_SHAPE_B: ", token_logprobs.shape, flush=True)
+            loss = -masked_mean(
+                token_logprobs,
+                mask[masked_indices],
+                global_normalization_factor=global_valid_toks,
+            )
+
+        return loss, {
+            "loss": loss.item() if loss.ndim == 0 else loss,
+            "num_unmasked_tokens": mask.sum().item(),
+            "num_valid_samples": sample_mask.sum().item(),
+        }
+
+
 class DPOLossConfig(TypedDict):
     reference_policy_kl_penalty: float
     preference_loss_weight: float

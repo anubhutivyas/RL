@@ -518,7 +518,7 @@ class DTensorPolicyWorker:
                     mb_iterator = batch.make_microbatch_iterator(mbs)
 
                 for mb in mb_iterator:
-                    input_ids = mb.get("input_ids").cuda()
+                    input_ids = mb.get("noisy_batch").cuda() if "noisy_batch" in mb else mb.get("input_ids").cuda()
                     input_lengths = mb.get("input_lengths")
                     batch_size, seq_len = input_ids.shape
 

@@ -118,6 +118,7 @@ def rl_collate_fn(data_batch: list[DatumSpec]) -> BatchedDataDict[Any]:
     """Collate function for RL training."""
     message_log = [datum_spec["message_log"] for datum_spec in data_batch]
     length = torch.tensor([datum_spec["length"] for datum_spec in data_batch])
+    prompt_length = torch.tensor([datum_spec["prompt_length"] for datum_spec in data_batch])
     loss_multiplier = torch.tensor(
         [datum_spec["loss_multiplier"] for datum_spec in data_batch]
     )
@@ -136,6 +137,7 @@ def rl_collate_fn(data_batch: list[DatumSpec]) -> BatchedDataDict[Any]:
     output: BatchedDataDict[Any] = BatchedDataDict(
         message_log=message_log,
         length=length,
+        prompt_length=prompt_length,
         loss_multiplier=loss_multiplier,
         extra_env_info=extra_env_info,
         task_name=task_names,

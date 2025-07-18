@@ -21,6 +21,7 @@ from typing import Any
 from omegaconf import OmegaConf
 from transformers import AutoTokenizer
 
+from nemo_rl.algorithms.loss_functions import DiffusionNLLLoss
 from nemo_rl.algorithms.sft import MasterConfig, setup, sft_train
 from nemo_rl.algorithms.utils import get_tokenizer
 from nemo_rl.data import DataConfig, hf_datasets
@@ -69,6 +70,7 @@ def sft_preprocessor(
     )
 
     length = sum(len(m["token_ids"]) for m in message_log)
+    prompt_length = length - len(message_log[-1]["token_ids"])
 
     loss_multiplier = 1.0
     if length > max_seq_length:
@@ -82,6 +84,7 @@ def sft_preprocessor(
     output = {
         "message_log": message_log,
         "length": length,
+        "prompt_length": prompt_length,
         "extra_env_info": None,
         "loss_multiplier": loss_multiplier,
         "idx": idx,
@@ -213,7 +216,7 @@ def main():
         train_dataloader,
         val_dataloader,
         tokenizer,
-        loss_fn,
+        DiffusionNLLLoss(),
         master_config,
         logger,
         sft_task_spec,

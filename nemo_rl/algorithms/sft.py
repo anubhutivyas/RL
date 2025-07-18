@@ -312,6 +312,23 @@ def validate(
     return val_metrics, timing_metrics
 
 
+def create_noisy_batch(input_ids, tokenizer, eps=1e-3):
+    b, l = input_ids.shape
+    t = torch.rand(b, device=input_ids.device)
+    p_mask = (1 - eps) * t + eps
+    p_mask = p_mask[:, None].repeat(1, l)
+
+    masked_indices = torch.rand((b, l), device=input_ids.device) < p_mask
+    # 126336 is used for [MASK] token
+    if tokenizer.mask_token_id is not None:
+        mask_token = tokenizer.mask_token_id
+    else:
+        mask_token = tokenizer.convert_tokens_to_ids(['<|mdm_mask|>'])[0]
+    noisy_batch = torch.where(masked_indices, mask_token, input_ids)
+    
+    return noisy_batch, masked_indices, p_mask
+
+
 def sft_train(
     policy,
     train_dataloader,
@@ -394,13 +411,34 @@ def sft_train(
                             "make_sequence_length_divisible_by"
                         ],
                     )
+                    
+                    noisy_batch, _, p_mask = create_noisy_batch(cat_and_padded["token_ids"], tokenizer)
+                    token_positions = torch.arange(noisy_batch.shape[1], device=noisy_batch.device).expand(noisy_batch.size(0), noisy_batch.size(1))
+
+                    prompt_mask = (token_positions < batch["prompt_length"].unsqueeze(1))
+                    noisy_batch[prompt_mask] = cat_and_padded["token_ids"][prompt_mask]
+                    
+                    # Calculate the answer length (including the padded <EOS> tokens)
+                    prompt_mask = prompt_mask.to(torch.int64)
+                    answer_lengths = torch.sum((1 - prompt_mask), dim=-1, keepdim=True)
+                    answer_lengths = answer_lengths.repeat(1, noisy_batch.shape[1])
+                    if tokenizer.mask_token_id is not None:
+                        mask_token = tokenizer.mask_token_id
+                    else:
+                        mask_token = tokenizer.convert_tokens_to_ids(['<|mdm_mask|>'])[0]
+                    masked_indices = (noisy_batch == mask_token)
 
                     train_data: BatchedDataDict = BatchedDataDict(
                         {
                             "input_ids": cat_and_padded["token_ids"],
+                            "noisy_batch": noisy_batch,
                             "input_lengths": input_lengths,
-                            "token_mask": cat_and_padded["token_loss_mask"],
+                            "token_mask": cat_and_padded["token_loss_mask"] * (~masked_indices),
                             "sample_mask": batch["loss_multiplier"],
+                            "prompt_lengths": batch["prompt_length"],
+                            "answer_lengths": answer_lengths,
+                            "masked_indices": masked_indices,
+                            "p_mask": p_mask,
                         }
                     )
 
