@@ -49,11 +49,14 @@ policy:
       foreach: false
       fused: false
 data:
-  max_input_seq_length: 16000
-  dataset_name: alpaca
+  max_input_seq_length: ${policy.max_total_sequence_length}
+  dataset_name: "openmathinstruct2"
+  prompt_file: examples/prompts/math.txt
+  split: "train_1M"
   add_bos: true
   add_eos: true
-  add_generation_prompt: false
+  add_generation_prompt: true
+  output_key: 'generated_solution'
 logger:
   log_dir: logs/sft-qwen2.5-32b-4n8g-fsdp2tp8sp-actckpt
   wandb_enabled: true
