@@ -23,14 +23,14 @@ from nemo_rl.data.interfaces import TaskDataSpec
 class PreferenceDataset:
     """Preference dataset. 
 
-    This class handles loading of preference data.
-    The input JSON files should contain examples with the following structure:
+    This class handles loading of custom preference data.
+    The input JSONL file should contain valid JSON objects formatted like this:
     {
-        "context": list of dicts, # The input message
+        "context": list of dicts, # The prompt message (including previous turns, if any)
         "completions": list of dicts, # The list of completions
             {
                 "rank": int, # The rank of the completion (lower rank is preferred)
-                "completion": list of dicts, # The completion message
+                "completion": list of dicts, # The completion message(s)
             }
     }
     """

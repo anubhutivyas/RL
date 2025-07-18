@@ -71,9 +71,11 @@ def mock_preference_data():
         json.dump(preference_data, preference_file)
         preference_path = preference_file.name
     
-    yield preference_path
-    # Cleanup
-    os.unlink(preference_path)
+    try:
+        yield preference_path
+    finally:
+        # Cleanup
+        os.unlink(preference_path)
 
 
 def test_preference_dataset_initialization(mock_preference_data):
