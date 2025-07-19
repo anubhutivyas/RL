@@ -128,9 +128,14 @@ class MathEnvironment(EnvironmentInterface):
             response: The assistant's response to check
             
         Returns:
-            float: 1.0 if <analysis> tags are present in correct order and answer content after analysis is longer, 0.0 otherwise
+            float: 1.0 if </think> and <analysis> tags are present in correct order and answer content after analysis is longer, 0.0 otherwise
         """
         response_lower = response.lower()
+        
+        # Check that there's exactly one </think> tag
+        think_close_count = response_lower.count("</think>")
+        if think_close_count != 1:
+            return 0.0
         
         # Check that there's exactly one pair of analysis tags
         analysis_open_count = response_lower.count("<analysis>")
@@ -139,12 +144,15 @@ class MathEnvironment(EnvironmentInterface):
         if analysis_open_count != 1 or analysis_close_count != 1:
             return 0.0
         
-        # Check analysis tag order
+        # Check tag order: </think> should come before <analysis>
+        think_end = response_lower.find("</think>")
         analysis_start = response_lower.find("<analysis>")
         analysis_end = response_lower.find("</analysis>")
-        has_proper_analysis = analysis_start != -1 and analysis_end != -1 and analysis_start < analysis_end
         
-        if has_proper_analysis:
+        has_proper_order = (think_end != -1 and analysis_start != -1 and analysis_end != -1 and 
+                           think_end < analysis_start and analysis_start < analysis_end)
+        
+        if has_proper_order:
             # Extract content between analysis tags
             analysis_content = response[analysis_start + len("<analysis>"):analysis_end].strip()
             
