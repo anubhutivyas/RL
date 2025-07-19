@@ -250,6 +250,22 @@ def validate(
                     "make_sequence_length_divisible_by"
                 ],
             )
+            
+            noisy_batch, _, p_mask = create_noisy_batch(cat_and_padded["token_ids"], tokenizer)
+            token_positions = torch.arange(noisy_batch.shape[1], device=noisy_batch.device).expand(noisy_batch.size(0), noisy_batch.size(1))
+
+            prompt_mask = (token_positions < val_batch["prompt_length"].unsqueeze(1))
+            noisy_batch[prompt_mask] = cat_and_padded["token_ids"][prompt_mask]
+            
+            # Calculate the answer length (including the padded <EOS> tokens)
+            prompt_mask = prompt_mask.to(torch.int64)
+            answer_lengths = torch.sum((1 - prompt_mask), dim=-1, keepdim=True)
+            answer_lengths = answer_lengths.repeat(1, noisy_batch.shape[1])
+            if tokenizer.mask_token_id is not None:
+                mask_token = tokenizer.mask_token_id
+            else:
+                mask_token = tokenizer.convert_tokens_to_ids(['<|mdm_mask|>'])[0]
+            masked_indices = (noisy_batch == mask_token)
 
             val_data: BatchedDataDict = BatchedDataDict(
                 {
@@ -257,6 +273,10 @@ def validate(
                     "input_lengths": input_lengths,
                     "token_mask": cat_and_padded["token_loss_mask"],
                     "sample_mask": val_batch["loss_multiplier"],
+                    "prompt_lengths": val_batch["prompt_length"],
+                    "answer_lengths": answer_lengths,
+                    "masked_indices": masked_indices,
+                    "p_mask": p_mask,
                 }
             )
 
