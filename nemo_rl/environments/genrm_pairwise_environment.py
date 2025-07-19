@@ -185,7 +185,7 @@ class AsyncGenRMWorker:
                 add_generation_prompt=True,
             )
             
-            logging.info(f"GenRM chat template text for {request_id}:\n{chat_template_text}")
+            # logging.info(f"GenRM chat template text for {request_id}:\n{chat_template_text}")
             
             # Apply chat template and tokenize
             token_ids = self.tokenizer.apply_chat_template(
@@ -195,7 +195,7 @@ class AsyncGenRMWorker:
                 return_tensors=None,  # Return list of token IDs
             )
             
-            logging.info(f"GenRM tokenized prompt for {request_id}: {len(token_ids)} tokens")
+            # logging.info(f"GenRM tokenized prompt for {request_id}: {len(token_ids)} tokens")
             
             # Create sampling parameters
             sampling_params = self.SamplingParams(**sampling_params_dict)
@@ -364,6 +364,7 @@ class GenRMPairwiseEnvironment(EnvironmentInterface):
         logging.info(f"Created {len(self.workers)} AsyncGenRMWorker actors.")
         self._request_counter = 0
         self._actor_id_prefix = str(uuid.uuid4())[:8]
+        self._last_additional_metrics = {}  # Store additional metrics from last step for global_post_process_and_metrics
 
     def shutdown(self):
         for worker in self.workers:
@@ -467,6 +468,11 @@ class GenRMPairwiseEnvironment(EnvironmentInterface):
             comparison_results, comparison_metadata, prompt_groups
         )
         
+        # Get additional metrics from the aggregator (e.g., individual scores for ranking-based aggregators)
+        self._last_additional_metrics = self.reward_aggregator.get_additional_metrics(
+            comparison_results, comparison_metadata, prompt_groups, final_scores
+        )
+        
         # Create observations and prepare return values in the same order as input
         observations = []
         all_metadata = []
@@ -508,35 +514,12 @@ class GenRMPairwiseEnvironment(EnvironmentInterface):
         self, batch: BatchedDataDict
     ) -> Tuple[BatchedDataDict, dict]:
         """Computes metrics for the GenRM pairwise environment."""
-        batch["rewards"] = (
-            batch["rewards"] * batch["is_end"]
-        )
         
-        if (batch["rewards"] > 0).float().sum() > 0:
-            positive_reward_generation_lengths = (
-                (batch["generation_lengths"] - batch["prompt_lengths"])[
-                    batch["rewards"] > 0
-                ]
-                .float()
-                .mean()
-                .item()
-            )
-        else:
-            positive_reward_generation_lengths = 0
-
-        metrics = {
-            "mean_pairwise_score": batch["rewards"].mean().item(),
-            "max_pairwise_score": batch["rewards"].max().item(),
-            "min_pairwise_score": batch["rewards"].min().item(),
-            "std_pairwise_score": batch["rewards"].std().item(),
-            "fraction_of_samples_properly_ended": batch["is_end"].float().mean().item(),
-            "num_responses_in_batch": batch["is_end"].shape[0],
-            "generation_lengths": batch["generation_lengths"].float().mean().item(),
-            "prompt_lengths": batch["prompt_lengths"].float().mean().item(),
-            "positive_reward_generation_lengths": positive_reward_generation_lengths,
-            "configured_num_generations_per_prompt": self.num_generations_per_prompt,  # Expected number
-            "reward_aggregator_method": self.reward_aggregator.name,  # Which aggregator is being used
-        }
+        metrics = {}
+        
+        # Add additional metrics from the aggregator (e.g., individual scores for ranking-based aggregators)
+        if self._last_additional_metrics:
+            metrics.update(self._last_additional_metrics)
 
         return batch, metrics
 

@@ -38,6 +38,29 @@ class PairwiseRewardAggregator(ABC):
         """Aggregate pairwise comparison results into final rewards for each response."""
         pass
     
+    def get_additional_metrics(
+        self,
+        comparison_results: List[Tuple[str, float, float, float]],  # (request_id, score_1, score_2, ranking_score)
+        comparison_metadata: List[Tuple[str, int, int]],  # (prompt_key, resp_i, resp_j)
+        prompt_groups: Dict[str, Dict[str, Any]],
+        final_scores: Dict[str, List[float]]  # The aggregated scores from aggregate_scores
+    ) -> Dict[str, float]:
+        """Compute additional metrics to log alongside the main aggregated scores.
+        
+        Default implementation returns empty dict. Subclasses can override to provide
+        additional metrics like individual scores, win rates, etc.
+        
+        Args:
+            comparison_results: Raw comparison results from the GenRM model
+            comparison_metadata: Metadata about which responses were compared
+            prompt_groups: Grouped prompt data
+            final_scores: The final aggregated scores returned by aggregate_scores
+            
+        Returns:
+            Dictionary of additional metrics to log
+        """
+        return {}
+    
     @property
     @abstractmethod
     def name(self) -> str:
@@ -93,6 +116,44 @@ class WinRateAggregator(PairwiseRewardAggregator):
                 final_scores[prompt_key].append(win_rate)
             
         return final_scores
+    
+    def get_additional_metrics(
+        self,
+        comparison_results: List[Tuple[str, float, float, float]],
+        comparison_metadata: List[Tuple[str, int, int]],
+        prompt_groups: Dict[str, Dict[str, Any]],
+        final_scores: Dict[str, List[float]]
+    ) -> Dict[str, float]:
+        """Compute individual score metrics alongside the win-rate scores."""
+        
+        # Collect individual scores for metrics
+        all_individual_scores = []
+        all_ranking_scores = []
+        
+        # Process each comparison result to extract individual scores
+        for (request_id, score_1, score_2, ranking_score), (prompt_key, resp_i, resp_j) in zip(
+            comparison_results, comparison_metadata
+        ):
+            all_individual_scores.extend([score_1, score_2])
+            all_ranking_scores.append(ranking_score)
+        
+        # Compute statistics for individual scores
+        individual_metrics = {}
+        if all_individual_scores:
+            individual_metrics.update({
+                "mean_individual_score": np.mean(all_individual_scores),
+                "std_individual_score": np.std(all_individual_scores),
+                "min_individual_score": np.min(all_individual_scores),
+                "max_individual_score": np.max(all_individual_scores),
+            })
+        
+        if all_ranking_scores:
+            individual_metrics.update({
+                "mean_ranking_score": np.mean(all_ranking_scores),
+                "std_ranking_score": np.std(all_ranking_scores),
+            })
+        
+        return individual_metrics
     
     @property
     def name(self) -> str:
@@ -211,6 +272,54 @@ class EloRatingAggregator(PairwiseRewardAggregator):
         
         return final_scores
     
+    def get_additional_metrics(
+        self,
+        comparison_results: List[Tuple[str, float, float, float]],
+        comparison_metadata: List[Tuple[str, int, int]],
+        prompt_groups: Dict[str, Dict[str, Any]],
+        final_scores: Dict[str, List[float]]
+    ) -> Dict[str, float]:
+        """Compute individual score metrics alongside the Elo rating scores."""
+        
+        # Collect individual scores for metrics
+        all_individual_scores = []
+        all_ranking_scores = []
+        wins_first_response = 0
+        total_comparisons = 0
+        
+        # Process each comparison result to extract individual scores
+        for (request_id, score_1, score_2, ranking_score), (prompt_key, resp_i, resp_j) in zip(
+            comparison_results, comparison_metadata
+        ):
+            all_individual_scores.extend([score_1, score_2])
+            all_ranking_scores.append(ranking_score)
+            total_comparisons += 1
+            
+            # Track win rate for first response in comparisons
+            if ranking_score <= 3.0:
+                wins_first_response += 1
+        
+        # Compute statistics for individual scores
+        individual_metrics = {}
+        if all_individual_scores:
+            individual_metrics.update({
+                "mean_individual_score": np.mean(all_individual_scores),
+                "std_individual_score": np.std(all_individual_scores),
+                "min_individual_score": np.min(all_individual_scores),
+                "max_individual_score": np.max(all_individual_scores),
+            })
+        
+        if all_ranking_scores:
+            individual_metrics.update({
+                "mean_ranking_score": np.mean(all_ranking_scores),
+                "std_ranking_score": np.std(all_ranking_scores),
+            })
+        
+        if total_comparisons > 0:
+            individual_metrics["win_rate_first_response"] = wins_first_response / total_comparisons
+            
+        return individual_metrics
+    
     def _update_elo_ratings(self, ratings: List[float], winner_idx: int, loser_idx: int):
         """Update Elo ratings based on a single comparison."""
         winner_rating = ratings[winner_idx]
@@ -298,6 +407,48 @@ class WeightedWinLossAggregator(PairwiseRewardAggregator):
                 final_scores[prompt_key].append(avg_weighted_score)
             
         return final_scores
+    
+    def get_additional_metrics(
+        self,
+        comparison_results: List[Tuple[str, float, float, float]],
+        comparison_metadata: List[Tuple[str, int, int]],
+        prompt_groups: Dict[str, Dict[str, Any]],
+        final_scores: Dict[str, List[float]]
+    ) -> Dict[str, float]:
+        """Compute individual score metrics alongside the weighted win-loss scores."""
+        
+        # Collect individual scores for metrics
+        all_individual_scores_1 = []
+        all_individual_scores_2 = []
+        all_individual_scores = []
+        
+        # Process each comparison result to extract individual scores
+        for (request_id, score_1, score_2, ranking_score), (prompt_key, resp_i, resp_j) in zip(
+            comparison_results, comparison_metadata
+        ):
+            all_individual_scores_1.append(score_1)
+            all_individual_scores_2.append(score_2)
+            all_individual_scores.extend([score_1, score_2])
+        
+        # Compute statistics for individual scores
+        individual_metrics = {}
+        if all_individual_scores:
+            individual_metrics.update({
+                "mean_individual_score": np.mean(all_individual_scores),
+                "std_individual_score": np.std(all_individual_scores),
+                "min_individual_score": np.min(all_individual_scores),
+                "max_individual_score": np.max(all_individual_scores),
+                "median_individual_score": np.median(all_individual_scores),
+            })
+            
+            # Also compute individual score metrics per response position
+            if all_individual_scores_1:
+                individual_metrics.update({
+                    "mean_individual_score_first": np.mean(all_individual_scores_1),
+                    "mean_individual_score_second": np.mean(all_individual_scores_2),
+                })
+        
+        return individual_metrics
     
     @property
     def name(self) -> str:
@@ -441,6 +592,54 @@ class BradleyTerryAggregator(PairwiseRewardAggregator):
         
         return strengths.tolist()
     
+    def get_additional_metrics(
+        self,
+        comparison_results: List[Tuple[str, float, float, float]],
+        comparison_metadata: List[Tuple[str, int, int]],
+        prompt_groups: Dict[str, Dict[str, Any]],
+        final_scores: Dict[str, List[float]]
+    ) -> Dict[str, float]:
+        """Compute individual score metrics alongside the Bradley-Terry scores."""
+        
+        # Collect individual scores for metrics
+        all_individual_scores = []
+        all_ranking_scores = []
+        total_comparisons = 0
+        wins_first_response = 0
+        
+        # Process each comparison result to extract individual scores
+        for (request_id, score_1, score_2, ranking_score), (prompt_key, resp_i, resp_j) in zip(
+            comparison_results, comparison_metadata
+        ):
+            all_individual_scores.extend([score_1, score_2])
+            all_ranking_scores.append(ranking_score)
+            total_comparisons += 1
+            
+            # Track win rate for first response in comparisons
+            if ranking_score <= 3.0:
+                wins_first_response += 1
+        
+        # Compute statistics for individual scores
+        individual_metrics = {}
+        if all_individual_scores:
+            individual_metrics.update({
+                "mean_individual_score": np.mean(all_individual_scores),
+                "std_individual_score": np.std(all_individual_scores),
+                "min_individual_score": np.min(all_individual_scores),
+                "max_individual_score": np.max(all_individual_scores),
+            })
+        
+        if all_ranking_scores:
+            individual_metrics.update({
+                "mean_ranking_score": np.mean(all_ranking_scores),
+                "std_ranking_score": np.std(all_ranking_scores),
+            })
+        
+        if total_comparisons > 0:
+            individual_metrics["win_rate_first_response"] = wins_first_response / total_comparisons
+            
+        return individual_metrics
+    
     @property
     def name(self) -> str:
         return "bradley_terry"
@@ -524,6 +723,55 @@ class SimpleTiebreakerAggregator(PairwiseRewardAggregator):
                 final_scores[prompt_key].append(avg_score)
             
         return final_scores
+    
+    def get_additional_metrics(
+        self,
+        comparison_results: List[Tuple[str, float, float, float]],
+        comparison_metadata: List[Tuple[str, int, int]],
+        prompt_groups: Dict[str, Dict[str, Any]],
+        final_scores: Dict[str, List[float]]
+    ) -> Dict[str, float]:
+        """Compute individual score metrics alongside the simple tiebreaker scores."""
+        
+        # Collect individual scores and track tiebreaking usage
+        all_individual_scores = []
+        all_ranking_scores = []
+        tiebreak_used_count = 0
+        
+        # Process each comparison result to extract individual scores
+        for (request_id, score_1, score_2, ranking_score), (prompt_key, resp_i, resp_j) in zip(
+            comparison_results, comparison_metadata
+        ):
+            # Track original individual scores (before any tiebreaking)
+            all_individual_scores.extend([score_1, score_2])
+            all_ranking_scores.append(ranking_score)
+            
+            # Count how often tiebreaking is used
+            if score_1 == score_2:
+                tiebreak_used_count += 1
+        
+        # Compute statistics for individual scores
+        individual_metrics = {}
+        if all_individual_scores:
+            individual_metrics.update({
+                "mean_individual_score": np.mean(all_individual_scores),
+                "std_individual_score": np.std(all_individual_scores),
+                "min_individual_score": np.min(all_individual_scores),
+                "max_individual_score": np.max(all_individual_scores),
+            })
+        
+        if all_ranking_scores:
+            individual_metrics.update({
+                "mean_ranking_score": np.mean(all_ranking_scores),
+                "std_ranking_score": np.std(all_ranking_scores),
+            })
+            
+        # Add tiebreaking statistics
+        total_comparisons = len(comparison_results)
+        if total_comparisons > 0:
+            individual_metrics["tiebreak_usage_rate"] = tiebreak_used_count / total_comparisons
+        
+        return individual_metrics
     
     @property
     def name(self) -> str:

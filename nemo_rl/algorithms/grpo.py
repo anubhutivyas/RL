@@ -64,6 +64,63 @@ from nemo_rl.utils.timer import Timer
 
 
 # ===============================================================================
+# Helper Functions  
+# ===============================================================================
+def apply_environment_post_processing(
+    batch: BatchedDataDict[DatumSpec], 
+    task_to_env: Dict[str, EnvironmentInterface],
+    prefix: str = ""
+) -> Tuple[BatchedDataDict[DatumSpec], Dict[str, Any]]:
+    """Apply environment post-processing to a batch.
+    
+    Args:
+        batch: Batch containing completed rollout data
+        task_to_env: Dictionary mapping task names to their corresponding environments
+        prefix: Optional prefix for metric names (e.g., "val_" for validation metrics)
+        
+    Returns:
+        Tuple of (original_batch, environment_metrics)
+        
+    Note:
+        This function only collects metrics from environment post-processing.
+        The batch is returned unchanged since training data was already processed during rollouts.
+    """
+    import ray
+    
+    env_metrics = {}
+    
+    # Collect futures for all environment post-processing calls
+    futures = []
+    task_info = []  # Store task_name for each future
+    
+    for task_name, env in task_to_env.items():
+        # Find indices for this task type. This MUST match the logic in `calculate_rewards`
+        # which uses the "task_name" field for dispatching to the correct environment.
+        task_indices = [i for i, name in enumerate(batch["task_name"]) if name == task_name]
+        if task_indices:
+            # Create a sub-batch for this task
+            task_batch = batch.select_indices(task_indices)
+            
+            # Apply environment post-processing (Ray remote call)
+            future = env.global_post_process_and_metrics.remote(task_batch)
+            futures.append(future)
+            task_info.append(task_name)
+    
+    # Get results and collect only metrics (ignore processed batches)
+    if futures:
+        results = ray.get(futures)
+        
+        # Process results - only collect metrics, ignore batch modifications
+        for task_name, (_, task_env_metrics) in zip(task_info, results):
+            # Collect metrics with appropriate prefix
+            metric_prefix = f"{prefix}{task_name}/env_" if prefix else f"{task_name}/env_"
+            env_metrics.update({f"{metric_prefix}{k}": v for k, v in task_env_metrics.items()})
+    
+    # Return original batch unchanged, just with additional metrics
+    return batch, env_metrics
+
+
+# ===============================================================================
 # Configuration
 # ===============================================================================
 @dataclass
@@ -494,6 +551,14 @@ def grpo_train(
                 )
                 policy_generation.finish_generation()
 
+            # Apply environment post-processing for training
+            print("▶ Applying environment post-processing...")
+            with timer.time("env_post_processing"):
+                repeated_batch, env_metrics = apply_environment_post_processing(
+                    repeated_batch, task_to_env
+                )
+                rollout_metrics.update(env_metrics)
+
             # get dataset specific pass at k
             prompt_based_reward_dict = defaultdict(list)
             idx_dictionary = defaultdict(list)
@@ -853,6 +918,12 @@ def validate(
             max_rollout_turns=master_config["grpo"]["max_rollout_turns"],
             greedy=False,
         )
+
+        # Apply environment post-processing for validation
+        val_batch, val_env_metrics = apply_environment_post_processing(
+            val_batch, val_task_to_env, prefix="val_"
+        )
+        gen_metrics.update(val_env_metrics)
 
         # Collect message logs for later display
         to_env = [
