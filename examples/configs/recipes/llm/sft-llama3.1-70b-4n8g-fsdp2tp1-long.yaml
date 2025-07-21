@@ -15,7 +15,7 @@ checkpointing:
   keep_top_k: 3
   save_period: 10
 policy:
-  model_name: "meta-llama/Llama-3.1-8B"
+  model_name: "meta-llama/Llama-3.1-70B"
   tokenizer:
     name: meta-llama/Llama-3.1-8B-Instruct ## specify if you'd like to use a tokenizer different from the model's default
   train_global_batch_size: 512

@@ -4,8 +4,8 @@ source $SCRIPT_DIR/common.env
 
 # ===== BEGIN CONFIG =====
 NUM_NODES=1
-STEPS_PER_RUN=500
-MAX_STEPS=500
+STEPS_PER_RUN=250
+MAX_STEPS=250
 NUM_RUNS=$(( (MAX_STEPS + STEPS_PER_RUN - 1) / STEPS_PER_RUN ))  # Round up
 NUM_MINUTES=15
 # ===== END CONFIG =====
@@ -35,8 +35,8 @@ uv run tests/json_dump_tb_logs.py $LOG_DIR --output_path $JSON_METRICS
 if [[ $(jq 'to_entries | .[] | select(.key == "train/loss") | .value | keys | map(tonumber) | max' $JSON_METRICS) -ge $MAX_STEPS ]]; then
     # TODO: UPDATE FOR OPENMATHINSTRUCT2
     uv run tests/check_metrics.py $JSON_METRICS \
-        'data["train/loss"]["1"] < 2.4' \
-        'data["train/loss"]["500"] < 0.5' \
+        'data["train/loss"]["1"] < 0.5' \
+        'data["train/loss"]["250"] < 0.5' \
         'max(data["ray/node.0.gpu.0.mem_gb"]) < 25'
 fi
 
