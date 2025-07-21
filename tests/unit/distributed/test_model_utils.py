@@ -182,7 +182,6 @@ def virtual_cluster_4_gpus():
 import numpy as np
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize(
     "tp_cp_config",
     [
@@ -385,7 +384,6 @@ def register_allgather_cp_test_actor():
             )
 
 
-@pytest.mark.unit
 @pytest.mark.parametrize("cp_size", [2])
 def test_allgather_cp_sharded_tensor(register_allgather_cp_test_actor, cp_size):
     """Test allgather_cp_sharded_tensor function."""
