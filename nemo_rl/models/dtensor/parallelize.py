@@ -92,7 +92,7 @@ def _parallelize_gemma3(
     Tensor parallelism is not supported for Gemma3 models because of tied word embeddings.
     """
     if isinstance(model, Gemma3ForConditionalGeneration):
-        model_prefix = "language_model"
+        model_prefix = "model.language_model"
     else:
         model_prefix = "model"
 
@@ -127,7 +127,7 @@ def _parallelize_gemma3(
         ),
         f"{model_prefix}.layers.*.post_feedforward_layernorm": SequenceParallel(),
         f"{model_prefix}.norm": SequenceParallel(),
-        f"{model_prefix}.lm_head": PrepareModuleInput(
+        "lm_head": PrepareModuleInput(
             input_layouts=(Shard(1),),
             desired_input_layouts=(Replicate(),),
             use_local_output=True,
@@ -146,10 +146,6 @@ def _parallelize_llama(
     sequence_parallel: bool = False,
 ):
     """Parallelizes a LlamaForCausalLM model across data and tensor parallel dimensions."""
-    assert not model.config.tie_word_embeddings, (
-        "Tie word embeddings not supported when TP is enabled"
-    )
-
     base_model_tp_plan = {
         "model.embed_tokens": RowwiseParallel(input_layouts=Replicate()),
         "model.layers.*.self_attn.q_proj": ColwiseParallel(),
@@ -206,9 +202,6 @@ def _parallelize_qwen(
                     f"expecting input of {mod} to be a torch.Tensor or DTensor, but got {input_tensor}"
                 )
 
-    assert not model.config.tie_word_embeddings, (
-        "Tie word embeddings not supported when TP is enabled"
-    )
     if sequence_parallel:
         base_model_tp_plan = {
             "lm_head": ColwiseParallel(

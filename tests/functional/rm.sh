@@ -24,9 +24,9 @@ cd $PROJECT_ROOT
 uv run $PROJECT_ROOT/examples/run_rm.py \
     --config examples/configs/rm.yaml \
     cluster.gpus_per_node=2 \
-    sft.max_num_steps=3 \
-    sft.val_batches=1 \
-    sft.val_period=3 \
+    rm.max_num_steps=3 \
+    rm.val_batches=1 \
+    rm.val_period=3 \
     logger.tensorboard_enabled=true \
     logger.log_dir=$LOG_DIR \
     logger.wandb_enabled=false \

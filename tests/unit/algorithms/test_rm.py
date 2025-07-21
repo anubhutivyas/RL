@@ -19,7 +19,7 @@ import torch
 from torchdata.stateful_dataloader import StatefulDataLoader
 
 from nemo_rl.algorithms.loss_functions import PreferenceLoss
-from nemo_rl.algorithms.sft import _default_sft_save_state, sft_train
+from nemo_rl.algorithms.rm import _default_rm_save_state, rm_train
 
 
 @pytest.fixture
@@ -77,11 +77,11 @@ def mock_components():
     loss_fn = PreferenceLoss()
     logger = MagicMock()
     checkpointer = MagicMock()
-    sft_task_spec = MagicMock()
+    rm_task_spec = MagicMock()
 
     # Create mock master config
     master_config = {
-        "sft": {
+        "rm": {
             "max_num_steps": 5,
             "max_num_epochs": 2,
             "val_period": 100,
@@ -107,7 +107,7 @@ def mock_components():
         "loss_fn": loss_fn,
         "logger": logger,
         "checkpointer": checkpointer,
-        "sft_task_spec": sft_task_spec,
+        "rm_task_spec": rm_task_spec,
         "master_config": master_config,
     }
 
@@ -115,12 +115,12 @@ def mock_components():
 def test_exit_on_max_steps(mock_components):
     """Test that training loop exits when max_num_steps is reached"""
     # Set max steps to 12, which is less than len(train_dataloader) * max_num_epochs
-    mock_components["master_config"]["sft"]["max_num_steps"] = 12
+    mock_components["master_config"]["rm"]["max_num_steps"] = 12
 
-    sft_save_state = _default_sft_save_state()
+    rm_save_state = _default_rm_save_state()
 
     # Run training
-    sft_train(
+    rm_train(
         mock_components["policy"],
         mock_components["train_dataloader"],
         mock_components["val_dataloader"],
@@ -128,9 +128,9 @@ def test_exit_on_max_steps(mock_components):
         mock_components["loss_fn"],
         mock_components["master_config"],
         mock_components["logger"],
-        mock_components["sft_task_spec"],
+        mock_components["rm_task_spec"],
         mock_components["checkpointer"],
-        sft_save_state,
+        rm_save_state,
     )
 
     # Verify we only trained for 12 steps.
@@ -140,13 +140,13 @@ def test_exit_on_max_steps(mock_components):
 def test_exit_on_max_epochs(mock_components):
     """Test that training loop exits when max_num_epochs is reached"""
     # Set max epochs to 2 and max steps to a large number
-    mock_components["master_config"]["sft"]["max_num_epochs"] = 2
-    mock_components["master_config"]["sft"]["max_num_steps"] = 100
+    mock_components["master_config"]["rm"]["max_num_epochs"] = 2
+    mock_components["master_config"]["rm"]["max_num_steps"] = 100
 
-    sft_save_state = _default_sft_save_state()
+    rm_save_state = _default_rm_save_state()
 
     # Run training
-    sft_train(
+    rm_train(
         mock_components["policy"],
         mock_components["train_dataloader"],
         mock_components["val_dataloader"],
@@ -154,9 +154,9 @@ def test_exit_on_max_epochs(mock_components):
         mock_components["loss_fn"],
         mock_components["master_config"],
         mock_components["logger"],
-        mock_components["sft_task_spec"],
+        mock_components["rm_task_spec"],
         mock_components["checkpointer"],
-        sft_save_state,
+        rm_save_state,
     )
 
     # Verify we trained for exactly two epochs (20 batches).

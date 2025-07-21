@@ -15,9 +15,9 @@ uv run examples/run_rm.py --config examples/configs/rm.yaml
 uv run examples/run_rm.py --config examples/configs/rm.yaml policy.model_name=Qwen/Qwen2.5-1.5B
 ```
 
-The YAML config must be specified. It uses the same base template as the SFT config but includes a new `reward_model_type` key that triggers Reward Model training. An example RM config file can be found at [examples/configs/rm.yaml](../../examples/configs/rm.yaml).
+You must specify the YAML config. It shares the same base template as the SFT config but adds a new `reward_model_type` key to trigger RM training. You can find an example RM config file at [examples/configs/rm.yaml](../../examples/configs/rm.yaml).
 
-**Reminder**: Don't forget to set your `HF_HOME`, `WANDB_API_KEY`, and `HF_DATASETS_CACHE` (if needed). You'll need to do a `huggingface-cli login` as well for Llama models.
+**Reminder**: Set your `HF_HOME`, `WANDB_API_KEY`, and `HF_DATASETS_CACHE` (if needed). Make sure to log in using `huggingface-cli` if you're working with Llama models.
 
 ## Datasets
 
