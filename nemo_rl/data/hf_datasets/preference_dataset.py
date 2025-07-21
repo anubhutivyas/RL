@@ -35,8 +35,9 @@ class PreferenceDataset:
     }
     """
 
-    def __init__(self, dataset_path: str) -> None:
-        self.formatted_ds = DatasetDict({"local": load_dataset("json", data_files=dataset_path, split="train")})
+    def __init__(self, dataset_path: str, split: str) -> None:
+        # Specifying split="train" returns Dataset instead of DatasetDict({"train": Dataset})
+        self.formatted_ds = DatasetDict({split: load_dataset("json", data_files=dataset_path, split="train")})
 
         self.task_spec = TaskDataSpec(
             task_name="PreferenceData",

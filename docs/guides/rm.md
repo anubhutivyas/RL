@@ -53,9 +53,44 @@ Each custom preference dataset should be a JSONL file, with each line containing
 }
 ```
 
-Currently, RM training supports only two completions (where rank 0 is preferred and rank 1 is rejected), with each completion being a single response. For example:
+Currently, RM training supports only two completions (where the lowest rank is preferred and the highest one is rejected), with each completion being a single response. For example:
 ```
-{"context": [{"role": "user", "content": "What's the capital of France?"}, {"role": "assistant", "content": "The capital of France is Paris."}, {"role": "user", "content": "Thanks! And what's the capital of Germany?"}], "completions": [{"rank": 0, "completion": [{"role": "assistant", "content": "The capital of Germany is Berlin."}]}, {"rank": 1, "completion": [{"role": "assistant", "content": "The capital of Germany is Munich."}]}]}
+{
+    "context": [
+        {
+            "role": "user",
+            "content": "What's the capital of France?"
+        },
+        {
+            "role": "assistant",
+            "content": "The capital of France is Paris."
+        },
+        {
+            "role": "user",
+            "content": "Thanks! And what's the capital of Germany?"
+        }
+    ],
+    "completions": [
+        {
+            "rank": 0,
+            "completion": [
+                {
+                    "role": "assistant",
+                    "content": "The capital of Germany is Berlin."
+                }
+            ]
+        },
+        {
+            "rank": 1,
+            "completion": [
+                {
+                    "role": "assistant",
+                    "content": "The capital of Germany is Munich."
+                }
+            ]
+        }
+    ]
+}
 ```
 
 NeMo RL supports using multiple custom validation preference datasets during RM training:

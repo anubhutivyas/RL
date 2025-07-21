@@ -106,12 +106,12 @@ def setup(
     master_config: MasterConfig,
     tokenizer: AutoTokenizer,
     train_dataset: AllTaskProcessedDataset,
-    val_dataset: AllTaskProcessedDataset,
+    val_dataset: AllTaskProcessedDataset | dict[str, AllTaskProcessedDataset],
 ) -> tuple[
     Policy,
     RayVirtualCluster,
     StatefulDataLoader,
-    StatefulDataLoader,
+    StatefulDataLoader | dict[str, StatefulDataLoader],
     LossFunction,
     MasterConfig,
     Logger,
@@ -177,26 +177,18 @@ def setup(
         )
         train_dataloader.load_state_dict(dataloader_state_dict)
 
-    if isinstance(val_dataset, dict):
-        val_dataloader = {
-            k: StatefulDataLoader(
-                v,
-                batch_size=sft_config["val_global_batch_size"],
-                shuffle=False,
-                collate_fn=collate_fn,
-                drop_last=True,
-            ) for k, v in val_dataset.items()
-        }
-    else:
-        val_dataloader = {
-            "validation": StatefulDataLoader(
-                val_dataset,
-                batch_size=sft_config["val_global_batch_size"],
-                shuffle=False,
-                collate_fn=collate_fn,
-                drop_last=True,
-            )
-        }
+    if not isinstance(val_dataset, dict):
+        val_dataset = {"validation": val_dataset}
+
+    val_dataloader = {
+        k: StatefulDataLoader(
+            v,
+            batch_size=sft_config["val_global_batch_size"],
+            shuffle=False,
+            collate_fn=collate_fn,
+            drop_last=True,
+        ) for k, v in val_dataset.items()
+    }
 
     # ==========================
     #          Cluster
@@ -254,7 +246,7 @@ def setup(
 # =======================================================
 def validate(
     policy: PolicyInterface,
-    val_dataloader: StatefulDataLoader,
+    val_dataloader: StatefulDataLoader | dict[str, StatefulDataLoader],
     tokenizer,
     loss_fn,
     step: int,

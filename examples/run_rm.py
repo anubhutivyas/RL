@@ -132,11 +132,11 @@ def setup_data(tokenizer: AutoTokenizer, data_config: DataConfig):
     # Custom preference dataset
     if data_cls.startswith("PreferenceData:"):
         _, _, data_path = data_cls.split(":", 2)
-        data = hf_datasets.PreferenceDataset(data_path)
-        train_dataset = data.formatted_ds["local"]
+        data = hf_datasets.PreferenceDataset(data_path, split="train")
+        train_dataset = data.formatted_ds["train"]
         val_dataset = None
         print(
-            f"  ✓ Training dataset loaded with {len(data.formatted_ds['local'])} samples."
+            f"  ✓ Training dataset loaded with {len(data.formatted_ds['train'])} samples."
         )
     # Legacy dataset
     elif data_cls == "HelpSteer3":
@@ -176,14 +176,14 @@ def setup_data(tokenizer: AutoTokenizer, data_config: DataConfig):
             assert val_data_cls.startswith("PreferenceData:")
             _, val_dataset_name, val_data_path = val_data_cls.split(":", 2)
             assert val_dataset_name not in val_dataset or val_dataset_name == "validation" # Users can override the default "validation" set
-            if val_dataset_name == "validation":
+            if val_dataset_name == "validation" and "validation" in val_dataset:
                 print(f"  ✓ Overriding the default validation dataset")
-            val_data = hf_datasets.PreferenceDataset(val_data_path)
+            val_data = hf_datasets.PreferenceDataset(val_data_path, split="validation")
             print(
-                f"  ✓ Validation dataset '{val_dataset_name}' loaded with {len(val_data.formatted_ds["local"])} samples."
+                f"  ✓ Validation dataset '{val_dataset_name}' loaded with {len(val_data.formatted_ds["validation"])} samples."
             )
             val_dataset[val_dataset_name] = AllTaskProcessedDataset(
-                val_data.formatted_ds["local"],
+                val_data.formatted_ds["validation"],
                 tokenizer,
                 val_data.task_spec,
                 rm_preprocessor,
