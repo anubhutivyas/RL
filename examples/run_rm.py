@@ -21,7 +21,7 @@ from typing import Any
 from omegaconf import OmegaConf
 from transformers import AutoTokenizer
 
-from nemo_rl.algorithms.sft import MasterConfig, setup, sft_train
+from nemo_rl.algorithms.rm import MasterConfig, rm_train, setup
 from nemo_rl.algorithms.utils import get_tokenizer
 from nemo_rl.data import DataConfig, hf_datasets
 from nemo_rl.data.datasets import AllTaskProcessedDataset
@@ -121,12 +121,12 @@ def setup_data(tokenizer: AutoTokenizer, data_config: DataConfig):
 
     train_dataset = data.formatted_ds["train"]
     val_dataset = data.formatted_ds["validation"]
-    sft_task_spec = data.task_spec
+    rm_task_spec = data.task_spec
 
     train_dataset = AllTaskProcessedDataset(
         train_dataset,
         tokenizer,
-        sft_task_spec,
+        rm_task_spec,
         rm_preprocessor,
         max_seq_length=data_config["max_input_seq_length"],
     )
@@ -134,12 +134,12 @@ def setup_data(tokenizer: AutoTokenizer, data_config: DataConfig):
     val_dataset = AllTaskProcessedDataset(
         val_dataset,
         tokenizer,
-        sft_task_spec,
+        rm_task_spec,
         rm_preprocessor,
         max_seq_length=data_config["max_input_seq_length"],
     )
 
-    return train_dataset, val_dataset, sft_task_spec
+    return train_dataset, val_dataset, rm_task_spec
 
 
 def main():
@@ -152,9 +152,6 @@ def main():
 
     config = load_config(args.config)
     print(f"Loaded configuration from: {args.config}")
-
-    # Uses the same base template as the SFT config but includes a new `reward_model_type` key that triggers Reward Model training
-    config.sft = "${.rm}"
 
     if overrides:
         print(f"Overrides: {overrides}")
@@ -183,7 +180,7 @@ def main():
     (
         dataset,
         val_dataset,
-        sft_task_spec,
+        rm_task_spec,
     ) = setup_data(tokenizer, config["data"])
 
     (
@@ -194,10 +191,10 @@ def main():
         loss_fn,
         logger,
         checkpointer,
-        sft_save_state,
+        rm_save_state,
         master_config,
     ) = setup(config, tokenizer, dataset, val_dataset)
-    sft_train(
+    rm_train(
         policy,
         train_dataloader,
         val_dataloader,
@@ -205,9 +202,9 @@ def main():
         loss_fn,
         master_config,
         logger,
-        sft_task_spec,
+        rm_task_spec,
         checkpointer,
-        sft_save_state,
+        rm_save_state,
     )
 
 
