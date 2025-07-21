@@ -110,7 +110,7 @@ logger:
     project: nemo-rl
     name: sft-llama3.1-8b-instruct-1n8g-fsdp1
   tensorboard:
-    log_dir: tb_logs-sft-dev-alpaca
+    log_dir: tb_logs-sft-dev-openmathinstruct2
   gpu_monitoring:
     collection_interval: 10
     flush_interval: 10

@@ -22,7 +22,7 @@ loss_fn:
   ratio_clip_c: null
 checkpointing:
   enabled: false
-  checkpoint_dir: results/grpo-qwen3-30ba3b-16n8g-megatron
+  checkpoint_dir: results/grpo-qwen3-30ba3b-8n8g-megatron
   metric_name: val_reward
   higher_is_better: true
   keep_top_k: 3
@@ -137,18 +137,18 @@ env:
   math:
     num_workers: 8
 logger:
-  log_dir: logs/grpo-qwen3-30ba3b-16n8g-megatron
+  log_dir: logs/grpo-qwen3-30ba3b-8n8g-megatron
   num_val_samples_to_print: 0
   wandb_enabled: true
   tensorboard_enabled: true
   monitor_gpus: true
   wandb:
     project: nemo-rl
-    name: grpo-qwen3-30ba3b-16n8g-megatron
+    name: grpo-qwen3-30ba3b-8n8g-megatron
   tensorboard: {}
   gpu_monitoring:
     collection_interval: 10
     flush_interval: 10
 cluster:
   gpus_per_node: 8
-  num_nodes: 16
+  num_nodes: 8
