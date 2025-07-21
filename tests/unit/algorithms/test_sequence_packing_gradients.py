@@ -390,33 +390,32 @@ def register_sequence_packing_gradient_test_actor():
             )
 
 
-@pytest.fixture(scope="function") 
+@pytest.fixture(scope="function")
 def cluster_fixture(request):
     """Create and teardown a virtual cluster for CP tests."""
     cp_size = request.node.callspec.params["cp_size"]
-    
+
     # Skip if not enough GPUs
     if not torch.cuda.is_available() or torch.cuda.device_count() < cp_size:
         pytest.skip(
             f"Not enough GPUs available. Need {cp_size}, got {torch.cuda.device_count()}"
         )
-    
+
     # Mysteriously, Ray is not initialized in this test, so we need to initialize it here.
     if not ray.is_initialized():
         print("Ray not initialized, initializing now...")
         from nemo_rl.distributed.virtual_cluster import init_ray
+
         init_ray()
         print("Ray initialized successfully")
     else:
         print("Ray is already initialized")
-    
+
     cluster_name = f"test-sequence-packing-cp{cp_size}"
     print(f"Creating virtual cluster '{cluster_name}' for {cp_size} GPUs...")
-    
+
     cluster = RayVirtualCluster(
-        name=cluster_name,
-        bundle_ct_per_node_list=[cp_size], 
-        use_gpus=True
+        name=cluster_name, bundle_ct_per_node_list=[cp_size], use_gpus=True
     )
     yield cluster
     print(f"Shutting down cluster '{cluster_name}'...")
