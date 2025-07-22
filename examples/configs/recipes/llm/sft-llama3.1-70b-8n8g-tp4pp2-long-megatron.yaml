@@ -4,7 +4,7 @@ sft:
   val_period: 500
   val_batches: 4
   val_global_batch_size: 128
-  val_micro_batch_size: 2
+  val_micro_batch_size: 1
   val_at_start: false
   seed: 42
 checkpointing:
@@ -19,7 +19,7 @@ policy:
   tokenizer:
     name: meta-llama/Llama-3.1-8B-Instruct ## specify if you'd like to use a tokenizer different from the model's default
   train_global_batch_size: 512
-  train_micro_batch_size: 2
+  train_micro_batch_size: 1
   max_total_sequence_length: 4096
   precision: "bfloat16"
   fsdp_offload_enabled: false
@@ -89,7 +89,7 @@ policy:
     enabled: false
   # makes the training sequence length divisible by the tensor parallel size
   # this is useful for sequence parallel training
-  make_sequence_length_divisible_by: ${policy.dtensor_cfg.tensor_parallel_size}
+  make_sequence_length_divisible_by: ${policy.megatron_cfg.tensor_model_parallel_size}
   max_grad_norm: null
   optimizer:
     name: "torch.optim.AdamW"
