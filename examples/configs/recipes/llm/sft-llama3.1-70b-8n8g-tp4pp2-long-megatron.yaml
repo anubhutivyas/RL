@@ -5,11 +5,11 @@ sft:
   val_batches: 4
   val_global_batch_size: 128
   val_micro_batch_size: 2
-  val_at_start: true
+  val_at_start: false
   seed: 42
 checkpointing:
   enabled: true
-  checkpoint_dir: results/sft-llama3.1-8b-instruct-1n8g-fsdp2tp1-long
+  checkpoint_dir: results/sft-llama3.1-70b-8n8g-tp4pp2-long-megatron
   metric_name: val_loss
   higher_is_better: false
   keep_top_k: 3
@@ -25,13 +25,66 @@ policy:
   fsdp_offload_enabled: false
   activation_checkpointing_enabled: false
   dtensor_cfg:
+    enabled: false
+  megatron_cfg:
     enabled: true
-    cpu_offload: False
-    sequence_parallel: false
+    empty_unused_memory_level: 1
     activation_checkpointing: false
-    tensor_parallel_size: 4
+    tensor_model_parallel_size: 4
+    expert_tensor_parallel_size: 1
+    expert_model_parallel_size: 1
+    pipeline_model_parallel_size: 2
+    num_layers_in_first_pipeline_stage: null
+    num_layers_in_last_pipeline_stage: null
     context_parallel_size: 1
-    custom_parallel_plan: null
+    pipeline_dtype: ${policy.precision}
+    sequence_parallel: false
+    freeze_moe_router: true
+    moe_router_dtype: "fp64"
+    moe_router_load_balancing_type: "none" # "seq_aux_loss" causes logprob error divergence for grpo
+    moe_router_bias_update_rate: 0.0 # by default, disable bias updates for grpo
+    #gives ~20% training perf speedup with sequence packing 
+    apply_rope_fusion: True
+    
+    optimizer:
+      optimizer: "adam"
+      lr: 2e-5
+      min_lr: 2e-5
+      weight_decay: 0.01
+      bf16: true
+      fp16: false
+      params_dtype: "float32"
+
+      #adam
+      adam_beta1: 0.9
+      adam_beta2: 0.999
+      adam_eps: 1e-8
+
+      #sgd
+      sgd_momentum: 0.9
+
+      #distributed optimizer
+      use_distributed_optimizer: true
+      use_precision_aware_optimizer: true
+
+      clip_grad: 0.0
+
+    scheduler:
+      start_weight_decay: ${policy.megatron_cfg.optimizer.weight_decay}
+      end_weight_decay: ${policy.megatron_cfg.optimizer.weight_decay}
+      weight_decay_incr_style: "constant"
+      lr_decay_style: "constant"
+      lr_decay_iters: null
+      lr_warmup_iters: 1
+      lr_warmup_init: 2e-5
+
+    distributed_data_parallel_config:
+      grad_reduce_in_fp32: false
+      overlap_grad_reduce: true
+      overlap_param_gather: true
+      average_in_collective: true
+      use_custom_fsdp: false
+      data_parallel_sharding_strategy: "optim_grads_params"
   dynamic_batching:
     enabled: false
   # makes the training sequence length divisible by the tensor parallel size

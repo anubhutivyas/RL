@@ -2,23 +2,22 @@
 SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd)
 source $SCRIPT_DIR/common.env
 
+# TODO: @ashors real convergence run (dataset only has 2737)
 # ===== BEGIN CONFIG =====
-NUM_NODES=4
-STEPS_PER_RUN=30
-MAX_STEPS=30
+NUM_NODES=1
+STEPS_PER_RUN=2730
+MAX_STEPS=2730
 NUM_RUNS=$(( (MAX_STEPS + STEPS_PER_RUN - 1) / STEPS_PER_RUN ))  # Round up
-NUM_MINUTES=150
+NUM_MINUTES=120
 # ===== END CONFIG =====
 
 exit_if_max_steps_reached
 
 # Run the experiment
 cd $PROJECT_ROOT
-export HF_HOME="~/.cache/huggingface/"
-export PYTHONPATH=$HF_HOME/modules:$PYTHONPATH
-uv run examples/run_grpo_math.py \
+uv run examples/run_sft.py \
     --config $CONFIG_PATH \
-    grpo.max_num_steps=$MAX_STEPS \
+    sft.max_num_steps=$MAX_STEPS \
     logger.log_dir=$LOG_DIR \
     logger.wandb_enabled=True \
     logger.wandb.project=nemo-rl \
@@ -33,10 +32,12 @@ uv run examples/run_grpo_math.py \
 # Convert tensorboard logs to json
 uv run tests/json_dump_tb_logs.py $LOG_DIR --output_path $JSON_METRICS
 
+# TODO: the memory check is known to OOM. see https://github.com/NVIDIA-NeMo/RL/issues/263
 # Only run metrics if the target step is reached
 if [[ $(jq 'to_entries | .[] | select(.key == "train/loss") | .value | keys | map(tonumber) | max' $JSON_METRICS) -ge $MAX_STEPS ]]; then
+    # TODO: FIGURE OUT CORRECT METRICS
     uv run tests/check_metrics.py $JSON_METRICS \
-        'mean(data["train/token_mult_prob_error"]) < 1.1' \
-        'data["train/token_mult_prob_error"]["30"] < 1.1' \
-        'mean(data["train/reward"]) > 0.45' \
+        'data["train/loss"]["1"] < 5' \
+        'data["train/loss"]["2730"] < 0.3' \
+        'max(data["ray/node.0.gpu.0.mem_gb"]) < 50'
 fi
