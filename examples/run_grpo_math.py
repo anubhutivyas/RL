@@ -26,6 +26,7 @@ from nemo_rl.algorithms.utils import get_tokenizer
 from nemo_rl.data import DataConfig
 from nemo_rl.data.datasets import AllTaskProcessedDataset
 from nemo_rl.data.hf_datasets.deepscaler import DeepScalerDataset
+from nemo_rl.data.hf_datasets.oai_format_dataset import OpenAIFormatDataset
 from nemo_rl.data.hf_datasets.openmathinstruct2 import OpenMathInstruct2Dataset
 from nemo_rl.data.interfaces import (
     DatumSpec,
@@ -73,25 +74,24 @@ def hf_data_processor(
     max_seq_length: int,
     idx: int,
 ) -> DatumSpec:
-    """Process a datum dictionary (directly loaded from data/hf_datasets/openmathinstruct2.py) into a DatumSpec for the Math Environment."""
-    user_message = datum_dict["messages"]
-    problem = user_message[0]["content"]
-    extra_env_info = {"ground_truth": user_message[1]["content"]}
+    """Process a datum dictionary into a DatumSpec for the Math Environment."""
+    extra_env_info = {"ground_truth": datum_dict["messages"][-1]["content"]}
 
     message_log: LLMMessageLogType = []
-    user_message = {
-        "role": "user",
-        "content": task_data_spec.prompt.format(problem),
-    }
-    message: list[str] = tokenizer.apply_chat_template(  # type: ignore
-        [user_message],
-        tokenize=False,
-        add_generation_prompt=True,
-        add_special_tokens=False,
-    )
-    user_message["token_ids"] = tokenizer(message, return_tensors="pt")["input_ids"][0]
-    user_message["content"] = message[0]
-    message_log.append(user_message)
+    for dict_message in datum_dict["messages"][:-1]:
+        print('dict_message["content"] before', repr(dict_message["content"]))
+        if len(datum_dict["messages"]) == 2 and task_data_spec.prompt:
+            dict_message["content"] = task_data_spec.prompt.format(dict_message["content"])
+        print('dict_message["content"] after', repr(dict_message["content"]))
+        message: list[str] = tokenizer.apply_chat_template(
+            [dict_message],
+            tokenize=False,
+            add_generation_prompt=True,
+            add_special_tokens=False,
+        )
+        dict_message["token_ids"] = tokenizer(message, return_tensors="pt")["input_ids"][0]
+        dict_message["content"] = message[0]
+        message_log.append(dict_message)
 
     length = sum(len(m["token_ids"]) for m in message_log)
 
@@ -141,6 +141,21 @@ def setup_data(
             "Loading agentica-org/DeepScaleR-Preview-Dataset for training and validation"
         )
         data: Any = DeepScalerDataset()
+    elif data_config["dataset_name"] == "openai_format":
+        print(
+            "Loading openai_format custom datasets for training and validation"
+        )
+        data = OpenAIFormatDataset(
+            data_config["train_data_path"],
+            data_config["val_data_path"],
+        )
+
+        def add_task_name(example):
+            example["task_name"] = "math"
+            return example
+
+        data.formatted_ds["train"] = data.formatted_ds["train"].map(add_task_name)
+        data.formatted_ds["validation"] = data.formatted_ds["validation"].map(add_task_name)
     else:
         raise ValueError(f"No processor for dataset {data_config['dataset_name']}.")
 

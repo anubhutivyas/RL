@@ -162,6 +162,31 @@ class EnglishMultichoiceVerifyWorker:
         return results
 
 
+@ray.remote  # pragma: no cover
+class EnglishMultichoiceBoxedVerifyWorker:
+    def verify(
+        self, pred_responses: list[str], ground_truths: list[str]
+    ) -> list[float]:
+        """Verify the correctness of the predicted responses against the ground truth.
+
+        Args:
+            pred_responses: list[str]. The predicted responses from the LLM.
+            ground_truths: list[str]. The ground truth responses.
+
+        Returns:
+            list[float]. The rewards for each predicted response.
+        """
+        results = []
+        for response, ground_truth in zip(pred_responses, ground_truths):
+            extracted_answer = None
+            match = re.search(r'\\boxed\{([^}]*)\}', response)
+            if match:
+                extracted_answer = match.group(1)
+            score = 1.0 if extracted_answer == ground_truth else 0.0
+            results.append(score)
+        return results
+
+
 class MathEnvironmentMetadata(TypedDict):
     ground_truth: str
 
@@ -174,6 +199,7 @@ class MathEnvironment(EnvironmentInterface):
         worker_cls = {
             "math": HFVerifyWorker,
             "english_multichoice": EnglishMultichoiceVerifyWorker,
+            "english_multichoice_boxed": EnglishMultichoiceBoxedVerifyWorker,
             "multilingual_multichoice": MultilingualMultichoiceVerifyWorker,
         }[cfg.get("verifier_type", "math")]
         self.workers = [
