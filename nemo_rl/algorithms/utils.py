@@ -213,6 +213,9 @@ def get_tokenizer(tokenizer_config: TokenizerConfig) -> PreTrainedTokenizerBase:
             )
         elif tokenizer_config["chat_template"].lower() == "default":
             print("Using tokenizer's default chat template")
+        elif tokenizer_config["chat_template"].lower() == "think_tag":
+            print("Using tokenizer's default chat template with <think> tag")
+            tokenizer.chat_template = tokenizer.chat_template + r"{{- '<think>\n' }}"
         else:
             print("Using custom chat template")
             tokenizer.chat_template = tokenizer_config["chat_template"]

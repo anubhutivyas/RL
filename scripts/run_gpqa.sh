@@ -28,7 +28,7 @@ fi
 
 set -e
 if [ -n "$MODEL_NAME" ]; then
-    model_family=$(basename "${MOnpDEL_NAME/-size/}") # Qwen2.5-Instruct
+    model_family=$(basename "${MODEL_NAME/-size/}") # Qwen2.5-Instruct
 else
     CHECKPOINT_DIR=$(realpath "$CHECKPOINT_DIR")
     model_family=$(basename "$CHECKPOINT_DIR") # Qwen2.5-3B-sft-xxx
