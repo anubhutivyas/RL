@@ -20,37 +20,29 @@ from datasets import load_dataset
 from nemo_rl.data.interfaces import TaskDataSpec
 
 
-def format_alpaca(data: dict[str, Any]) -> dict[str, list[dict[str, str]]]:
+def format_squad(data: dict[str, Any]) -> dict[str, list[dict[str, str]]]:
     return {
         "messages": [
             {
                 "role": "system",
-                "content": "Below is an instruction that describes a task. Write a response that appropriately completes the request.",
+                "content": data["context"],
             },
             {
                 "role": "user",
-                "content": data["instruction"]
-                + (("\n" + data["input"]) if data["input"] else "")
-                + "\n",
+                "content": data["question"],
             },
             {
                 "role": "assistant",
-                "content": data["output"],
+                "content": data["answers"]["text"][0],
             },
         ]
     }
 
 
-class AlpacaDataset:
+class SquadDataset:
     def __init__(self) -> None:
-        original_ds = load_dataset("tatsu-lab/alpaca")
-        ds_mapped = original_ds.map(format_alpaca)
-        print(f"ds_mapped: {ds_mapped}")
-        ds_split = ds_mapped["train"].train_test_split(test_size=0.1)
-        self.formatted_ds = {
-            "train": ds_split["train"],
-            "validation": ds_split["test"],
-        }
+        original_ds = load_dataset("rajpurkar/squad")
+        self.formatted_ds = original_ds.map(format_squad)
         self.task_spec = TaskDataSpec(
-            task_name="Alpaca",
+            task_name="SQuAD",
         )
