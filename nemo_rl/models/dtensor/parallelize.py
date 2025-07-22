@@ -42,16 +42,8 @@ from transformers.models.qwen2.modeling_qwen2 import Qwen2ForCausalLM
 from transformers.models.qwen3.modeling_qwen3 import Qwen3ForCausalLM
 
 # Add VL model imports
-try:
-    from transformers.models.qwen2_vl.modeling_qwen2_vl import Qwen2VLForConditionalGeneration, Qwen2_5_VLModel
-except ImportError:
-    Qwen2VLForConditionalGeneration = None
-    Qwen2_5_VLModel = None
-
-try:
-    from transformers.models.qwen2_5_vl.modeling_qwen2_5_vl import Qwen2_5_VLForConditionalGeneration
-except ImportError:
-    Qwen2_5_VLForConditionalGeneration = None
+from transformers.models.qwen2_vl.modeling_qwen2_vl import Qwen2VLForConditionalGeneration
+from transformers.models.qwen2_5_vl.modeling_qwen2_5_vl import Qwen2_5_VLForConditionalGeneration
 
 from nemo_rl.distributed.model_utils import from_parallel_logits_to_logprobs
 from nemo_rl.models.policy.utils import import_class_from_path
@@ -359,11 +351,8 @@ PARALLIZE_FUNCTIONS: dict[
 }
 
 # Add VL models to the dictionary if they are available
-if Qwen2VLForConditionalGeneration is not None:
-    PARALLIZE_FUNCTIONS[Qwen2VLForConditionalGeneration] = _parallelize_qwen_vl
-
-if Qwen2_5_VLForConditionalGeneration is not None:
-    PARALLIZE_FUNCTIONS[Qwen2_5_VLForConditionalGeneration] = _parallelize_qwen_vl
+PARALLIZE_FUNCTIONS[Qwen2VLForConditionalGeneration] = _parallelize_qwen_vl
+PARALLIZE_FUNCTIONS[Qwen2_5_VLForConditionalGeneration] = _parallelize_qwen_vl
 
 
 @lru_cache
