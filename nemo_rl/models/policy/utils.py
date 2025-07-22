@@ -109,6 +109,8 @@ def sliding_window_overwrite(model_name: str) -> dict:
     """
     hf_config = AutoConfig.from_pretrained(model_name, trust_remote_code=True)
     return {}
+
+
 # Override sliding_window setting to address a HF mismatch relevant to use_sliding_window
 # TODO(@zhiyul): remove this once the bug is fixed https://github.com/huggingface/transformers/issues/38002
 # if (

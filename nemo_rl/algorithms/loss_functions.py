@@ -19,7 +19,6 @@ import torch
 from nemo_rl.algorithms.interfaces import LossFunction
 from nemo_rl.algorithms.utils import (
     calculate_kl_penalty_joschu2020,
-    compute_token_level_entropy,
     compute_token_logprobs,
     masked_mean,
 )

@@ -198,7 +198,12 @@ Answer yes or no, then give your reasoning. Surround the yes/no with @@@ @@@ so 
             if match:
                 result = match.group(1)
 
-            has_yes = "yes" in result.lower()
+                has_yes = "yes" in result.lower()
+
+            else:
+                has_yes = False
+                if "yes" in generated_text.lower():
+                    has_yes = True
 
             if has_yes:
                 score = 1.0
