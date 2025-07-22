@@ -33,7 +33,6 @@ uv run tests/json_dump_tb_logs.py $LOG_DIR --output_path $JSON_METRICS
 
 # Only run metrics if the target step is reached
 if [[ $(jq 'to_entries | .[] | select(.key == "train/loss") | .value | keys | map(tonumber) | max' $JSON_METRICS) -ge $MAX_STEPS ]]; then
-    # TODO: UPDATE FOR OPENMATHINSTRUCT2
     uv run tests/check_metrics.py $JSON_METRICS \
         'data["train/loss"]["1"] < 0.5' \
         'data["train/loss"]["250"] < 0.5' \
