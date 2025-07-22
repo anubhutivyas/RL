@@ -444,7 +444,7 @@ class GenRMPairwiseEnvironment(EnvironmentInterface):
             
             
             # Generate all pairwise comparisons for this prompt group
-            for i, j in itertools.combinations(range(len(responses)), 2):
+            for i, j in itertools.permutations(range(len(responses)), 2):
                 request_id = f"genrm_{self._actor_id_prefix}_step_{self._request_counter}_pk{hash(prompt_key)}_r{i}_r{j}"
                 worker_idx = len(comparison_futures) % self.num_workers
                 
