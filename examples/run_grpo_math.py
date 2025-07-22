@@ -79,10 +79,8 @@ def hf_data_processor(
 
     message_log: LLMMessageLogType = []
     for dict_message in datum_dict["messages"][:-1]:
-        print('dict_message["content"] before', repr(dict_message["content"]))
         if len(datum_dict["messages"]) == 2 and task_data_spec.prompt:
             dict_message["content"] = task_data_spec.prompt.format(dict_message["content"])
-        print('dict_message["content"] after', repr(dict_message["content"]))
         message: list[str] = tokenizer.apply_chat_template(
             [dict_message],
             tokenize=False,
