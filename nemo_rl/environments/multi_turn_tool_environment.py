@@ -17,7 +17,7 @@ import json
 import logging
 import re
 import importlib
-from typing import Any, Dict, List, Optional, Tuple, TypedDict
+from typing import Any, Dict, List, Optional, Tuple, TypedDict, Set
 import torch
 import ray
 
@@ -88,8 +88,22 @@ class ToolManager:
             # Parse JSON array inside tool tags
             try:
                 tool_content = tool_matches[0].strip()
-                tool_calls = json.loads(tool_content)
-                return tool_calls if isinstance(tool_calls, list) else []
+                tool_calls_raw = json.loads(tool_content)
+
+                tool_calls: List[Dict[str, Any]] = []
+                if isinstance(tool_calls_raw, list):
+                    for item in tool_calls_raw:
+                        if isinstance(item, dict):
+                            tool_calls.append(item)
+                        elif isinstance(item, str):
+                            try:
+                                parsed_item = json.loads(item)
+                                if isinstance(parsed_item, dict):
+                                    tool_calls.append(parsed_item)
+                            except json.JSONDecodeError:
+                                # Skip malformed entries; they'll be handled later.
+                                continue
+                return tool_calls
             except json.JSONDecodeError:
                 return []
         return []
@@ -132,35 +146,60 @@ class RewardCalculator:
     def calculate_reward(self, metadata: MultiTurnToolMetadata, is_final_turn: bool) -> float:
         """Calculate reward for current turn."""
         
-        if not is_final_turn:
-            return 0.0  # No reward for intermediate turns
+        # if not is_final_turn:
+        #     return 0.0  # No reward for intermediate turns
         
         # Final turn - calculate reward
-        state_score = self._compare_tool_states(
-            metadata["model_tool_instances"], 
-            metadata["gt_tool_instances"]
-        )
+        # Compare states only for tools the model actually invoked this turn
+        cur_turn = metadata.get("current_turn", 0)
+        calls_this_turn: List[str] = []
+        if cur_turn < len(metadata.get("model_calls_per_turn", [])):
+            calls_this_turn = metadata["model_calls_per_turn"][cur_turn]
+
+        used_tools: Set[str] = set()
+        for call in calls_this_turn:
+            func = call.split("(")[0].strip()
+            for t_name, t_inst in metadata["model_tool_instances"].items():
+                if hasattr(t_inst, func):
+                    used_tools.add(t_name)
+
+        state_score = 0.0
+        # compute state score only on final turn
+        if is_final_turn:
+            state_score = self._compare_tool_states(
+                metadata["model_tool_instances"],
+                metadata["gt_tool_instances"],
+                used_tools,
+            )
         
         call_score = self._compare_tool_calls(
-            metadata["model_calls_per_turn"], 
-            metadata["ground_truth"]
+            metadata["model_calls_per_turn"],
+            metadata["ground_truth"],
+            cur_turn,
         )
-
-        return 0.5 * state_score + 0.5 * call_score
+        # breakpoint()
+        return state_score, call_score
     
-    def _compare_tool_states(self, model_tools: Dict[str, Any], gt_tools: Dict[str, Any]) -> float:
-        """Compare final tool states by checking internal attributes."""
-        if set(model_tools.keys()) != set(gt_tools.keys()):
-            return 0.0
-        
-        total_tools = len(model_tools)
+    def _compare_tool_states(
+        self,
+        model_tools: Dict[str, Any],
+        gt_tools: Dict[str, Any],
+        tool_subset: Set[str],
+    ) -> float:
+        """Compare states for the specified subset of tools."""
+
+        if not tool_subset:
+            return 1.0  # nothing to compare yet
+
+        total_tools = len(tool_subset)
         matching_tools = 0
         
-        for tool_name in model_tools:
-            model_instance = model_tools[tool_name]
-            gt_instance = gt_tools[tool_name]
-            
-            # Check if instances are of the same type
+        for tool_name in tool_subset:
+            model_instance = model_tools.get(tool_name)
+            gt_instance = gt_tools.get(tool_name)
+            if model_instance is None or gt_instance is None:
+                continue
+
             if type(model_instance) != type(gt_instance):
                 continue
                 
@@ -182,22 +221,38 @@ class RewardCalculator:
         
         return matching_tools / total_tools if total_tools > 0 else 1.0
     
-    def _compare_tool_calls(self, model_calls: List[List[str]], gt_calls: List[List[str]]) -> float:
-        """Compare tool calls across all turns."""
-        if not gt_calls:
+    def _compare_tool_calls(
+        self,
+        model_calls: List[List[str]],
+        gt_calls: List[List[str]],
+        turn_index: int,
+    ) -> float:
+        """Return 1.0 if the model's calls for ``turn_index`` exactly match ground truth, else 0.0."""
+
+        # Guard against out-of-range indices or missing data.
+        if (
+            turn_index >= len(gt_calls)
+            or turn_index >= len(model_calls)
+        ):
+            return 0.0
+
+        model_set = set(model_calls[turn_index])
+        gt_set = set(gt_calls[turn_index])
+
+        # Full reward if model exactly matches ground-truth.
+        if model_set == gt_set:
             return 1.0
-        
-        scores = []
-        for i in range(len(gt_calls)):
-            if i < len(model_calls):
-                model_set = set(model_calls[i])
-                gt_set = set(gt_calls[i])
-                score = 1.0 if model_set == gt_set else 0.0
-            else:
-                score = 0.0
-            scores.append(score)
-        
-        return sum(scores) / len(scores) if scores else 0.0
+
+        if not gt_set:
+            # No expected calls but model differs → zero.
+            return 0.0
+
+        # Partial reward: proportion of correctly predicted calls.
+        correct_calls = len(model_set.intersection(gt_set))
+        # Penalise extra incorrect calls by dividing by total unique calls made/expected.
+        total_unique = len(model_set.union(gt_set))
+
+        return correct_calls / total_unique
 
 @ray.remote
 class MultiTurnToolEnvironment(EnvironmentInterface):
@@ -227,27 +282,20 @@ class MultiTurnToolEnvironment(EnvironmentInterface):
             "model_tool_instances": model_tools,
             "gt_tool_instances": gt_tools,
             "model_calls_per_turn": [],
+            "turn_metadata": {}
         }
 
     def _should_continue(self, metadata: MultiTurnToolMetadata) -> bool:
         """Check if conversation should continue to next turn."""
         return (
-            metadata["current_turn"] < metadata["max_turns"] - 1 and
-            metadata["current_turn"] < len(metadata["user_question_bank"])
+            metadata["current_turn"] <= metadata["max_turns"] - 1
         )
     
     def _get_next_observation(self, tool_results: str, metadata: MultiTurnToolMetadata) -> Dict[str, str]:
         """Generate observation for next turn or termination."""
-        # TODO: ykarnati - is there better way to include  tool result and next user question?
-        if self._should_continue(metadata):
-            # Get next user question
-            next_question = metadata["user_question_bank"][metadata["current_turn"]][0]
-            observation_content = f"<tool_result>{tool_results}</tool_result>\n\n{next_question['content']}"
-            return {"role": "environment", "content": observation_content}
-        else:
-            return {"role": "environment", "content": f"<tool_result>{tool_results}</tool_result>"}
+        return {"role": "environment", "content": f"<tool_result> {tool_results} </tool_result>"}
 
-    def _process_turn(self, message_log: LLMMessageLogType, metadata: MultiTurnToolMetadata) -> Tuple[str, List[str]]:
+    def _process_turn(self, message_log: LLMMessageLogType, metadata: MultiTurnToolMetadata) -> Tuple[str, List[str], bool]:
         """Process current turn and return tool results and calls made."""
         
         # Get latest assistant response
@@ -256,21 +304,24 @@ class MultiTurnToolEnvironment(EnvironmentInterface):
             if msg["role"] == "assistant":
                 assistant_response = msg["content"]
                 break
-
         model_calls_made = []
         tool_results = []
+        # turn_success is True only if ALL expected tool calls execute successfully
+        # Initialize as True and set to False on any failure or missing call.
+        turn_success = True
         # Check if tool tags exist
         if '<tool>' not in assistant_response:
             tool_results.append("Function call not found in current assistant response.")
             model_calls_made.append("No function call made'")
+            turn_success = False
         else:
             # Parse tool calls
             model_tool_calls = self.tool_manager.parse_tool_calls(assistant_response)
-            
             if not model_tool_calls:
                 tool_results.append("Error: Invalid tool command. Parsing tool calls failed. Ensure correct formatting. "
                                 "Tool command must be one list of JSON objects.")
                 model_calls_made.append('No function call made')
+                turn_success = False
             else:
 
                 for tool_call in model_tool_calls:
@@ -278,24 +329,37 @@ class MultiTurnToolEnvironment(EnvironmentInterface):
                         tool_call, metadata["model_tool_instances"]
                     )
                     tool_results.append(result)
-                    if success:
-                        func_name = tool_call.get('name', '')
-                        args = tool_call.get('args', {})
-                        call_str = f"{func_name}({', '.join([f'{k}={repr(v)}' for k, v in args.items()])})"
-                        model_calls_made.append(call_str)
+                    func_name = tool_call.get('name', '')
+                    args = tool_call.get('args', {})
+                    
+                    if isinstance(args, dict):
+                        arg_repr = ', '.join([f"{k}={repr(v)}" for k, v in args.items()])
                     else:
+                        # Unexpected format – record the raw representation
+                        arg_repr = repr(args)
+                        # Mark turn as failed because format is not as expected
+                        turn_success = False
+
+                    call_str = f"{func_name}({arg_repr})"
+                    model_calls_made.append(call_str)
+                    # Fail turn if execution failed OR result string contains 'error'.
+                    if not success or ("error" in result.lower()):
+                        turn_success = False
                         # Stop on first error
                         break
+        # TODO: ykarnati - both the tool calls might be successful
+        #  but these might be wrong calls.
+        # should we still make the turn success ?
         
         # Execute ground truth calls for this turn
         current_turn = metadata["current_turn"]
         if current_turn < len(metadata["ground_truth"]):
             gt_calls = metadata["ground_truth"][current_turn]
             for call_str in gt_calls:
-                result, success = self._execute_gt_call(call_str, metadata["gt_tool_instances"])
+                result, _ = self._execute_gt_call(call_str, metadata["gt_tool_instances"])
 
-        
-        return "\n".join(tool_results), model_calls_made
+        # breakpoint()
+        return "\n".join(tool_results), model_calls_made, turn_success
     
     def _execute_gt_call(self, call_str: str, tools: Dict[str, Any]) -> Tuple[str, bool]:
         """Execute ground truth call string."""
@@ -342,11 +406,12 @@ class MultiTurnToolEnvironment(EnvironmentInterface):
         
         for i, (message_log, sample_metadata) in enumerate(zip(message_log_batch, processed_metadata)):
             # Process current turn
-            tool_results, model_calls = self._process_turn(
+            tool_results, model_calls, turn_success = self._process_turn(
                 message_log, sample_metadata
             )
             
             sample_metadata["model_calls_per_turn"].append(model_calls)
+            sample_metadata["turn_success"] = turn_success
             
             # Check if should continue
             should_continue = self._should_continue(sample_metadata)
@@ -356,30 +421,29 @@ class MultiTurnToolEnvironment(EnvironmentInterface):
             
             # Calculate reward
             is_final_turn = not should_continue
-            reward = self.reward_calculator.calculate_reward(sample_metadata, is_final_turn)
-            
+            state_score, call_score = self.reward_calculator.calculate_reward(sample_metadata, is_final_turn)
+            reward = 0.5 * state_score + 1 * call_score
+            sample_metadata["turn_metadata"][sample_metadata["current_turn"]] = {}
+            sample_metadata["turn_metadata"][sample_metadata["current_turn"]].update({
+                "state_score": state_score,
+                "call_score": call_score,
+                "turn_success": turn_success,
+                "tool_results": tool_results,
+            })
             # Update for next turn
             if should_continue:
                 sample_metadata["current_turn"] += 1
-                next_metadata.append(sample_metadata)
+                
                 terminateds.append(False)
                 next_stop_strings.append(None)
             else:
-                next_metadata.append(None)
+                # next_metadata.append(None)
                 terminateds.append(True)
                 next_stop_strings.append(None)
-            
+            next_metadata.append(sample_metadata)
             observations.append(observation)
             rewards.append(reward)
-
-        # logging for sample 0
-        logging.debug("*"*100)
-        logging.debug(f"[MultiTurnToolEnvironment] Current turn: {next_metadata[0]['current_turn']}")
-        logging.debug(f"[MultiTurnToolEnvironment] Observation: {observations[0]}")
-        logging.debug(f"[MultiTurnToolEnvironment] GT fn calls: {next_metadata[0]['ground_truth'][next_metadata[0]['current_turn'] - 1]}")
-        logging.debug(f"[MultiTurnToolEnvironment] Model fn calls: {next_metadata[0]['model_calls_per_turn'][next_metadata[0]['current_turn'] - 1]}")
-        logging.debug(f"[MultiTurnToolEnvironment] Reward: {rewards[0]}")
-        logging.debug("*"*100)
+        # breakpoint()
         return EnvironmentReturn(
             observations=observations,
             metadata=next_metadata,
