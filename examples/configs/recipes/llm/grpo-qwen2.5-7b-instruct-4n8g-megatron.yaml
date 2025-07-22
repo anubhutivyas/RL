@@ -27,7 +27,7 @@ checkpointing:
 policy:
   model_name: Qwen/Qwen2.5-7B-Instruct
   tokenizer:
-    name: Qwen/Qwen2.5-7B-Instruct
+    name: ${policy.model_name}
   train_global_batch_size: 512
   train_micro_batch_size: 1
   generation_batch_size: 32
@@ -43,7 +43,7 @@ policy:
     empty_unused_memory_level: 0
     activation_checkpointing: false
     converter_type: "Qwen2ForCausalLM"
-    tensor_model_parallel_size: 1
+    tensor_model_parallel_size: 2
     expert_tensor_parallel_size: 1
     expert_model_parallel_size: 1
     pipeline_model_parallel_size: 1
