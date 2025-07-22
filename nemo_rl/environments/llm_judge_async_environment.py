@@ -153,8 +153,8 @@ Answer yes or no, then give your reasoning. Surround the yes/no with @@@ @@@ so 
         Returns:
             Tuple of (request_id, score)
         """
-        reference = metadata.get("reference_answer", None)
-        criteria = metadata.get("evaluation_criteria", None)
+        reference = metadata.get("reference_answer", "")
+        criteria = metadata.get("evaluation_criteria", "")
         extract_box = metadata.get("extract_box", False)
 
         response_to_judge = response_to_judge.split("</think>")[-1].strip()
