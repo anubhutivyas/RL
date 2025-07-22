@@ -672,14 +672,21 @@ class DTensorPolicyWorker:
 
                     with DTensorPolicyWorker.train_context(context_parallel_ctx):
                         with torch.autocast(device_type="cuda", dtype=self.dtype):
-                            outputs = self.model(
-                                input_ids=input_ids,
-                                attention_mask=attention_mask,
-                                position_ids=position_ids,
-                                use_cache=False,
-                                flash_attn_kwargs=flash_attn_kwargs,
-                            )
-
+                            if self.cfg["reward_model_type"] == "bradley_terry":
+                                outputs = self.model(
+                                    input_ids=input_ids,
+                                    attention_mask=attention_mask,
+                                    position_ids=position_ids,
+                                    use_cache=False,
+                                )
+                            else:
+                                outputs = self.model(
+                                    input_ids=input_ids,
+                                    attention_mask=attention_mask,
+                                    position_ids=position_ids,
+                                    use_cache=False,
+                                    flash_attn_kwargs=flash_attn_kwargs,
+                                )
                         # Get logprobs
                         if not hasattr(outputs, "logits"):
                             logits = self.model.lm_head(outputs.last_hidden_state)
