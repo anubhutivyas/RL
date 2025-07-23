@@ -43,7 +43,7 @@ This command:
 - Trains a 0.5B parameter Qwen model
 - Uses the UltraChat dataset
 - Runs for 1 epoch
-- Logs to Weights & Biases
+- Logs to Weights and Biases
 
 ### Step 2: Monitor Training
 

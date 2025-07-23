@@ -74,7 +74,7 @@ Learn how to integrate custom models and architectures into NeMo RL training pip
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} {octicon}`alert;1.5em;sd-mr-1` Model Quirks & Special Cases
+:::{grid-item-card} {octicon}`alert;1.5em;sd-mr-1` Model Quirks and Special Cases
 :link: model-development/model-quirks
 :link-type: doc
 
@@ -86,7 +86,7 @@ Handle model-specific behaviors and special cases in NeMo RL.
 
 ::::
 
-## Environment & Data
+## Environment and Data
 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
@@ -123,12 +123,12 @@ Comprehensive performance optimization and profiling techniques.
 
 ::::
 
-## Production & Support
+## Production and Support
 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Production & Support
+:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Production and Support
 :link: production-support/index
 :link-type: doc
 

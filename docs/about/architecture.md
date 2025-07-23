@@ -1,3 +1,13 @@
+---
+description: "Comprehensive overview of NeMo RL's modular, scalable architecture for distributed reinforcement learning with Ray-based coordination"
+categories: ["concepts-architecture"]
+tags: ["architecture", "distributed", "ray", "virtual-cluster", "worker-groups", "reinforcement-learning", "scalability"]
+personas: ["mle-focused", "researcher-focused", "admin-focused"]
+difficulty: "intermediate"
+content_type: "concept"
+modality: "universal"
+---
+
 # Architecture
 
 NeMo RL is built on a modular, scalable architecture designed to handle the complexities of distributed reinforcement learning while maintaining simplicity and flexibility.

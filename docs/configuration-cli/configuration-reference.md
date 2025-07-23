@@ -35,6 +35,36 @@ distributed:
   num_gpus: 8
 ```
 
+## UV Configuration
+
+NeMo RL uses `uv` for dependency management. Key configuration options:
+
+```toml
+# pyproject.toml
+[tool.uv]
+python = "3.9"
+dependencies = [
+    "torch>=2.0.0",
+    "transformers>=4.30.0",
+    "ray>=2.5.0",
+    "datasets>=2.10.0",
+    "accelerate>=0.20.0"
+]
+
+[tool.uv.scripts]
+grpo = "examples.run_grpo_math:main"
+dpo = "examples.run_dpo:main"
+sft = "examples.run_sft:main"
+eval = "examples.run_eval:main"
+
+[tool.uv.dev-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "black>=23.0.0",
+    "isort>=5.0.0"
+]
+```
+
 ## Model Configuration
 
 ### Backend Selection

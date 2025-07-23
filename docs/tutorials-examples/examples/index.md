@@ -57,6 +57,42 @@ Large-scale distributed training example with DeepScaleR integration.
 - **Scaling**: Multi-GPU and multi-node training strategies
 - **Use Case**: Production-scale RL training, cloud deployment
 
+## Example Scripts
+
+### **Core Training Scripts**
+
+The following scripts are available in the `examples/` directory:
+
+#### **GRPO Training**
+- `examples/run_grpo_math.py` - GRPO training on math problems
+- `examples/configs/grpo_math_1B.yaml` - Configuration for 1B parameter model
+- `examples/configs/grpo_deepscaler-1.5b-24K.yaml` - DeepScaleR configuration
+
+#### **DPO Training**
+- `examples/run_dpo.py` - DPO training implementation
+- `examples/configs/dpo.yaml` - DPO configuration template
+
+#### **SFT Training**
+- `examples/run_sft.py` - Supervised fine-tuning
+- `examples/configs/sft.yaml` - SFT configuration template
+
+#### **Evaluation**
+- `examples/run_eval.py` - Model evaluation script
+- `examples/configs/eval.yaml` - Evaluation configuration
+
+### **Usage Examples**
+
+```bash
+# Run GRPO training
+uv run examples/run_grpo_math.py --config examples/configs/grpo_math_1B.yaml
+
+# Run DPO training
+uv run examples/run_dpo.py --config examples/configs/dpo.yaml
+
+# Run evaluation
+uv run examples/run_eval.py --config examples/configs/eval.yaml
+```
+
 ## Getting Started with Examples
 
 ### **Prerequisites**
@@ -121,7 +157,7 @@ For advanced distributed training, see the [Distributed Training Guide](../../ad
 
 ### **Performance Optimization**
 
-For comprehensive performance optimization strategies, see the [Performance & Optimization Guide](../../advanced/performance/index).
+For comprehensive performance optimization strategies, see the [Performance and Optimization Guide](../../advanced/performance/index).
 
 ## Troubleshooting
 
@@ -147,7 +183,7 @@ After running the examples:
 4. **Production**: Deploy models in production environments
 5. **Contribute**: Share your improvements and customizations
 
-For additional learning resources, visit the main [Tutorials & Examples](../index) page.
+For additional learning resources, visit the main [Tutorials and Examples](../index) page.
 
 ```{toctree}
 :maxdepth: 2

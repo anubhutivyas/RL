@@ -29,7 +29,7 @@ Set up your environment and run your first reinforcement learning training job w
 {bdg-success}`Beginner` {bdg-secondary}`Setup`
 :::
 
-:::{grid-item-card} {octicon}`play;1.5em;sd-mr-1` Tutorials & Examples
+:::{grid-item-card} {octicon}`play;1.5em;sd-mr-1` Tutorials and Examples
 :link: tutorials-examples/index
 :link-type: doc
 :class-body: text-center
@@ -51,7 +51,7 @@ Master NeMo RL with organized guides covering training algorithms, model develop
 {bdg-warning}`Advanced` {bdg-secondary}`Reference`
 :::
 
-:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Core Design & Architecture
+:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Core Design and Architecture
 :link: design-docs/index
 :link-type: doc
 :class-body: text-center
@@ -84,7 +84,7 @@ Complete API documentation including high-level guides and detailed auto-generat
 {bdg-primary}`Technical` {bdg-secondary}`API`
 :::
 
-:::{grid-item-card} {octicon}`terminal;1.5em;sd-mr-1` Configuration & CLI
+:::{grid-item-card} {octicon}`terminal;1.5em;sd-mr-1` Configuration and CLI
 :link: configuration-cli/index
 :link-type: doc
 :class-body: text-center
@@ -102,7 +102,7 @@ Access comprehensive reference documentation including configuration options and
 Follow this structured progression to master NeMo RL:
 
 ### **Beginner Path** (0-2 weeks)
-1. **Installation & Setup** → [Installation Guide](get-started/installation)
+1. **Installation and Setup** → [Installation Guide](get-started/installation)
 2. **First Training Run** → [Quickstart Guide](get-started/quickstart)
 3. **SFT Tutorial** → [Supervised Fine-Tuning Tutorial](tutorials-examples/tutorials/sft-tutorial)
 4. **Basic Examples** → [SFT on OpenMathInstruct-2](tutorials-examples/examples/sft-openmathinstruct2)
@@ -115,9 +115,9 @@ Follow this structured progression to master NeMo RL:
 
 ### **Advanced Path** (4+ weeks)
 1. **GRPO Tutorial** → [Group Relative Policy Optimization Tutorial](tutorials-examples/tutorials/grpo-tutorial)
-2. **Advanced Performance** → [Performance & Optimization](advanced/performance/index)
+2. **Advanced Performance** → [Performance and Optimization](advanced/performance/index)
 3. **Distributed Training** → [Distributed Training Guide](advanced/performance/distributed-training)
-4. **Production Deployment** → [Production & Support](guides/production-support/index)
+4. **Production Deployment** → [Production and Support](guides/production-support/index)
 
 ## Key Resources
 
@@ -144,7 +144,7 @@ Extend NeMo RL with custom model architectures and backends.
 {bdg-info}`Development`
 :::
 
-:::{grid-item-card} {octicon}`zap;1.5em;sd-mr-1` Performance & Optimization
+:::{grid-item-card} {octicon}`zap;1.5em;sd-mr-1` Performance and Optimization
 :link: advanced/performance/index
 :link-type: doc
 
@@ -154,7 +154,7 @@ Optimize training performance, benchmarking, and profiling techniques.
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Production & Support
+:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Production and Support
 :link: guides/production-support/index
 :link-type: doc
 

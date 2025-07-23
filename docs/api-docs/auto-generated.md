@@ -24,12 +24,12 @@ The NeMo RL package is organized into the following modules:
 - **WorkerGroup**: Distributed worker coordination
 - **BatchedDataDict**: Efficient distributed data structures
 
-### Models & Policies
+### Models and Policies
 - **Policy Interfaces**: Abstract policy implementations
 - **Generation Backends**: Text generation with VLLM, Hugging Face, Megatron
 - **Model Converters**: Model format conversions
 
-### Data & Environments
+### Data and Environments
 - **Dataset Interfaces**: Standardized data loading
 - **Environment Abstractions**: RL environment implementations
 - **Data Processing**: Tokenization and preprocessing utilities

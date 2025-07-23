@@ -113,7 +113,7 @@ docker run --gpus all \
     -v /path/to/hf_cache:/hf_cache \
     -it nemo-rl:release
 
-# Set Weights & Biases API key
+# Set Weights and Biases API key
 docker run --gpus all \
     -e WANDB_API_KEY=your_api_key \
     -it nemo-rl:release

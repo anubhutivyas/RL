@@ -1,7 +1,11 @@
 ---
-description: "Direct Preference Optimization (DPO) theory with preference loss and SFT loss components for language model alignment."
-tags: ["dpo", "theory", "mathematics", "preference learning", "alignment"]
-categories: ["theory"]
+description: "Direct Preference Optimization (DPO) theory with preference loss and SFT loss components for language model alignment"
+categories: ["research-advanced"]
+tags: ["dpo", "theory", "mathematics", "preference-learning", "alignment", "reinforcement-learning"]
+personas: ["researcher-focused", "mle-focused"]
+difficulty: "advanced"
+content_type: "concept"
+modality: "universal"
 ---
 
 # DPO Theory

@@ -17,14 +17,14 @@ This guide covers installing NeMo RL on various platforms and environments.
 ### System Requirements
 - **Python**: 3.9 or higher
 - **CUDA**: 11.8 or higher (for GPU support)
-- **Memory**: Minimum 16GB RAM, 32GB+ recommended
+- **Memory**: Minimum 16 GB RAM, 32 GB+ recommended
 - **Storage**: At least 50GB free space for models and datasets
 
 ### Hardware Requirements
 
 (gpu-requirements)=
 
-- **GPU**: NVIDIA GPU with 8GB+ VRAM (16GB+ recommended)
+- **GPU**: NVIDIA GPU with 8 GB+ VRAM (16 GB+ recommended)
 - **CPU**: Multi-core processor (8+ cores recommended)
 - **Network**: Stable internet connection for downloading models
 
@@ -47,6 +47,8 @@ This guide covers installing NeMo RL on various platforms and environments.
    ```bash
    uv sync
    ```
+   
+   > **Note**: NeMo RL uses `uv` for dependency management. This is the recommended installation method as it ensures all dependencies are properly resolved and locked.
 
 4. **Install with pip** (alternative):
    ```bash
@@ -90,11 +92,15 @@ This guide covers installing NeMo RL on various platforms and environments.
 Set the following environment variables:
 
 ```bash
+# NeMo RL specific
+export NRL_VIRTUAL_CLUSTER_MAX_RETRIES=6
+export NRL_RAY_OBJECT_STORE_MEMORY=1000000000
+
 # Hugging Face
 export HF_HOME="/path/to/huggingface/cache"
 export HF_DATASETS_CACHE="/path/to/datasets/cache"
 
-# Weights & Biases (optional)
+# Weights and Biases (optional)
 export WANDB_API_KEY="your_wandb_api_key"
 
 # CUDA

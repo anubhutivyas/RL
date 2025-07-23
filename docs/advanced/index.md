@@ -12,7 +12,7 @@ modality: "universal"
 
 Welcome to the NeMo RL Advanced Topics section! This comprehensive collection provides deep technical content for AI researchers, performance engineers, and advanced practitioners who need to understand the theoretical foundations, conduct research, and optimize performance.
 
-## Mathematical Foundations & Theory
+## Mathematical Foundations and Theory
 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
@@ -69,7 +69,7 @@ Comprehensive analysis of all loss function implementations and mathematical for
 
 ::::
 
-## Research & Experimentation
+## Research and Experimentation
 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
@@ -163,7 +163,7 @@ Implement progressive difficulty scheduling to improve training efficiency and m
 
 ::::
 
-## Performance & Optimization
+## Performance and Optimization
 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2

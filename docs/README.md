@@ -217,7 +217,7 @@ This will create a virtual environment in `.venv-docs` and install all required 
 
 ## Build the Documentation
 
-To build the NeMo Curator documentation, run:
+To build the NeMo RL documentation, run:
 
 ```sh
 make docs-html
@@ -273,8 +273,8 @@ only: not ga
 Hide specific grid cards from certain builds:
 
 ```markdown
-:::{grid-item-card} Video Curation Features
-:link: video-overview  
+:::{grid-item-card} Advanced RL Features
+:link: advanced-overview  
 :link-type: ref
 :only: not ga
 Content for EA-only features
@@ -383,16 +383,16 @@ extensions = [
 
 # Define reusable variables
 myst_substitutions = {
-    "product_name": "NeMo Curator",
-    "product_name_short": "Curator", 
+    "product_name": "NeMo RL",
+    "product_name_short": "NeMo RL", 
     "company": "NVIDIA",
     "version": release,  # Uses the release variable from conf.py
     "current_year": "2025",
-    "github_repo": "https://github.com/NVIDIA/NeMo-Curator",
-    "docs_url": "https://docs.nvidia.com/nemo-curator",
-    "support_email": "nemo-curator-support@nvidia.com",
-    "min_python_version": "3.8",
-    "recommended_cuda": "12.0+",
+    "github_repo": "https://github.com/NVIDIA/NeMo-RL",
+    "docs_url": "https://docs.nvidia.com/nemo-rl",
+    "support_email": "nemo-rl-support@nvidia.com",
+    "min_python_version": "3.9",
+    "recommended_cuda": "11.8+",
 }
 ```
 
@@ -414,10 +414,10 @@ The extension enables substitutions in standard code blocks:
 
 ```bash
 # Install {{ product_name }} version {{ version }}
-helm install my-release oci://nvcr.io/nvidia/nemo-curator --version {{ version }}
+helm install my-release oci://nvcr.io/nvidia/nemo-rl --version {{ version }}
 kubectl get pods -n {{ product_name_short }}-namespace
-docker run --rm nvcr.io/nvidia/nemo-curator:{{ version }}
-pip install nemo-curator=={{ version }}
+docker run --rm nvcr.io/nvidia/nemo-rl:{{ version }}
+pip install nemo-rl=={{ version }}
 ```
 
 ### Template Language Protection
@@ -450,17 +450,17 @@ The extension automatically detects and preserves common template patterns:
 ```yaml
 # values.yaml - MyST substitutions work alongside Helm templates
 image:
-  repository: nvcr.io/nvidia/nemo-curator
+  repository: nvcr.io/nvidia/nemo-rl
   tag: {{ .Values.image.tag | default "latest" }}        # ← Helm template (preserved)
 
 # Documentation URLs using MyST substitutions  
 downloads:
-  releaseUrl: "https://github.com/NVIDIA/NeMo-Curator/releases/download/v{{ version }}/nemo-curator.tar.gz"  # ← MyST substitution
+  releaseUrl: "https://github.com/NVIDIA/NeMo-RL/releases/download/v{{ version }}/nemo-rl.tar.gz"  # ← MyST substitution
   docsUrl: "{{ docs_url }}"                              # ← MyST substitution
   supportEmail: "{{ support_email }}"                    # ← MyST substitution
 
 service:
-  name: {{ include "nemo-curator.fullname" . }}          # ← Helm template (preserved)
+  name: {{ include "nemo-rl.fullname" . }}          # ← Helm template (preserved)
   
 env:
   - name: CURATOR_VERSION
@@ -475,7 +475,7 @@ env:
 # MyST substitutions for documentation
 - name: "Install {{ product_name }} version {{ version }}"     # ← MyST substitution
   shell: |
-    wget {{ github_repo }}/releases/download/v{{ version }}/nemo-curator.tar.gz  # ← MyST substitution
+    wget {{ github_repo }}/releases/download/v{{ version }}/nemo-rl.tar.gz  # ← MyST substitution
     
   # Ansible templates preserved
   when: "{{ ansible_distribution }} == 'Ubuntu'"              # ← Ansible template (preserved)

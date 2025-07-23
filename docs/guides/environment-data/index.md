@@ -1,4 +1,4 @@
-# Environment & Data
+# Environment and Data
 
 This section covers environment setup, data management, debugging, and performance profiling for NeMo RL training workflows.
 
@@ -209,7 +209,7 @@ dataset = dataset.map(
 )
 ```
 
-## Monitoring & Logging
+## Monitoring and Logging
 
 ### Training Metrics
 

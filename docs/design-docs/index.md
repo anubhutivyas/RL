@@ -9,7 +9,7 @@ modality: "universal"
 ---
 
 (design-overview)=
-# Core Design & Architecture
+# Core Design and Architecture
 
 This section contains detailed design documents, architectural decisions, and technical specifications for NeMo RL. These documents provide insights into the framework's internals and design philosophy.
 
@@ -158,7 +158,7 @@ Understand the checkpointing mechanisms and strategies for model state persisten
 ::::
 
 ```{toctree}
-:caption: Core Design & Architecture
+:caption: Core Design and Architecture
 :maxdepth: 2
 :hidden:
 

@@ -1,10 +1,20 @@
+---
+description: "Introduction to NeMo RL's capabilities, supported algorithms, and real-world applications for reinforcement learning with large language models"
+categories: ["concepts-architecture"]
+tags: ["overview", "reinforcement-learning", "grpo", "dpo", "sft", "large-language-models", "distributed", "use-cases"]
+personas: ["mle-focused", "researcher-focused", "admin-focused"]
+difficulty: "beginner"
+content_type: "concept"
+modality: "universal"
+---
+
 # Why NeMo RL?
 
 **NeMo RL** is an open-source, scalable post-training library developed by NVIDIA for applying **reinforcement learning (RL)** to large language models (LLMs). It supports models ranging from compact architectures to 100B+ parameters and scales from single-GPU setups to thousand-GPU clusters. NeMo RL is part of the broader [NVIDIA NeMo framework](https://docs.nvidia.com/nemo/rl/latest/index.html), which focuses on training and aligning generative AI.
 
 Built for scalability, efficiency, and ease of use, NeMo RL provides researchers and practitioners with the tools needed to train, evaluate, and deploy RL-enhanced language models at scale.
 
-## Architecture & Design Principles
+## Architecture and Design Principles
 
 - **Modular and Backend-Agnostic**  
   Separation between algorithm logic and backend execution—supports PyTorch Native, Megatron Core, and vLLM
@@ -40,9 +50,9 @@ Backends are configurable and interchangeable without altering core algorithm lo
 - **Hugging Face**: For model loading, datasets, tokenizer management
 - **Ray**: Distributed rollout generation, process isolation, fault tolerance
 - **uv**: Python environment management for reproducibility
-- **Weights & Biases**: Logging and training visualization support
+- **Weights and Biases**: Logging and training visualization support
 
-## Scalability & Performance
+## Scalability and Performance
 
 - **Rollout Generation**: Distributed across Ray actors using either Hugging Face or vLLM
 - **Training Execution**: Supports various forms of parallelism including FSDP2 and DeepSpeed-style optimization
@@ -89,7 +99,7 @@ For detailed implementation guides, architectural patterns, and production consi
 
 ## Get Started
 
-Ready to begin your NeMo RL journey? Here's how to get started:
+Ready to begin your NeMo RL journey. Here's how to get started:
 
 ### **Installation**
 • [Installation Guide](../get-started/installation) - Complete setup instructions
@@ -108,13 +118,13 @@ Ready to begin your NeMo RL journey? Here's how to get started:
 • [GRPO Training](../guides/training-algorithms/grpo) - Group Relative Policy Optimization for reasoning tasks
 • [DPO Training](../guides/training-algorithms/dpo) - Direct Preference Optimization for human alignment
 
-### **Evaluation & Development**
+### **Evaluation and Development**
 • [Evaluation](../guides/training-algorithms/eval) - Model evaluation and benchmarking
 • [Add New Models](../guides/model-development/adding-new-models) - Custom model integration
 • [Debugging](../guides/environment-data/debugging) - Training debugging techniques
 • [Environment Development](../guides/environment-data/environment-development) - Custom environment creation
 
-### **Production & Scaling**
+### **Production and Scaling**
 • [Distributed Training](../advanced/performance/distributed-training) - Multi-node training setup
 • [Production Support](../guides/production-support/index) - Production deployment and monitoring
 • [Performance Benchmarking](../advanced/performance/benchmarking) - Training performance optimization
@@ -122,7 +132,7 @@ Ready to begin your NeMo RL journey? Here's how to get started:
 
 ### **Reference Documentation**
 • [API Documentation](../api-docs/index) - Complete API documentation
-• [Configuration & CLI](../configuration-cli/index) - Configuration options and command-line interface
+• [Configuration and CLI](../configuration-cli/index) - Configuration options and command-line interface
 • [Troubleshooting](../configuration-cli/troubleshooting) - Common issues and solutions
 • [Architecture](../about/architecture) - System architecture and design principles
 

@@ -10,7 +10,7 @@ modality: "universal"
 
 # SFT Tutorial: Supervised Fine-Tuning
 
-Welcome to the Supervised Fine-Tuning (SFT) tutorial! This step-by-step guide will teach you how to fine-tune language models using supervised learning techniques with NeMo RL.
+Welcome to the Supervised Fine-Tuning (SFT) tutorial. This step-by-step guide will teach you how to fine-tune language models using supervised learning techniques with NeMo RL.
 
 ## What You'll Learn
 
@@ -54,7 +54,7 @@ Learn proven techniques for successful SFT.
 
 ## Step 1: Understanding SFT
 
-### **What is Supervised Fine-Tuning?**
+### **Supervised Fine-Tuning Overview**
 
 Supervised Fine-Tuning (SFT) is a technique for adapting pre-trained language models to specific tasks or domains. Unlike reinforcement learning, SFT uses labeled training data where each example has a correct answer or desired output.
 
@@ -340,4 +340,4 @@ In this tutorial, you learned:
 - ✅ **Evaluation**: Assessing model performance and quality
 - ✅ **Best Practices**: Proven techniques for successful SFT
 
-You're now ready to apply SFT to your own projects and explore more advanced techniques like DPO and GRPO! 
+You're now ready to apply SFT to your own projects and explore more advanced techniques like DPO and GRPO. 

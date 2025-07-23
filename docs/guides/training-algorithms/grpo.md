@@ -8,9 +8,9 @@ content_type: "tutorial"
 modality: "universal"
 ---
 
-# An in-depth Walkthrough of GRPO in NeMo RL
+# An In-Depth Walkthrough of GRPO in NeMo RL
 
-This guide details the Group Relative Policy Optimization(GRPO) implementation within NeMo RL. We'll walk through essential aspects including data handling, policy model training, fast generation, and the specifics of the GRPO loss function and its enhancements. 
+This guide details the Group Relative Policy Optimization (GRPO) implementation within NeMo RL. We'll walk through essential aspects including data handling, policy model training, fast generation, and the specifics of the GRPO loss function and its enhancements. 
 
 ## Quickstart: Launch a GRPO Run
 
@@ -47,6 +47,42 @@ To support this, we need to know:
 * What environments you have
 * Which data should go to which environments
 * How to prepare the data from your dataset into a form we can use
+
+#### Data Validation for Researchers
+
+For AI researchers conducting experiments, ensure data quality with these validation steps:
+
+```python
+def validate_training_data(dataset, tokenizer, max_length):
+    """Validate training data for GRPO experiments"""
+    validation_results = {
+        'total_samples': len(dataset),
+        'valid_samples': 0,
+        'avg_length': 0,
+        'length_distribution': {}
+    }
+    
+    for idx, sample in enumerate(dataset):
+        # Check data format compliance
+        if 'task_name' not in sample:
+            continue
+            
+        # Validate tokenization
+        tokens = tokenizer.encode(sample.get('text', ''))
+        if len(tokens) > max_length:
+            continue
+            
+        validation_results['valid_samples'] += 1
+        validation_results['avg_length'] += len(tokens)
+        
+        # Track length distribution
+        length_bucket = (len(tokens) // 100) * 100
+        validation_results['length_distribution'][length_bucket] = \
+            validation_results['length_distribution'].get(length_bucket, 0) + 1
+    
+    validation_results['avg_length'] /= validation_results['valid_samples']
+    return validation_results
+```
 
 #### Common Data Format
 

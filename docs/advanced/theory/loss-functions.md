@@ -1,7 +1,11 @@
 ---
-description: "Comprehensive analysis of all loss function implementations in NeMo RL including mathematical formulations and optimization strategies."
-tags: ["loss functions", "theory", "mathematics", "optimization", "gradients"]
-categories: ["theory"]
+description: "Comprehensive analysis of all loss function implementations in NeMo RL including mathematical formulations and optimization strategies"
+categories: ["research-advanced"]
+tags: ["loss-functions", "theory", "mathematics", "optimization", "gradients", "reinforcement-learning"]
+personas: ["researcher-focused", "mle-focused"]
+difficulty: "advanced"
+content_type: "concept"
+modality: "universal"
 ---
 
 # Loss Functions

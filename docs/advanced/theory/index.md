@@ -4,7 +4,7 @@ tags: ["theory", "mathematics", "algorithms", "reinforcement learning", "foundat
 categories: ["theory"]
 ---
 
-# Mathematical Foundations & Theory
+# Mathematical Foundations and Theory
 
 This section provides the mathematical foundations and theoretical background for NeMo RL algorithms. Understanding these concepts is essential for AI scientists and researchers working with reinforcement learning for language models.
 

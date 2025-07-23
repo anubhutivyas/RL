@@ -1,3 +1,13 @@
+---
+description: "Debug NeMo RL applications using Ray distributed debugger for worker/actor processes and driver scripts in SLURM environments"
+categories: ["deployment-operations"]
+tags: ["debugging", "ray", "distributed", "slurm", "development", "troubleshooting"]
+personas: ["mle-focused", "admin-focused", "devops-focused"]
+difficulty: "intermediate"
+content_type: "tutorial"
+modality: "universal"
+---
+
 # Debug NeMo RL Applications
 
 This guide explains how to debug NeMo RL applications, covering two scenarios. It first outlines the procedure for debugging distributed Ray worker/actor processes using the Ray Distributed Debugger within a SLURM environment, and then details debugging the main driver script.
@@ -11,7 +21,7 @@ Since Ray programs can spawn multiple workers and actors, using the Ray Distribu
 * Install the [Ray Debugger VS Code/Cursor extension](https://docs.ray.io/en/latest/ray-observability/ray-distributed-debugger.html).
 * Launch the [interactive cluster](../../get-started/cluster.md) with `ray.sub`.
 * Launch VS Code/Cursor on the SLURM login node (where `squeue`/`sbatch` is available).
-* Add `breakpoint()` in your code under actors & tasks (i.e. classes or functions decorated with `@ray.remote`).
+* Add `breakpoint()` in your code under actors and tasks (i.e. classes or functions decorated with `@ray.remote`).
 * **Ensure** `RAY_DEBUG=legacy` is not set since this debugging requires the default distributed debugger.
 
 ### Forward a Port from the Head Node
@@ -67,6 +77,60 @@ The Ray Debugger Panel for cluster `127.0.0.1:52640` lists all active breakpoint
 Note that you can jump between breakpoints across all workers with this process.
 
 ![Ray Debugger Extension Step 4](../../assets/ray-debug-step4.png)
+
+## Advanced Debugging for ML Engineers
+
+For ML Engineers debugging complex training issues:
+
+```python
+def debug_training_pipeline(cluster, worker_group):
+    """Advanced debugging for distributed training issues"""
+    debug_info = {
+        'cluster_status': cluster.get_placement_groups(),
+        'worker_status': [],
+        'memory_usage': {},
+        'gpu_utilization': {},
+        'communication_latency': {}
+    }
+    
+    # Check worker health
+    for worker in worker_group.get_workers():
+        try:
+            status = ray.get(worker.check_health.remote())
+            debug_info['worker_status'].append(status)
+        except Exception as e:
+            debug_info['worker_status'].append({'error': str(e)})
+    
+    # Monitor resource usage
+    for node in cluster.get_nodes():
+        debug_info['memory_usage'][node] = get_node_memory_usage(node)
+        debug_info['gpu_utilization'][node] = get_node_gpu_utilization(node)
+    
+    # Check communication patterns
+    debug_info['communication_latency'] = measure_worker_communication(worker_group)
+    
+    return debug_info
+
+def diagnose_training_issues(debug_info):
+    """Diagnose common training issues based on debug information"""
+    issues = []
+    
+    # Check for memory issues
+    for node, memory in debug_info['memory_usage'].items():
+        if memory > 0.9:  # 90% memory usage
+            issues.append(f"High memory usage on {node}: {memory:.1%}")
+    
+    # Check for GPU underutilization
+    for node, gpu_util in debug_info['gpu_utilization'].items():
+        if gpu_util < 0.5:  # Less than 50% GPU utilization
+            issues.append(f"Low GPU utilization on {node}: {gpu_util:.1%}")
+    
+    # Check for communication issues
+    if debug_info['communication_latency'] > 100:  # 100ms threshold
+        issues.append(f"High communication latency: {debug_info['communication_latency']}ms")
+    
+    return issues
+```
 
 ## Debug the Driver Script
 

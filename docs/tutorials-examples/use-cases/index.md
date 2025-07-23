@@ -146,7 +146,7 @@ After implementing a use case:
 4. **Monitor and Maintain**: Continuously monitor and improve model performance
 5. **Share Knowledge**: Contribute your experiences and improvements
 
-For additional learning resources, visit the main [Tutorials & Examples](../index) page.
+For additional learning resources, visit the main [Tutorials and Examples](../index) page.
 
 ```{toctree}
 :maxdepth: 2

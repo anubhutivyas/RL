@@ -2,15 +2,15 @@
 description: "Comprehensive collection of tutorials and examples for learning and mastering reinforcement learning with large language models using NeMo RL"
 categories: ["training-algorithms"]
 tags: ["tutorials", "examples", "sft", "dpo", "grpo", "reinforcement-learning", "training-execution"]
-personas: ["mle-focused", "researcher-focused"]
+personas: ["mle-focused", "researcher-focused", "admin-focused"]
 difficulty: "beginner"
 content_type: "concept"
 modality: "universal"
 ---
 
-# Tutorials & Examples
+# Tutorials and Examples
 
-Welcome to the NeMo RL Tutorials & Examples! This comprehensive collection provides everything you need to learn and master reinforcement learning with large language models using NeMo RL.
+Welcome to the NeMo RL Tutorials and Examples! This comprehensive collection provides everything you need to learn and master reinforcement learning with large language models using NeMo RL.
 
 ## What You'll Find Here
 
@@ -30,7 +30,7 @@ Real-world applications and production patterns for NeMo RL. Learn how to apply 
 Follow this structured learning path to master NeMo RL:
 
 ### **Beginner Path** (0-2 weeks)
-1. **Installation & Setup** → [Installation Guide](../get-started/installation)
+1. **Installation and Setup** → [Installation Guide](../get-started/installation)
 2. **First Training Run** → [Quickstart Guide](../get-started/quickstart)
 3. **SFT Tutorial** → [Supervised Fine-Tuning Tutorial](tutorials/sft-tutorial)
 4. **Basic Examples** → [SFT on OpenMathInstruct-2](examples/sft-openmathinstruct2)
@@ -43,9 +43,9 @@ Follow this structured learning path to master NeMo RL:
 
 ### **Advanced Path** (4+ weeks)
 1. **GRPO Tutorial** → [Group Relative Policy Optimization Tutorial](tutorials/grpo-tutorial)
-2. **Advanced Performance** → [Performance & Optimization](../advanced/performance/index)
+2. **Advanced Performance** → [Performance and Optimization](../advanced/performance/index)
 3. **Distributed Training** → [Distributed Training Guide](../advanced/performance/distributed-training)
-4. **Production Deployment** → [Production & Support](../guides/production-support/index)
+4. **Production Deployment** → [Production and Support](../guides/production-support/index)
 
 ## Tutorials
 
@@ -237,7 +237,7 @@ Design and conduct rigorous experiments:
 #### **Third-Party Integrations**
 Integrate NeMo RL with other tools and frameworks:
 
-- **Weights & Biases**: Integrate with W&B for experiment tracking
+- **Weights and Biases**: Integrate with W&B for experiment tracking
 - **MLflow**: Use MLflow for model lifecycle management
 - **Kubernetes**: Deploy NeMo RL on Kubernetes clusters
 - **Cloud Platforms**: Deploy on AWS, GCP, or Azure
@@ -303,7 +303,7 @@ Start with the learning path that matches your experience level, and gradually w
 
 ```{toctree}
 :maxdepth: 2
-:caption: Tutorials & Examples
+:caption: Tutorials and Examples
 :hidden:
 
 tutorials/index

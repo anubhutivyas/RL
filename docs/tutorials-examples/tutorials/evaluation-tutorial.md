@@ -10,7 +10,7 @@ modality: "universal"
 
 # Evaluation Tutorial: Model Evaluation and Benchmarking
 
-Welcome to the Model Evaluation tutorial! This comprehensive guide will teach you how to evaluate and benchmark your NeMo RL models using various metrics and techniques.
+Welcome to the Model Evaluation tutorial. This comprehensive guide will teach you how to evaluate and benchmark your NeMo RL models using various metrics and techniques.
 
 ## What You'll Learn
 
@@ -54,7 +54,7 @@ Learn proven techniques for reliable evaluation.
 
 ## Step 1: Understanding Evaluation
 
-### **What is Model Evaluation?**
+### **Model Evaluation Overview**
 
 Model evaluation is the process of assessing how well your trained models perform on specific tasks and criteria. It helps you understand model strengths, weaknesses, and areas for improvement.
 

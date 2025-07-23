@@ -1,7 +1,11 @@
 ---
-description: "Core mathematical foundations of reinforcement learning theory, convergence proofs, and fundamental concepts for NeMo RL."
-tags: ["mathematics", "theory", "reinforcement learning", "convergence", "policy gradients"]
-categories: ["theory"]
+description: "Core mathematical foundations and theoretical concepts that underpin NeMo RL algorithms and training methods"
+categories: ["research-advanced"]
+tags: ["mathematics", "theory", "foundations", "reinforcement-learning", "policy-optimization", "convergence"]
+personas: ["researcher-focused", "mle-focused"]
+difficulty: "advanced"
+content_type: "concept"
+modality: "universal"
 ---
 
 # Mathematical Foundations

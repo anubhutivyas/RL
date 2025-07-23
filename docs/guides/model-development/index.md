@@ -25,7 +25,7 @@ Learn how to integrate custom models and architectures into NeMo RL training pip
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} {octicon}`alert;1.5em;sd-mr-1` Model Quirks & Special Cases
+:::{grid-item-card} {octicon}`alert;1.5em;sd-mr-1` Model Quirks and Special Cases
 :link: model-quirks
 :link-type: doc
 

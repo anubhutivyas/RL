@@ -4,7 +4,7 @@ tags: ["research", "experimentation", "algorithms", "methodology", "reproducibil
 categories: ["research"]
 ---
 
-# Research & Experimentation
+# Research and Experimentation
 
 This section provides comprehensive guides for AI scientists and researchers conducting research with NeMo RL. These guides cover experimental design, reproducibility best practices, and advanced research methodologies.
 
@@ -134,12 +134,12 @@ Rigorous standards for reproducible research:
 - Set up reproducible environments
 - Establish monitoring and logging systems
 
-### 4. Analysis & Validation
+### 4. Analysis and Validation
 - Conduct thorough statistical analysis
 - Validate results across multiple runs
 - Perform robustness and generalization tests
 
-### 5. Documentation & Publication
+### 5. Documentation and Publication
 - Document all experimental details
 - Prepare reproducible code and data
 - Write clear research papers and reports
@@ -169,7 +169,7 @@ Understanding model behavior and decisions:
 - **Decision Trees**: Extracting interpretable rules
 - **Counterfactual Analysis**: Understanding model reasoning
 
-## Collaboration & Sharing
+## Collaboration and Sharing
 
 ### Open Research
 NeMo RL supports open research practices:

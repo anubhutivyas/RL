@@ -1,4 +1,4 @@
-# Models & Policies API
+# Models and Policies API
 
 This section documents the model interfaces, policy implementations, and generation backends in NeMo RL.
 

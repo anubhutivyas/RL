@@ -1,7 +1,11 @@
 ---
-description: "Methodologies for designing robust experiments with proper controls and statistical analysis."
-tags: ["experimental design", "research", "methodology", "statistics"]
-categories: ["research"]
+description: "Methodologies for designing robust experiments with proper controls and statistical analysis for NeMo RL reinforcement learning workflows"
+categories: ["research-advanced"]
+tags: ["experimental-design", "research", "methodology", "statistics", "reinforcement-learning", "grpo", "dpo", "sft"]
+personas: ["researcher-focused", "mle-focused"]
+difficulty: "advanced"
+content_type: "concept"
+modality: "universal"
 ---
 
 # Experimental Design
@@ -87,6 +91,59 @@ Account for multiple hypothesis testing:
 - **Bonferroni Correction**: α' = α / n (where n = number of comparisons)
 - **False Discovery Rate**: Control expected proportion of false positives
 - **Family-wise Error Rate**: Control probability of any false positive
+
+#### Reproducibility Framework for Researchers
+
+For AI researchers ensuring reproducible experiments:
+
+```python
+def setup_reproducible_experiment(seed=42):
+    """Setup reproducible environment for NeMo RL experiments"""
+    import torch
+    import numpy as np
+    import random
+    
+    # Set all random seeds
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    
+    # Enable deterministic algorithms
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    
+    # Set environment variables for Ray
+    import os
+    os.environ['RAY_DISABLE_IMPORT_WARNING'] = '1'
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    
+    return {
+        'seed': seed,
+        'torch_version': torch.__version__,
+        'cuda_available': torch.cuda.is_available(),
+        'gpu_count': torch.cuda.device_count()
+    }
+
+def log_experiment_metadata(config, results, output_dir):
+    """Log complete experiment metadata for reproducibility"""
+    import json
+    import datetime
+    
+    metadata = {
+        'timestamp': datetime.datetime.now().isoformat(),
+        'config': config,
+        'results': results,
+        'system_info': {
+            'python_version': platform.python_version(),
+            'torch_version': torch.__version__,
+            'ray_version': ray.__version__,
+            'gpu_info': get_gpu_info()
+        }
+    }
+    
+    with open(f"{output_dir}/experiment_metadata.json", 'w') as f:
+        json.dump(metadata, f, indent=2)
+```
 
 ## Experimental Frameworks
 

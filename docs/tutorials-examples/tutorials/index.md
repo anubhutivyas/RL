@@ -86,7 +86,7 @@ Advanced reinforcement learning with Group Relative Policy Optimization.
 
 ### **Advanced Path** (4+ weeks)
 1. **GRPO Tutorial** → Advanced reinforcement learning
-2. **Advanced Performance** → [Performance & Optimization](../../advanced/performance/index)
+2. **Advanced Performance** → [Performance and Optimization](../../advanced/performance/index)
 3. **Distributed Training** → [Distributed Training Guide](../../advanced/performance/distributed-training)
 
 ## Tutorial Descriptions
@@ -108,7 +108,7 @@ Advanced reinforcement learning with Group Relative Policy Optimization.
 - **Multi-Agent Scenarios**: Learn to handle complex multi-agent training
 - **Performance Optimization**: Master techniques for large-scale GRPO training
 
-For comprehensive performance optimization strategies, see the [Performance & Optimization Guide](../../advanced/performance/index).
+For comprehensive performance optimization strategies, see the [Performance and Optimization Guide](../../advanced/performance/index).
 
 ### **Evaluation Tutorial**
 - **Model Assessment**: Learn comprehensive evaluation strategies
@@ -149,7 +149,7 @@ After completing the tutorials:
 - **Contribute**: Share your experiences and help improve the tutorials
 - **Advanced Topics**: Dive into research and experimentation
 
-For additional learning resources, visit the main [Tutorials & Examples](../index) page.
+For additional learning resources, visit the main [Tutorials and Examples](../index) page.
 
 ```{toctree}
 :maxdepth: 2

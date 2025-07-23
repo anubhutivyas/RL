@@ -8,9 +8,9 @@ content_type: "concept"
 modality: "universal"
 ---
 
-# Production & Support
+# Production and Support
 
-Welcome to the NeMo RL Production & Support guide! This section covers everything you need to deploy, maintain, and troubleshoot NeMo RL in production environments.
+Welcome to the NeMo RL Production and Support guide! This section covers everything you need to deploy, maintain, and troubleshoot NeMo RL in production environments.
 
 ## What You'll Find Here
 
@@ -21,12 +21,12 @@ Our production and support guides help you:
 - **Monitor and Maintain**: Keep your systems running smoothly
 - **Troubleshoot Issues**: Resolve common problems and errors
 
-## Production & Support Guides
+## Production and Support Guides
 
 ::::{grid} 1 2 2 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} Testing & Debugging
+:::{grid-item-card} Testing and Debugging
 :link: testing
 :link-type: doc
 

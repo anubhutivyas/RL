@@ -1,7 +1,11 @@
 ---
-description: "Supervised Fine-Tuning (SFT) mathematical foundations and negative log-likelihood loss theory for language models."
-tags: ["sft", "theory", "mathematics", "supervised learning", "language models"]
-categories: ["theory"]
+description: "Supervised Fine-Tuning (SFT) mathematical foundations and negative log-likelihood loss for language model training"
+categories: ["research-advanced"]
+tags: ["sft", "theory", "mathematics", "supervised-learning", "language-models", "training"]
+personas: ["researcher-focused", "mle-focused"]
+difficulty: "intermediate"
+content_type: "concept"
+modality: "universal"
 ---
 
 # SFT Theory

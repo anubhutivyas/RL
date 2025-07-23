@@ -10,7 +10,7 @@ modality: "universal"
 
 # DPO Tutorial: Direct Preference Optimization
 
-Welcome to the Direct Preference Optimization (DPO) tutorial! This step-by-step guide will teach you how to train language models using preference learning techniques with NeMo RL.
+Welcome to the Direct Preference Optimization (DPO) tutorial. This step-by-step guide will teach you how to train language models using preference learning techniques with NeMo RL.
 
 ## What You'll Learn
 
@@ -54,7 +54,7 @@ Learn proven techniques for successful DPO.
 
 ## Step 1: Understanding DPO
 
-### **What is Direct Preference Optimization?**
+### **Direct Preference Optimization Overview**
 
 Direct Preference Optimization (DPO) is a technique for training language models to align with human preferences. Unlike supervised fine-tuning, DPO uses preference data where humans rank different model responses.
 
@@ -363,4 +363,4 @@ In this tutorial, you learned:
 - ✅ **Evaluation**: Assessing model alignment and preferences
 - ✅ **Best Practices**: Proven techniques for successful DPO
 
-You're now ready to apply DPO to align models with human preferences and explore more advanced RL techniques like GRPO! 
+You're now ready to apply DPO to align models with human preferences and explore more advanced RL techniques like GRPO. 

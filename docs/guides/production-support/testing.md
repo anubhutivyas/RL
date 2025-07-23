@@ -1,3 +1,13 @@
+---
+description: "Comprehensive testing strategies for NeMo RL including unit tests, functional tests, and performance validation in local and distributed environments"
+categories: ["deployment-operations"]
+tags: ["testing", "unit-tests", "functional-tests", "performance", "validation", "quality-assurance"]
+personas: ["mle-focused", "admin-focused", "devops-focused"]
+difficulty: "intermediate"
+content_type: "tutorial"
+modality: "universal"
+---
+
 # Test NeMo RL
 
 This guide outlines how to test NeMo RL using unit and functional tests, detailing steps for local or Docker-based execution, dependency setup, and metric tracking to ensure effective and reliable testing.
@@ -98,6 +108,97 @@ jq -r '[.start_time, .git_commit, .metrics["test_hf_ray_policy::test_lm_policy_g
 #2025-03-24 23:38:50     778d288bb5d2edfd3eec4d07bb7dffffad5ef21b        1.0000039339065552
 ```
 :::
+
+## CI/CD Integration for DevOps
+
+For DevOps professionals managing automated testing pipelines:
+
+```yaml
+# .github/workflows/test-nemo-rl.yml
+name: NeMo RL Tests
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  unit-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.9, 3.10]
+        cuda-version: [11.8, 12.1]
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+    
+    - name: Install CUDA ${{ matrix.cuda-version }}
+      uses: Jimver/cuda-toolkit@v0.2.12
+      with:
+        cuda: ${{ matrix.cuda-version }}
+    
+    - name: Run unit tests
+      run: |
+        uv run --group test bash tests/run_unit.sh
+        python -m pytest tests/unit/ --cov=nemo_rl --cov-report=xml
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+```
+
+## Performance Testing for MLEs
+
+For ML Engineers validating training performance:
+
+```python
+def performance_benchmark(model_config, dataset_config):
+    """Benchmark NeMo RL training performance"""
+    import time
+    import psutil
+    
+    benchmark_results = {
+        'training_time': 0,
+        'memory_usage': [],
+        'gpu_utilization': [],
+        'throughput': 0
+    }
+    
+    start_time = time.time()
+    
+    # Monitor system resources during training
+    def monitor_resources():
+        while training_active:
+            memory = psutil.virtual_memory().percent
+            gpu_util = get_gpu_utilization()
+            benchmark_results['memory_usage'].append(memory)
+            benchmark_results['gpu_utilization'].append(gpu_util)
+            time.sleep(5)
+    
+    # Run training with monitoring
+    with ThreadPoolExecutor() as executor:
+        monitor_future = executor.submit(monitor_resources)
+        training_future = executor.submit(run_training, model_config, dataset_config)
+        
+        training_future.result()
+        training_active = False
+        monitor_future.result()
+    
+    benchmark_results['training_time'] = time.time() - start_time
+    benchmark_results['throughput'] = calculate_throughput()
+    
+    return benchmark_results
+```
 
 ## Functional Tests
 

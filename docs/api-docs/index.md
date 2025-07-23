@@ -1,6 +1,6 @@
 ---
 description: "Comprehensive API documentation for NeMo RL framework including distributed computing, models, algorithms, and data interfaces"
-categories: ["api-reference"]
+categories: ["reference"]
 tags: ["api", "reference", "distributed", "models", "algorithms", "data-interfaces", "python-api"]
 personas: ["mle-focused", "researcher-focused"]
 difficulty: "reference"
@@ -42,7 +42,7 @@ Core distributed computing abstractions including VirtualCluster and WorkerGroup
 {bdg-primary}`Core`
 :::
 
-:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Models & Policies
+:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Models and Policies
 :link: nemo_rl/nemo_rl.models
 :link-type: doc
 
@@ -62,7 +62,7 @@ RL algorithms including DPO, GRPO, SFT, and custom loss functions.
 {bdg-warning}`Training`
 :::
 
-:::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Data & Environments
+:::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Data and Environments
 :link: nemo_rl/nemo_rl.data
 :link-type: doc
 
@@ -84,7 +84,7 @@ The distributed computing layer provides abstractions for managing compute resou
 - **WorkerGroup**: Coordinates groups of distributed worker processes
 - **BatchedDataDict**: Efficient data structures for distributed communication
 
-### Models & Policies
+### Models and Policies
 
 The model layer provides interfaces for different model backends and policy implementations:
 
@@ -101,7 +101,7 @@ The algorithms layer implements various RL algorithms and training methods:
 - **SFT**: Supervised Fine-Tuning
 - **Custom Loss Functions**: Extensible loss function framework
 
-### Data & Environments
+### Data and Environments
 
 The data layer handles data processing, dataset management, and environment interactions:
 
@@ -202,9 +202,9 @@ class CustomPolicy(PolicyInterface):
 The following sections provide detailed API documentation for each component:
 
 - [Distributed Computing](nemo_rl/nemo_rl.distributed): VirtualCluster, WorkerGroup, and distributed utilities
-- [Models & Policies](nemo_rl/nemo_rl.models): Policy interfaces, generation backends, and model implementations
+- [Models and Policies](nemo_rl/nemo_rl.models): Policy interfaces, generation backends, and model implementations
 - [Algorithms](nemo_rl/nemo_rl.algorithms): RL algorithms, loss functions, and training utilities
-- [Data & Environments](nemo_rl/nemo_rl.data): Dataset interfaces, environment abstractions, and data processing
+- [Data and Environments](nemo_rl/nemo_rl.data): Dataset interfaces, environment abstractions, and data processing
 - [Utilities](nemo_rl/nemo_rl.utils): Logging, configuration, and utility functions
 - [Auto-Generated Reference](auto-generated): Complete API reference with all functions, classes, and parameters
 - [Complete API Reference](nemo_rl/nemo_rl): Full auto-generated documentation for all modules

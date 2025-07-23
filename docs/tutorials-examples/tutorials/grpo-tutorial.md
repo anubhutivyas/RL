@@ -10,7 +10,7 @@ modality: "universal"
 
 # GRPO Tutorial: Group Relative Policy Optimization
 
-Welcome to the Group Relative Policy Optimization (GRPO) tutorial! This advanced guide will teach you how to train language models using group-based reinforcement learning techniques with NeMo RL.
+Welcome to the Group Relative Policy Optimization (GRPO) tutorial. This advanced guide will teach you how to train language models using group-based reinforcement learning techniques with NeMo RL.
 
 ## What You'll Learn
 
@@ -54,7 +54,7 @@ Learn proven techniques for successful GRPO.
 
 ## Step 1: Understanding GRPO
 
-### **What is Group Relative Policy Optimization?**
+### **Group Relative Policy Optimization Overview**
 
 Group Relative Policy Optimization (GRPO) is an advanced reinforcement learning technique that trains models using group-based comparisons. Unlike DPO which uses pairwise preferences, GRPO operates on groups of responses and learns relative preferences within groups.
 
@@ -81,6 +81,31 @@ GRPO uses group-based loss functions that:
 2. **Learn relative preferences** between group members
 3. **Optimize policy** based on group rankings
 4. **Maintain balance** across different preference dimensions
+
+### **Quickstart Example**
+
+```python
+from nemo_rl.algorithms import grpo_train
+from nemo_rl.models import HuggingFacePolicyWorker
+from nemo_rl.distributed import RayVirtualCluster, RayWorkerGroup
+from nemo_rl.algorithms.loss_functions import ClippedPGLossFn
+
+# Set up distributed environment
+cluster = RayVirtualCluster([4, 4])  # 2 nodes, 4 GPUs each
+worker_group = RayWorkerGroup(cluster, HuggingFacePolicyWorker)
+
+# Run GRPO training
+grpo_train(
+    policy=worker_group,
+    dataloader=dataloader,
+    loss_fn=ClippedPGLossFn,
+    task_to_env=environments,
+    logger=logger,
+    checkpointer=checkpoint_manager,
+    grpo_save_state=save_state,
+    master_config=config
+)
+```
 
 ## Step 2: Group Formation
 
@@ -365,4 +390,4 @@ In this tutorial, you learned:
 - ✅ **Evaluation**: Assessing model performance in group scenarios
 - ✅ **Best Practices**: Proven techniques for successful GRPO
 
-You're now ready to apply GRPO to advanced reinforcement learning scenarios and deploy group-optimized models in production! 
+You're now ready to apply GRPO to advanced reinforcement learning scenarios and deploy group-optimized models in production. 

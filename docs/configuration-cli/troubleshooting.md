@@ -1,3 +1,13 @@
+---
+description: "Comprehensive troubleshooting guide for NeMo RL covering common errors, configuration issues, and solutions for different deployment scenarios"
+categories: ["deployment-operations"]
+tags: ["troubleshooting", "debugging", "errors", "configuration", "support"]
+personas: ["mle-focused", "admin-focused", "devops-focused"]
+difficulty: "intermediate"
+content_type: "reference"
+modality: "universal"
+---
+
 # Troubleshooting
 
 This guide covers common issues, error messages, and solutions for NeMo RL. If you encounter a problem not covered here, please check the [GitHub Issues](https://github.com/your-repo/issues) or create a new one.
@@ -81,6 +91,56 @@ ValidationError: Invalid configuration parameter
    ```bash
    python -m nemo_rl.config template --algorithm dpo --output dpo.yaml
    ```
+
+### DevOps Automation for Configuration Management
+
+For DevOps professionals managing multiple environments:
+
+```yaml
+# config-management.yaml
+environments:
+  development:
+    algorithm:
+      batch_size: 2
+      learning_rate: 1e-5
+    model:
+      use_cache: true
+      torch_dtype: "float16"
+  
+  staging:
+    algorithm:
+      batch_size: 4
+      learning_rate: 1e-5
+    model:
+      use_cache: false
+      torch_dtype: "float16"
+  
+  production:
+    algorithm:
+      batch_size: 8
+      learning_rate: 5e-6
+    model:
+      use_cache: false
+      torch_dtype: "bfloat16"
+```
+
+```bash
+# Automated configuration deployment
+#!/bin/bash
+ENVIRONMENT=$1
+CONFIG_FILE="configs/${ENVIRONMENT}.yaml"
+
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "Configuration file $CONFIG_FILE not found"
+    exit 1
+fi
+
+# Validate configuration
+python -m nemo_rl.config validate --config "$CONFIG_FILE"
+
+# Deploy with environment-specific settings
+uv run examples/run_grpo_math.py --config "$CONFIG_FILE"
+```
 
 (configuration-issues)=
 ## Configuration Issues

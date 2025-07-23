@@ -6,11 +6,77 @@ This section documents the distributed computing abstractions in NeMo RL, which 
 
 NeMo RL's distributed computing layer is built around Ray and provides abstractions for resource management, process isolation, coordination, and communication. The key components are designed to scale seamlessly from single GPU to thousands of GPUs.
 
+## Ray Configuration
+
+NeMo RL requires specific Ray configuration:
+
+```python
+import ray
+
+# Initialize Ray with GPU support
+ray.init(
+    num_cpus=8,
+    num_gpus=4,
+    object_store_memory=1000000000,  # 1GB
+    _memory=2000000000,  # 2GB
+    ignore_reinit_error=True
+)
+```
+
+### Environment Variables for Ray
+
+```bash
+# Ray configuration
+export RAY_OBJECT_STORE_MEMORY=1000000000
+export RAY_DEDUP_VAR_NAMES=1
+export RAY_DISABLE_IMPORT_WARNING=1
+
+# NeMo RL specific
+export NRL_VIRTUAL_CLUSTER_MAX_RETRIES=6
+```
+
 ## Core Components
 
 ### RayVirtualCluster
 
 The `RayVirtualCluster` class provides a basic abstraction on top of Ray Placement Groups that allows you to section off compute resources for WorkerGroups to run on as though they had their own cluster.
+
+#### High Availability Configuration for DevOps
+
+For production deployments requiring high availability:
+
+```python
+# Multi-zone cluster configuration
+cluster_config = {
+    "zones": ["us-west1-a", "us-west1-b", "us-west1-c"],
+    "nodes_per_zone": 2,
+    "gpus_per_node": 8,
+    "failover_enabled": True,
+    "health_check_interval": 30
+}
+
+# Initialize high-availability cluster
+cluster = RayVirtualCluster(
+    bundle_ct_per_node_list=[8, 8, 8, 8, 8, 8],  # 6 nodes across 3 zones
+    **cluster_config
+)
+
+# Monitor cluster health
+def monitor_cluster_health(cluster):
+    """Monitor cluster health for DevOps teams"""
+    health_metrics = {
+        'active_nodes': len(cluster.get_placement_groups()),
+        'gpu_utilization': get_gpu_utilization(),
+        'memory_usage': get_memory_usage(),
+        'network_latency': measure_network_latency()
+    }
+    
+    # Alert if health metrics exceed thresholds
+    if health_metrics['gpu_utilization'] < 0.7:
+        send_alert("Low GPU utilization detected")
+    
+    return health_metrics
+```
 
 ```python
 class RayVirtualCluster:

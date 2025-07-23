@@ -94,6 +94,35 @@ GPUS_PER_NODE=8 \
 sbatch ray.sub \
    ...
 ```
+
+#### Security Considerations for Cluster Administrators
+
+For production deployments, implement these security measures:
+
+```bash
+# Network security
+export RAY_DISABLE_IMPORT_WARNING=1
+export RAY_DEDUP_VAR_NAMES=1
+
+# Resource isolation
+export RAY_OBJECT_STORE_MEMORY=1000000000
+export NRL_VIRTUAL_CLUSTER_MAX_RETRIES=6
+
+# Monitoring and logging
+export RAY_ENABLE_MULTI_PROCESSES_CPU_COUNT=1
+export RAY_ENABLE_MULTI_PROCESSES_GPU_COUNT=1
+```
+
+#### Resource Allocation Guidelines
+
+For optimal performance across different workloads:
+
+| Workload Type | GPUs per Node | Memory (GB) | CPU Cores | Network Bandwidth |
+|---------------|---------------|-------------|-----------|-------------------|
+| Small Model (1B) | 4-8 | 64-128 | 16-32 | 10Gbps |
+| Medium Model (7B) | 8-16 | 128-256 | 32-64 | 25Gbps |
+| Large Model (13B+) | 16+ | 256+ | 64+ | 100Gbps |
+
 #### Common Environment Configuration
 ``````{list-table}
 :header-rows: 1
