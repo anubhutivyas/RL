@@ -520,10 +520,8 @@ def create_aggregator(method: str, **kwargs) -> PairwiseRewardAggregator:
     aggregators = {
         "win_rate": WinRateAggregator,
         "individual_scores": IndividualScoreAggregator,
-        "elo_rating": EloRatingAggregator,
         "weighted_win_loss": WeightedWinLossAggregator,
         "combined": CombinedAggregator,
-        "bradley_terry": BradleyTerryAggregator,
         "simple_tiebreaker": SimpleTiebreakerAggregator,
     }
     
