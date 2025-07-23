@@ -203,11 +203,15 @@ class DTensorPolicyWorker:
             else None,
         )
 
-        self._is_reward_model = self.cfg.get("reward_model_cfg", {}).get("enabled", False)
+        self._is_reward_model = self.cfg.get("reward_model_cfg", {}).get(
+            "enabled", False
+        )
         if self._is_reward_model:
             # Ensure sequence packing is disabled.
             if self.enable_seq_packing:
-                raise NotImplementedError("Sequence packing is not supported for reward models")
+                raise NotImplementedError(
+                    "Sequence packing is not supported for reward models"
+                )
             # Load model as a Reward Model.
             rm_type = self.cfg["reward_model_cfg"]["reward_model_type"]
             if rm_type == "bradley_terry":
@@ -227,9 +231,7 @@ class DTensorPolicyWorker:
                     )
                     model_config.num_labels = 1
             else:
-                raise ValueError(
-                    f"Unknown reward model type: {rm_type}"
-                )
+                raise ValueError(f"Unknown reward model type: {rm_type}")
         else:
             model_class = AutoModelForCausalLM
 

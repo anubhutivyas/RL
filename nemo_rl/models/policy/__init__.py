@@ -38,6 +38,7 @@ class RewardModelConfig(TypedDict):
     enabled: bool
     reward_model_type: str
 
+
 class MegatronOptimizerConfig(TypedDict):
     optimizer: str
     lr: float
