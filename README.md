@@ -331,7 +331,6 @@ For distributed DPO training across multiple nodes, modify the following script 
 NUM_ACTOR_NODES=2
 
 COMMAND="uv run ./examples/run_dpo.py --config examples/configs/dpo.yaml cluster.num_nodes=2 cluster.gpus_per_node=8 dpo.val_global_batch_size=32 checkpointing.checkpoint_dir='results/dpo_llama81_2nodes' logger.wandb_enabled=True logger.wandb.name='dpo-llama1b'" \
-RAY_DEDUP_LOGS=0 \
 CONTAINER=YOUR_CONTAINER \
 MOUNTS="$PWD:$PWD" \
 sbatch \
@@ -376,7 +375,6 @@ For distributed RM training across multiple nodes, modify the following script f
 NUM_ACTOR_NODES=2
 
 COMMAND="uv run ./examples/run_rm.py --config examples/configs/rm.yaml cluster.num_nodes=2 cluster.gpus_per_node=8 checkpointing.checkpoint_dir='results/rm_llama1b_2nodes' logger.wandb_enabled=True logger.wandb.name='rm-llama1b-2nodes'" \
-RAY_DEDUP_LOGS=0 \
 CONTAINER=YOUR_CONTAINER \
 MOUNTS="$PWD:$PWD" \
 sbatch \
