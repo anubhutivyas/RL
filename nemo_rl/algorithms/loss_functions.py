@@ -568,7 +568,7 @@ class DPOLossFn(PreferenceLoss):
 
         self.loss_type = LossType.SEQUENCE_LEVEL
 
-    def _preference_loss(
+    def _dpo_loss(
         self,
         next_token_logits: Tensor,
         data: BatchedDataDict[DPOLossDataDict],
@@ -619,7 +619,7 @@ class DPOLossFn(PreferenceLoss):
         if self.preference_average_log_probs:
             rewards = rewards / token_mask.sum(-1).clamp(min=1)
 
-        return super()._preference_loss(
+        return self._preference_loss(
             rewards, sample_mask, global_valid_seqs, self.reference_policy_kl_penalty
         )
 
@@ -661,7 +661,7 @@ class DPOLossFn(PreferenceLoss):
             accuracy,
             rewards_chosen_mean,
             rewards_rejected_mean,
-        ) = self._preference_loss(
+        ) = self._dpo_loss(
             next_token_logits,
             data,
             global_valid_seqs,
