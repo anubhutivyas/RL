@@ -205,6 +205,9 @@ class DTensorPolicyWorker:
 
         self._is_reward_model = self.cfg.get("reward_model_cfg", {}).get("enabled", False)
         if self._is_reward_model:
+            # Ensure sequence packing is disabled.
+            if self.enable_seq_packing:
+                raise NotImplementedError("Sequence packing is not supported for reward models")
             # Load model as a Reward Model.
             rm_type = self.cfg["reward_model_cfg"]["reward_model_type"]
             if rm_type == "bradley_terry":
@@ -676,20 +679,16 @@ class DTensorPolicyWorker:
                     with DTensorPolicyWorker.train_context(context_parallel_ctx):
                         with torch.autocast(device_type="cuda", dtype=self.dtype):
                             if self._is_reward_model:
-                                outputs = self.model(
-                                    input_ids=input_ids,
-                                    attention_mask=attention_mask,
-                                    position_ids=position_ids,
-                                    use_cache=False,
-                                )
-                            else:
-                                outputs = self.model(
-                                    input_ids=input_ids,
-                                    attention_mask=attention_mask,
-                                    position_ids=position_ids,
-                                    use_cache=False,
-                                    flash_attn_kwargs=flash_attn_kwargs,
-                                )
+                                # Reward models don't support sequence packing so there
+                                # should be no specific flash attention arguments.
+                                assert not flash_attn_kwargs
+                            outputs = self.model(
+                                input_ids=input_ids,
+                                attention_mask=attention_mask,
+                                position_ids=position_ids,
+                                use_cache=False,
+                                flash_attn_kwargs=flash_attn_kwargs,
+                            )
                         # Get logprobs
                         if not hasattr(outputs, "logits"):
                             logits = self.model.lm_head(outputs.last_hidden_state)
