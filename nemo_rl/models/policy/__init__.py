@@ -34,6 +34,10 @@ class SequencePackingConfig(TypedDict):
     algorithm: str
 
 
+class RewardModelConfig(TypedDict):
+    enabled: bool
+    reward_model_type: str
+
 class MegatronOptimizerConfig(TypedDict):
     optimizer: str
     lr: float
@@ -134,6 +138,7 @@ class PolicyConfig(TypedDict):
         int
     ]  # used in static batched (framework) generation
     precision: str
+    reward_model_cfg: NotRequired[RewardModelConfig]
     dtensor_cfg: DTensorConfig
     megatron_cfg: NotRequired[MegatronConfig]
     dynamic_batching: DynamicBatchingConfig

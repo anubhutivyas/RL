@@ -203,8 +203,11 @@ class DTensorPolicyWorker:
             else None,
         )
 
-        if "reward_model_type" in self.cfg:
-            if self.cfg["reward_model_type"] == "bradley_terry":
+        self._is_reward_model = self.cfg.get("reward_model_cfg", {}).get("enabled", False)
+        if self._is_reward_model:
+            # Load model as a Reward Model.
+            rm_type = self.cfg["reward_model_cfg"]["reward_model_type"]
+            if rm_type == "bradley_terry":
                 model_class = AutoModelForSequenceClassification
                 if model_config.num_labels != 1:
                     # For Bradley-Terry reward models, the linear head has a single output.
@@ -222,7 +225,7 @@ class DTensorPolicyWorker:
                     model_config.num_labels = 1
             else:
                 raise ValueError(
-                    f"Unknown reward model type: {self.cfg['reward_model_type']}"
+                    f"Unknown reward model type: {rm_type}"
                 )
         else:
             model_class = AutoModelForCausalLM
@@ -672,7 +675,7 @@ class DTensorPolicyWorker:
 
                     with DTensorPolicyWorker.train_context(context_parallel_ctx):
                         with torch.autocast(device_type="cuda", dtype=self.dtype):
-                            if self.cfg["reward_model_type"] == "bradley_terry":
+                            if self._is_reward_model:
                                 outputs = self.model(
                                     input_ids=input_ids,
                                     attention_mask=attention_mask,
