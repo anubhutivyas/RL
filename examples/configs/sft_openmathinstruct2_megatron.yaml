@@ -72,7 +72,7 @@ policy:
       start_weight_decay: 0.01
       weight_decay_incr_style: constant
     sequence_parallel: true
-    tensor_model_parallel_size: 2
+    tensor_model_parallel_size: 1
 
     freeze_moe_router: true
     moe_router_dtype: "fp64"
@@ -133,5 +133,5 @@ logger:
 
 cluster:
   gpus_per_node: 8
-  num_nodes: 4
+  num_nodes: 1
                                                   
