@@ -122,10 +122,12 @@ def calculate_rewards(
             - terminateds: Tensor of booleans indicating if an episode ended naturally.
     """
     # Extract message logs for environment (most recent interaction)
+    print("yz debug; batch:", batch)
     to_env = [
-        get_keys_from_message_log(batch["message_log"][i], ["role", "content"])
+        get_keys_from_message_log(batch["raw_messages"][i] + [batch["message_log"][i][-1]], ["role", "content"])
         for i in range(len(batch["message_log"]))
     ]
+    print("yz debug; to_env:", to_env)
     task_names = batch["task_name"]
 
     # Group messages by task type

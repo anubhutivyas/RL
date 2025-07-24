@@ -71,8 +71,9 @@ class JsonlinesDataset:
         # this will also contain system prompt
         user_message = {"role": "user"}
 
+        extra_env_info = {}
         for m in single_message:
-            if m["role"] == "user":
+            if m["role"] == "user" and "metadata" in m:
                 # need to be deepcopy to avoid overwriting the original metadata
                 extra_env_info = deepcopy(m["metadata"])
 
@@ -102,6 +103,7 @@ class JsonlinesDataset:
             "idx": idx,
             "task_name": data["task_name"],
             "dataset": data["dataset"],
+            "raw_messages": data["messages"][0],
         }
 
         return output
@@ -206,6 +208,7 @@ def rl_collate_fn(data_batch: List[DatumSpec]) -> BatchedDataDict:
     # Extract stop_strings if present
     stop_strings = [datum.get("stop_strings", None) for datum in data_batch]
     dataset_names = [datum.get("dataset", None) for datum in data_batch]
+    raw_messages = [datum.get("raw_messages", None) for datum in data_batch]
 
     output = BatchedDataDict(
         message_log=message_log,
@@ -217,6 +220,7 @@ def rl_collate_fn(data_batch: List[DatumSpec]) -> BatchedDataDict:
         batch_max_length=batch_max_length,
         stop_strings=stop_strings,
         dataset_names=dataset_names,
+        raw_messages=raw_messages,
     )
     return output
 

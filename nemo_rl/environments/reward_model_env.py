@@ -165,9 +165,17 @@ class RewardModelEnvironment(EnvironmentInterface):
         """
         # Process message logs to extract content after </think> for assistant messages
         processed_message_logs = []
+        format_rewards = []
         for message_log in message_logs:
+            assert message_log[-1]["role"] == "assistant"
+            # TODO: decide based on system
+            if "<think>" in message_log[-1]["content"] or "</think>" in message_log[-1]["content"]:
+                format_rewards.append(-3.0)
+            else:
+                format_rewards.append(0)
             processed_messages = []
             for msg in message_log:
+                print("yz debug; msg:", msg)
                 if msg["role"] == "assistant":
                     # Extract content after </think> if it exists
                     content = msg["content"]
@@ -179,7 +187,9 @@ class RewardModelEnvironment(EnvironmentInterface):
                 else:
                     processed_messages.append(msg)
             processed_message_logs.append(processed_messages)
+            print("yz debug; processed_messages:", processed_messages)
         
+        assert len(format_rewards) == len(processed_message_logs)
         # Create data in the format expected by DTensorRewardModelWorker
         reward_data = BatchedDataDict()
         reward_data["messages"] = processed_message_logs
@@ -197,6 +207,11 @@ class RewardModelEnvironment(EnvironmentInterface):
             rewards = rewards_tensor.cpu().numpy().tolist()
         else:
             rewards = rewards_tensor
+        
+        for i in range(len(format_rewards)):
+            if format_rewards[i] != 0:
+                print("yz debug; low format reward")
+                rewards[i] = format_rewards[i]
 
         
         # Create observations with meaningful content based on rewards (like math environment)
