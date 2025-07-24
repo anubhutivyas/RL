@@ -490,6 +490,7 @@ class MegatronPolicyWorker:
         model_cfg.sequence_parallel = self.cfg["megatron_cfg"]["sequence_parallel"]
         model_cfg.bf16 = self.dtype == torch.bfloat16
         model_cfg.fp16 = self.dtype == torch.float16
+
         if model_cfg.fp16:
             assert not model_cfg.bf16, "fp16 and bf16 cannot be used together"
             model_cfg.params_dtype = torch.float16
@@ -498,6 +499,22 @@ class MegatronPolicyWorker:
             model_cfg.params_dtype = torch.bfloat16
         else:
             model_cfg.params_dtype = torch.float32
+
+        ## TODO: clean this up. Which of these should we actually make configurable and which should we hard-code?
+        if self.cfg["megatron_cfg"]["fp8_cfg"]["enabled"]:
+            ## one of e4m3, hybrid (or none)
+            model_cfg.fp8 = self.cfg["megatron_cfg"]["fp8_cfg"]["fp8"]
+            model_cfg.fp8_recipe = self.cfg["megatron_cfg"]["fp8_cfg"]["fp8_recipe"]
+            model_cfg.fp8_param = self.cfg["megatron_cfg"]["fp8_cfg"]["fp8_param"]
+            model_cfg.fp8_amax_history_len = 1024  ## TODO: make configurable?
+            model_cfg.fp8_amax_compute_algo = "max"  ## TODO: make configurable?
+            model_cfg.fp8_dot_product_attention = self.cfg["megatron_cfg"]["fp8_cfg"][
+                "fp8_dot_product_attention"
+            ]
+            model_cfg.fp8_multi_head_attention = self.cfg["megatron_cfg"]["fp8_cfg"][
+                "fp8_multi_head_attention"
+            ]
+
         model_cfg.pipeline_dtype = dtype_map[self.cfg["megatron_cfg"]["pipeline_dtype"]]
         model_cfg.parallel_output = True
         if self.cfg["megatron_cfg"]["activation_checkpointing"]:
