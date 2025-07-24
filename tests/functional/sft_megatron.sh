@@ -22,7 +22,7 @@ mkdir -p $EXP_DIR $LOG_DIR
 
 cd $PROJECT_ROOT
 uv run $PROJECT_ROOT/examples/run_sft.py \
-    --config $PROJECT_ROOT/examples/configs/recipes/llm/sft-llama3.1-8b-instruct-1n8g-megatron.yaml \
+    --config $PROJECT_ROOT/examples/configs/recipes/llm/sft-llama3.1-8b-instruct-1n8g-megatron.v2.yaml \
     policy.model_name=Qwen/Qwen3-0.6B \
     cluster.gpus_per_node=2 \
     sft.max_num_steps=3 \
@@ -40,5 +40,5 @@ uv run $PROJECT_ROOT/examples/run_sft.py \
 uv run tests/json_dump_tb_logs.py $LOG_DIR --output_path $JSON_METRICS
 
 uv run tests/check_metrics.py $JSON_METRICS \
-  'data["train/loss"]["3"] < 5.9' \
+  'data["train/loss"]["3"] < 5' \
 
