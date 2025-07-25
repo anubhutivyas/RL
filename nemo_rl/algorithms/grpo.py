@@ -538,6 +538,7 @@ def create_aggregation_prompts(
 def combine_training_data(
     generation_train_data: BatchedDataDict[ClippedPGLossDataDict],
     aggregation_train_data: BatchedDataDict[ClippedPGLossDataDict],
+    shuffle: bool = True,
 ) -> BatchedDataDict[ClippedPGLossDataDict]:
     """Combine training data from both generation and aggregation stages.
     
@@ -574,17 +575,18 @@ def combine_training_data(
         "sample_mask": torch.cat([generation_train_data["sample_mask"], aggregation_train_data["sample_mask"]], dim=0),
     })
     
-    # Shuffle the combined data to mix generation and aggregation samples
-    total_samples = combined_data["input_ids"].shape[0]
-    shuffle_indices = torch.randperm(total_samples)
-    
-    # Apply shuffle to all tensors
-    combined_data["input_ids"] = combined_data["input_ids"][shuffle_indices]
-    combined_data["input_lengths"] = combined_data["input_lengths"][shuffle_indices]
-    combined_data["advantages"] = combined_data["advantages"][shuffle_indices]
-    combined_data["generation_logprobs"] = combined_data["generation_logprobs"][shuffle_indices]
-    combined_data["token_mask"] = combined_data["token_mask"][shuffle_indices]
-    combined_data["sample_mask"] = combined_data["sample_mask"][shuffle_indices]
+    # Optionally shuffle the combined data to mix generation and aggregation samples
+    if shuffle:
+        total_samples = combined_data["input_ids"].shape[0]
+        shuffle_indices = torch.randperm(total_samples)
+
+        # Apply shuffle to all tensors
+        combined_data["input_ids"] = combined_data["input_ids"][shuffle_indices]
+        combined_data["input_lengths"] = combined_data["input_lengths"][shuffle_indices]
+        combined_data["advantages"] = combined_data["advantages"][shuffle_indices]
+        combined_data["generation_logprobs"] = combined_data["generation_logprobs"][shuffle_indices]
+        combined_data["token_mask"] = combined_data["token_mask"][shuffle_indices]
+        combined_data["sample_mask"] = combined_data["sample_mask"][shuffle_indices]
     
     return combined_data
 
@@ -1284,6 +1286,7 @@ def grpo_train(
                     train_data = combine_training_data(
                         train_data,
                         aggregation_train_data,
+                        shuffle=master_config["grpo"].get("shuffle_combined_data", True),
                     )
 
                 train_data.to("cpu")
