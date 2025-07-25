@@ -14,7 +14,6 @@ exit_if_max_steps_reached
 
 # Run the experiment
 cd $PROJECT_ROOT
-export HF_HOME="~/.cache/huggingface/"
 export PYTHONPATH=$HF_HOME/modules:$PYTHONPATH
 uv run examples/run_grpo_math.py \
     --config $CONFIG_PATH \
