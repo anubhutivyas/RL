@@ -842,8 +842,6 @@ def grpo_train(
                             if last_assistant_response is not None:
                                 if reasoning_split_word and reasoning_split_word in last_assistant_response:
                                     prompt_responses.append(last_assistant_response.split(reasoning_split_word)[-1].lstrip())
-                                else:
-                                    prompt_responses.append(last_assistant_response)
                             else:
                                 raise ValueError(f"No assistant response found for prompt {i} generation {j} which is {original_repeated_batch['message_log'][idx]}")
                         # if no assistant response, use the last assistant response from the previous generation
@@ -851,7 +849,7 @@ def grpo_train(
                             prompt_responses.append(last_assistant_response[:5000])
 
                         prompt_rewards.extend(all_generation_rewards[i * num_generations : (i + 1) * num_generations].tolist())
-                        
+                        # Randomly select a subset of responses instead of using all
                         # Choose a random number of responses to select (between 1 and total available)
                         num_to_select = random.randint(1, len(prompt_responses))
                         indices_to_select = random.sample(range(len(prompt_responses)), num_to_select)
