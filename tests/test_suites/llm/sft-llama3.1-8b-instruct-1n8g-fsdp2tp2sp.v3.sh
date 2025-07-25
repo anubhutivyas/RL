@@ -37,6 +37,6 @@ uv run tests/json_dump_tb_logs.py $LOG_DIR --output_path $JSON_METRICS
 if [[ $(jq 'to_entries | .[] | select(.key == "train/loss") | .value | keys | map(tonumber) | max' $JSON_METRICS) -ge $MAX_STEPS ]]; then
     uv run tests/check_metrics.py $JSON_METRICS \
         'data["train/loss"]["1"] < 0.5' \
-        'data["train/loss"]["250"] < 0.4' \
+        'data["train/loss"]["250"] < 0.36' \
         'max(data["ray/node.0.gpu.0.mem_gb"]) < 45'
 fi 
