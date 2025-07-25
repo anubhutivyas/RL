@@ -83,6 +83,7 @@ class GRPOConfig(TypedDict):
     aggregation_prompt_template: str  # Template for aggregation prompts
     first_stage_generation_max_seq_len: int  # Max new tokens for first stage generation (controls generation length, not total sequence length)
     aggregation_format_checking: bool  # Whether to enable format checking for aggregation stage
+    num_aggregation_prompts_per_original: int  # Number of aggregation prompts to create per original prompt
 
 
 class GRPOSaveState(TypedDict):
@@ -808,7 +809,9 @@ def grpo_train(
                     reasoning_split_word = get_reasoning_split_word(master_config["env"])
                     
                     # Group responses by original prompt (using ALL generation responses)
-                    generation_responses = []
+                    generation_responses_for_aggregation = []
+                    num_aggregation_prompts_per_original = master_config["grpo"].get("num_aggregation_prompts_per_original", 1)
+                    
                     for i in range(num_original_prompts):
                         prompt_responses = []
                         for j in range(num_generations):
@@ -826,23 +829,36 @@ def grpo_train(
                         # if no assistant response, use the last assistant response from the previous generation
                         if len(prompt_responses) == 0:
                             prompt_responses.append(last_assistant_response[:5000])
-                        # Randomly select a subset of responses instead of using all
-                        # Choose a random number of responses to select (between 1 and total available)
-                        num_to_select = random.randint(1, len(prompt_responses))
-                        # Randomly sample that many responses
-                        selected_responses = random.sample(prompt_responses, num_to_select)
-                        generation_responses.append(selected_responses)
+                        
+                        # Create multiple aggregation prompts per original prompt
+                        for agg_idx in range(num_aggregation_prompts_per_original):
+                            # Sample from agg_idx+1 to len(prompt_responses), weigh more on the higher end
+                            min_responses = agg_idx + 1
+                            max_responses = len(prompt_responses)
+                            
+                            if min_responses < max_responses:
+                                num_to_select = random.randint(min_responses, max_responses)
+                            else:
+                                # If we've exceeded available responses, use all of them
+                                num_to_select = max_responses
+                            
+                            # Randomly sample that many responses
+                            selected_responses = random.sample(prompt_responses, num_to_select)
+                            generation_responses_for_aggregation.append(selected_responses)
                     
-                    # Create aggregation prompts using the original unfiltered batch
+                    # Create expanded batch to match the number of aggregation prompts
+                    expanded_batch = batch.repeat_interleave(num_aggregation_prompts_per_original)
+                    
+                    # Create aggregation prompts using the expanded batch
                     aggregation_batch_template = create_aggregation_prompts(
-                        batch,  # Use original unfiltered batch 
-                        generation_responses, 
+                        expanded_batch,  # Use expanded batch to match number of aggregation prompts
+                        generation_responses_for_aggregation, 
                         master_config["grpo"]["aggregation_prompt_template"],
                         tokenizer,
                         master_config["grpo"]["aggregation_format_checking"],
                     )
                     
-                    print(f"▶ Created aggregation prompts from {len(batch['message_log'])} original prompts")
+                    print(f"▶ Created {len(expanded_batch['message_log'])} aggregation prompts from {len(batch['message_log'])} original prompts ({num_aggregation_prompts_per_original} per original)")
                     
                     # Repeat aggregation batch for multiple generations
                     aggregation_repeated_batch = aggregation_batch_template.repeat_interleave(
