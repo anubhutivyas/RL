@@ -623,7 +623,8 @@ class DPOLossFn(PreferenceLoss):
             rewards, sample_mask, global_valid_seqs, self.reference_policy_kl_penalty
         )
 
-    def __call__(
+    # TODO a cleaner typing fix would be required (probably that DPOLossFn should not inherit from PreferenceLoss)
+    def __call__( # type: ignore
         self,
         next_token_logits: Tensor,
         data: BatchedDataDict[DPOLossDataDict],
