@@ -17,6 +17,7 @@ grpo:
   
   # Aggregation stage configuration (disabled by default)
   enable_aggregation: false
+  max_judge_difficulty_loss_weight: 2.0
   first_stage_generation_max_seq_len: null
   aggregation_format_checking: true  # Whether to enable format checking for aggregation stage
   aggregation_prompt_template: |

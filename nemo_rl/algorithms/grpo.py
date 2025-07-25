@@ -13,6 +13,7 @@
 # limitations under the License.
 import os
 import random
+import math
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple, TypedDict, List
@@ -404,9 +405,11 @@ def filter_prompts_by_diversity(
 def create_aggregation_prompts(
     original_batch: BatchedDataDict[DatumSpec],
     generation_responses: List[List[str]],
+    generation_rewards: List[List[float]],
     aggregation_prompt_template: str,
     tokenizer,
     aggregation_format_checking: bool = True,
+    max_judge_difficulty_loss_weight: float = 2.0,
 ) -> BatchedDataDict[DatumSpec]:
     """Create aggregation prompts by combining original prompts with generation responses.
     
@@ -497,7 +500,19 @@ def create_aggregation_prompts(
         aggregation_env_info = deepcopy(original_batch["extra_env_info"][i])
         aggregation_env_info["format_checking"] = aggregation_format_checking  # Use configurable format checking for aggregation
         new_extra_env_info.append(aggregation_env_info)
-        new_loss_multiplier.append(original_batch["loss_multiplier"][i])
+        
+        # Calculate difficulty and set loss weight
+        rewards_for_prompt = generation_rewards[i]
+        if rewards_for_prompt:
+            correct_fraction = sum(r > 0 for r in rewards_for_prompt) / len(rewards_for_prompt)
+        else:
+            correct_fraction = 0.0
+
+        # Continuous loss weight based on difficulty
+        difficulty = 1.0 - correct_fraction  # 0=easiest,1=hardest
+        loss_weight = math.exp(math.log(max_judge_difficulty_loss_weight) * difficulty)  # ranges from 1.0 to 2.0
+
+        new_loss_multiplier.append(original_batch["loss_multiplier"][i] * loss_weight)
         new_task_name.append(original_batch["task_name"][i])
         # TODO: add back dataset
         # new_dataset.append(original_batch["dataset"][i])
@@ -808,9 +823,13 @@ def grpo_train(
                     reasoning_split_word = get_reasoning_split_word(master_config["env"])
                     
                     # Group responses by original prompt (using ALL generation responses)
+                    all_generation_rewards = original_repeated_batch["total_reward"]
                     generation_responses = []
+                    generation_rewards_grouped = []
+
                     for i in range(num_original_prompts):
                         prompt_responses = []
+                        prompt_rewards = []
                         for j in range(num_generations):
                             idx = i * num_generations + j
                             # Extract assistant response from the message log - take the last assistant turn
@@ -821,25 +840,36 @@ def grpo_train(
                             if last_assistant_response is not None:
                                 if reasoning_split_word and reasoning_split_word in last_assistant_response:
                                     prompt_responses.append(last_assistant_response.split(reasoning_split_word)[-1].lstrip())
+                                else:
+                                    prompt_responses.append(last_assistant_response)
                             else:
                                 raise ValueError(f"No assistant response found for prompt {i} generation {j} which is {original_repeated_batch['message_log'][idx]}")
                         # if no assistant response, use the last assistant response from the previous generation
                         if len(prompt_responses) == 0:
                             prompt_responses.append(last_assistant_response[:5000])
-                        # Randomly select a subset of responses instead of using all
+
+                        prompt_rewards.extend(all_generation_rewards[i * num_generations : (i + 1) * num_generations].tolist())
+                        
                         # Choose a random number of responses to select (between 1 and total available)
                         num_to_select = random.randint(1, len(prompt_responses))
-                        # Randomly sample that many responses
-                        selected_responses = random.sample(prompt_responses, num_to_select)
+                        indices_to_select = random.sample(range(len(prompt_responses)), num_to_select)
+
+                        # Use these same indices to select both the responses and their rewards
+                        selected_responses = [prompt_responses[k] for k in indices_to_select]
+                        selected_rewards = [prompt_rewards[k] for k in indices_to_select]
+                        
                         generation_responses.append(selected_responses)
+                        generation_rewards_grouped.append(selected_rewards)
                     
                     # Create aggregation prompts using the original unfiltered batch
                     aggregation_batch_template = create_aggregation_prompts(
                         batch,  # Use original unfiltered batch 
-                        generation_responses, 
+                        generation_responses,
+                        generation_rewards_grouped,
                         master_config["grpo"]["aggregation_prompt_template"],
                         tokenizer,
                         master_config["grpo"]["aggregation_format_checking"],
+                        master_config["grpo"]["max_judge_difficulty_loss_weight"],
                     )
                     
                     print(f"▶ Created aggregation prompts from {len(batch['message_log'])} original prompts")
@@ -1206,6 +1236,11 @@ def grpo_train(
 
                 # Process aggregation data if aggregation training is enabled
                 if master_config["grpo"].get("enable_aggregation", False):
+                    # Update loss multipliers based on difficulty weights from the environment
+                    for i, meta in enumerate(aggregation_batch["extra_env_info"]):
+                        if 'loss_weight' in meta:
+                            aggregation_batch["loss_multiplier"][i] = meta['loss_weight']
+                    
                     # Create training data for aggregation
                     for i, message_log in enumerate(aggregation_batch["message_log"]):
                         for j, message in enumerate(message_log):
