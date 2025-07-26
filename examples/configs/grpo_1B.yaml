@@ -17,7 +17,6 @@ grpo:
   
   # Aggregation stage configuration (disabled by default)
   enable_aggregation: false
-  num_aggregation_prompts_per_original: 1
   first_stage_generation_max_seq_len: null
   aggregation_format_checking: true  # Whether to enable format checking for aggregation stage
   aggregation_prompt_template: |
