@@ -21,6 +21,7 @@ from contextlib import AbstractContextManager, contextmanager, nullcontext
 from typing import Any, Generator, Iterable, Optional, Set, Union, cast
 
 import ray
+from accelerate import init_empty_weights
 import torch
 from torch import nn
 from torch.distributed.checkpoint.state_dict import (
@@ -35,10 +36,11 @@ from torch.distributed.tensor.experimental import context_parallel
 from torch.distributed.tensor.experimental._attention import (
     set_rotate_method,
 )
-from transformers import AutoTokenizer, AutoProcessor
+from transformers import AutoTokenizer, AutoProcessor, AutoConfig
 from transformers.integrations.accelerate import find_tied_parameters
 from transformers.models.gemma3.modeling_gemma3 import Gemma3ForCausalLM
 
+from nemo_rl.models.policy.utils import resolve_model_class
 from nemo_rl.algorithms.interfaces import LossFunction, LossType
 from nemo_rl.algorithms.loss_functions import SequencePackingLossWrapper
 from nemo_rl.distributed.batched_data_dict import BatchedDataDict
@@ -210,8 +212,9 @@ class DTensorPolicyWorker:
             else None,
         )
 
-        full_state_dict = None
+        # DO NOT assume AutoModelForCausalLM, multimodal models can inherit from AutoModelForImageTextToText, AutoModelForTextToWaveform, etc.
         AutoModelClass = resolve_model_class(model_name)
+        full_state_dict = None
         if self.rank == 0:
             print(f"[Rank {self.rank}] Loading model {model_name} on CPU...")
             model = AutoModelClass.from_pretrained(
@@ -228,7 +231,7 @@ class DTensorPolicyWorker:
         # The actual weights will be broadcast from rank 0.
 
         with init_empty_weights():
-            self.model = AutoModelForCausalLM.from_config(
+            self.model = AutoModelClass.from_config(
                 model_config,
             )
 
@@ -609,6 +612,7 @@ class DTensorPolicyWorker:
                     itertools.chain(mb_iterator, dummy_iterator)
                 ):
                     with torch.autocast(device_type="cuda", dtype=self.dtype):
+
                         if self.enable_seq_packing:
                             input_ids = mb.get("input_ids").cuda()
                             input_ids, position_ids, _ = pack_sequences(
@@ -645,7 +649,9 @@ class DTensorPolicyWorker:
 
                         # add vlm kwargs to model call
                         vlm_kwargs = mb.get_multimodal_dict(as_tensors=True, device=input_ids.device)
-                        
+                        flash_attn_kwargs_wrap = {}
+                        if len(vlm_kwargs) == 0:
+                            flash_attn_kwargs_wrap['flash_attn_kwargs'] = flash_attn_kwargs
 
                     context_parallel_ctx = None
                     if self.cp_size > 1:
@@ -673,7 +679,7 @@ class DTensorPolicyWorker:
                                 attention_mask=attention_mask,
                                 position_ids=position_ids,
                                 use_cache=False,
-                                flash_attn_kwargs=flash_attn_kwargs,
+                                **flash_attn_kwargs_wrap,
                                 **vlm_kwargs,
                             )
 
@@ -896,9 +902,11 @@ class DTensorPolicyWorker:
                 step += 1
                 input_ids = lp_batch.get("input_ids").cuda()
                 input_lengths = lp_batch.get("input_lengths")
+                vlm_kwargs = lp_batch.get_multimodal_dict(as_tensors=True, device=input_ids.device)
 
                 batch_size, seq_len = input_ids.shape
                 if self.enable_seq_packing:
+                    assert len(vlm_kwargs) == 0, "multimodal kwargs are not supported for sequence packing"
                     input_ids, position_ids, _ = pack_sequences(
                         input_ids=input_ids,
                         input_lengths=input_lengths,
@@ -928,7 +936,7 @@ class DTensorPolicyWorker:
                         seq_len, device=input_ids.device
                     ).repeat(batch_size, 1)
                     flash_attn_kwargs = {}
-
+                
                 with torch.autocast(device_type="cuda", dtype=self.dtype):
                     # DTensor requires the casual attention kernel to hit,
                     # yet our attention mask above is not always all 1s
@@ -937,7 +945,12 @@ class DTensorPolicyWorker:
                     attention_mask_input_all_ones = torch.ones(
                         (batch_size, seq_len), dtype=torch.long, device=input_ids.device
                     )
-                    vlm_kwargs = lp_batch.get_multimodal_dict(as_tensors=True, device=input_ids.device)
+                
+                # wrap flash_attn_kwargs
+                flash_attn_kwargs_wrap = {}
+                # only add flash_attn_kwargs if there are no multimodal kwargs
+                if len(vlm_kwargs) == 0:
+                    flash_attn_kwargs_wrap['flash_attn_kwargs'] = flash_attn_kwargs
 
                 context_parallel_ctx = None
                 if self.cp_size > 1:
@@ -961,7 +974,7 @@ class DTensorPolicyWorker:
                             attention_mask=attention_mask_input_all_ones,
                             position_ids=position_ids,
                             use_cache=False,
-                            flash_attn_kwargs=flash_attn_kwargs,
+                            **flash_attn_kwargs_wrap,
                             **vlm_kwargs,
                         )
 
