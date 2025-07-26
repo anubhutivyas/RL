@@ -576,3 +576,36 @@ def tiny_gemma3_model_path():
     tokenizer.save_pretrained(model_path)
     del model, tokenizer
     yield model_path
+
+
+@pytest.fixture(scope="session", autouse=True)
+def tiny_nemotron5_h_model_path():
+    """Fixture that returns a path to a tiny nemotron model with a dummy tokenizer."""
+    import shutil
+
+    from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
+
+    config = AutoConfig.from_pretrained(
+        "nvidia/Nemotron-H-8B-Base-8K", trust_remote_code=True
+    )
+    config.hybrid_override_pattern = "M*-"
+    config.num_hidden_layers = 3
+    config.intermediate_size = 32
+    config.hidden_size = 256
+    config.num_attention_heads = 8
+    config.mamba_num_heads = 8
+    config.num_key_value_heads = 8
+    config.n_groups = 1
+
+    model_path = TEST_ASSETS.TINY_NEMOTRON5_H_MODEL_PATH
+
+    model = AutoModelForCausalLM.from_config(config, trust_remote_code=True)
+    tokenizer = AutoTokenizer.from_pretrained(
+        "nvidia/Nemotron-H-8B-Base-8K", trust_remote_code=True
+    )
+
+    shutil.rmtree(model_path, ignore_errors=True)
+    model.save_pretrained(model_path)
+    tokenizer.save_pretrained(model_path)
+    del model, tokenizer
+    yield model_path
