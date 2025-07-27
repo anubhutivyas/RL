@@ -27,6 +27,7 @@ loss_fn:
   use_generation_logprobs_in_ppo_baseline: false
   use_kl_fix: false
   use_stable_loss: false
+  use_sequence_based_ratio: false
   disable_ppo_ratio: false
 
 checkpointing:

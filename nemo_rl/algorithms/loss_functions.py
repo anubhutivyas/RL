@@ -118,6 +118,7 @@ class ClippedPGLossFn(LossFunction):
         )
         self.use_stable_loss = cfg.get("use_stable_loss", False)
         self.force_on_policy = cfg.get("force_on_policy", False)
+        self.use_sequence_based_ratio = cfg.get("use_sequence_based_ratio", False)
 
     def __call__(
         self,
@@ -211,8 +212,51 @@ class ClippedPGLossFn(LossFunction):
             )
 
         if self.use_stable_loss:
-            loss_stable = -(advantages * ratios_clamped.detach() * curr_logprobs)
+            if self.use_sequence_based_ratio:
+                with torch.no_grad():
+                    ratio_to_compare = (
+                        generation_logprobs
+                        if self.use_generation_logprobs_in_ppo_baseline
+                        else prev_logprobs
+                    )
+
+                    sequence_ratios = (curr_logprobs - ratio_to_compare) * mask
+                    sequence_ratios = sequence_ratios.sum(-1) / mask.sum(-1)
+                    sequence_ratios = sequence_ratios.exp()
+
+                    sequence_ratios_clamped = sequence_ratios.clamp(
+                        1.0 - self.ratio_clip_min, 1.0 + self.ratio_clip_max
+                    ).view(-1, 1)
+
+                loss_stable = -(
+                    advantages * sequence_ratios_clamped.detach() * curr_logprobs
+                )
+
+            else:
+                loss_stable = -(advantages * ratios_clamped.detach() * curr_logprobs)
+
             clip_loss = loss_stable
+        elif self.use_sequence_based_ratio:
+            ratio_to_compare = (
+                generation_logprobs
+                if self.use_generation_logprobs_in_ppo_baseline
+                else prev_logprobs
+            )
+
+            s_i = (curr_logprobs - ratio_to_compare) * mask
+            s_i = s_i.sum(-1) / mask.sum(-1)
+            s_i = s_i.exp().detach().view(-1, 1)
+
+            sequence_ratios = s_i * (curr_logprobs - curr_logprobs.detach())
+            sequence_ratios_clamped = sequence_ratios.clamp(
+                1.0 - self.ratio_clip_min, 1.0 + self.ratio_clip_max
+            )
+
+            loss1 = -advantages * sequence_ratios
+            loss2 = -advantages * sequence_ratios_clamped
+
+            # Determine which value to use for clipping (max for pessimistic estimate)
+            clip_loss = torch.max(loss1, loss2)
 
         else:
             loss1 = -advantages * ratios
