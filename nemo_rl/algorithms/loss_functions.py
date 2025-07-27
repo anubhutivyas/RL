@@ -432,12 +432,17 @@ class ClippedPGLossFn(LossFunction):
                     sequence_ratios_metric[clipped_max_mask.bool()].sum().item()
                 )
 
+            sequence_ratios_metric_clamped = sequence_ratios_metric.clamp(
+                1.0 - self.ratio_clip_min, 1.0 + self.ratio_clip_max
+            )
+
             sequence_metrics = {
                 "tokens_min_clipped_sequence": clipped_min,
                 "tokens_max_clipped_sequence": clipped_max,
                 "clamped_min_ratios_sequence": clamped_min_ratios,
                 "clamped_max_ratios_sequence": clamped_max_ratios,
                 "sequence_ratios": sequence_ratios_metric.sum().item(),
+                "sequence_ratios_clamped": sequence_ratios_metric_clamped.sum().item(),
             }
 
         metric.update(sequence_metrics)

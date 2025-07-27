@@ -541,6 +541,13 @@ class DTensorPolicyWorker:
                                 metric_dict["sequence_ratios"]
                                 / metric_dict["num_valid_samples"]
                             )
+
+                        if "sequence_ratios_clamped" in metric_dict:
+                            metric_dict["sequence_ratios_clamped"] = (
+                                metric_dict["sequence_ratios_clamped"]
+                                / metric_dict["num_valid_samples"]
+                            )
+
                         if "clamped_min_ratios_sequence" in metric_dict:
                             metric_dict["clamped_min_ratios_sequence"] = (
                                 metric_dict["clamped_min_ratios_sequence"]
