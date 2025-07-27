@@ -11,14 +11,15 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+import json
 import logging
 import os
-import re
 import uuid
-from typing import Dict, List, Optional, Tuple, TypedDict
+from typing import Dict, List, Literal, Optional, Tuple, TypedDict
 
 import ray
 import torch
+from pydantic import BaseModel
 
 from nemo_rl.distributed.batched_data_dict import BatchedDataDict
 from nemo_rl.distributed.virtual_cluster import PY_EXECUTABLES, RayVirtualCluster
@@ -30,6 +31,33 @@ from nemo_rl.environments.metrics import (
     calculate_pass_rate_per_prompt,
 )
 from nemo_rl.environments.utils import extract_answer_from_box
+
+JUDGE_PROMPT = """Judge whether the following [response] to [question] is correct or not based on the precise and unambiguous [correct_answer] below.
+
+[question]: {question}
+
+[response]: {response}
+
+Your judgement must be in the format and criteria specified below:
+
+extracted_final_answer: The final exact answer extracted from the [response]. Put the extracted answer as 'None' if there is no exact, final answer to extract from the response.
+
+[correct_answer]: {reference}
+
+reasoning: Explain why the extracted_final_answer is correct or incorrect based on [correct_answer], focusing only on if there are meaningful differences between [correct_answer] and the extracted_final_answer. Do not comment on any background to the problem, do not attempt to solve the problem, do not argue for any answer different than [correct_answer], focus only on whether the answers match.
+
+correct: Answer 'yes' if extracted_final_answer matches the [correct_answer] given above, or is within a small margin of error for numerical problems. Answer 'no' otherwise, i.e. if there if there is any inconsistency, ambiguity, non-equivalency, or if the extracted answer is incorrect.
+
+
+confidence: The extracted confidence score between 0|\%| and 100|\%| from [response]. Put 100 if there is no confidence score available."""
+
+
+class ExtractedAnswer(BaseModel):
+    extracted_final_answer: str
+    reasoning: str
+    correct: Literal["yes", "no"]
+    confidence: int
+    strict: Literal[True]  # 100% reliability
 
 
 class LLMJudgeAsyncConfig(TypedDict):
@@ -63,22 +91,6 @@ class AsyncVLLMWorker:
     """
 
     DEFAULT_PY_EXECUTABLE = PY_EXECUTABLES.VLLM
-    DEFAULT_JUDGE_PROMPT_TEMPLATE = """You are an expert judge. You will be given a question, a model's prediction to evaluate, a reference answer, and evaluation criteria.
-
-Question:
-{question}
-
-Model's Prediction:
-{response}
-
-Reference Answer:
-{reference}
-
-Now, evaluate if the response is correct based on the following evaluation criteria:
-{criteria}
-
-Answer yes or no, then give your reasoning. Surround the yes/no with @@@ @@@ so it's easier to parse.
-"""
 
     def __init__(
         self,
@@ -94,7 +106,10 @@ Answer yes or no, then give your reasoning. Surround the yes/no with @@@ @@@ so 
         from huggingface_hub.constants import HUGGINGFACE_HUB_CACHE
         from vllm.engine.arg_utils import AsyncEngineArgs
         from vllm.engine.async_llm_engine import AsyncLLMEngine
-        from vllm.sampling_params import SamplingParams
+        from vllm.sampling_params import GuidedDecodingParams, SamplingParams
+
+        json_schema = ExtractedAnswer.model_json_schema()
+        self.guided_decoding_params = GuidedDecodingParams(json=json_schema)
 
         self.SamplingParams = SamplingParams
         # Attempt to use HF_HUB_CACHE from env, otherwise default to huggingface_hub's default cache
@@ -166,9 +181,7 @@ Answer yes or no, then give your reasoning. Surround the yes/no with @@@ @@@ so 
         response_to_judge = "None" if response_to_judge is None else response_to_judge
         # Prioritize metadata's judge_prompt_template, then default
         # Note that if you want to use a custom judge_prompt_template, you may need to change the verdict extraction logic accordingly
-        current_judge_prompt = (
-            metadata.get("judge_prompt_template") or self.DEFAULT_JUDGE_PROMPT_TEMPLATE
-        )
+        current_judge_prompt = metadata.get("judge_prompt_template") or JUDGE_PROMPT
 
         prompt = current_judge_prompt.format(
             question=question,
@@ -178,8 +191,9 @@ Answer yes or no, then give your reasoning. Surround the yes/no with @@@ @@@ so 
         )
         logging.info(f"Prompt: {prompt}")
 
-        sampling_params = self.SamplingParams(**sampling_params_dict)
-
+        sampling_params = self.SamplingParams(
+            **sampling_params_dict, guided_decoding_params=self.guided_decoding_params
+        )
         results_generator = self.engine.generate(prompt, sampling_params, request_id)
 
         final_output = None
@@ -187,43 +201,27 @@ Answer yes or no, then give your reasoning. Surround the yes/no with @@@ @@@ so 
             final_output = request_output
 
         score = 0.0
-
         if final_output and not final_output.finished:
             logging.info(
                 f"Request {request_id} did not finish within the token limit, but we will score it anyway. Output: {final_output}"
             )
         elif final_output:
-            generated_text = final_output.outputs[0].text.strip()
-            match = re.search(r"@@@(.+?)@@@", generated_text)
-            if match:
-                result = match.group(1)
-
-                has_yes = "yes" in result.lower()
-
-            else:
-                has_yes = False
-                if "yes" in generated_text.lower():
-                    has_yes = True
-
-            if has_yes:
-                score = 1.0
+            try:
+                output_text = json.loads(final_output.outputs[0].text)
+                score = output_text["correct"].lower() == "yes"
                 logging.info(
-                    f"Parsed 'yes' for request {request_id}. Score: {score}. Output: '{generated_text}'"
+                    f"Parsed for request {request_id}. Score: {score}. Output: '{final_output.outputs[0].text}'"
                 )
-            else:
+
+            except:
                 score = 0.0
                 logging.info(
-                    f"No 'yes' found in {request_id}. Score: {score}. Output: '{generated_text}'"
+                    f"cannot parse {request_id}. Score: {score}. Output: '{final_output.outputs[0].text}'"
                 )
 
         else:
             logging.warning(f"No output received from LLM for request {request_id}.")
 
-        if response_to_judge == "None":
-            score = 0.0
-            logging.info(
-                f"Response to judge is 'None' for request {request_id}. so we set the score to : {score}."
-            )
         return request_id, score
 
 
