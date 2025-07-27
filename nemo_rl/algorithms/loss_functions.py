@@ -220,9 +220,12 @@ class ClippedPGLossFn(LossFunction):
                         else prev_logprobs
                     )
 
-                    sequence_ratios = (curr_logprobs - ratio_to_compare) * mask
-                    sequence_ratios = sequence_ratios.sum(-1) / mask.sum(-1)
-                    sequence_ratios = sequence_ratios.exp()
+                    sequence_ratios_metric = (curr_logprobs - ratio_to_compare) * mask
+                    sequence_ratios_metric = sequence_ratios_metric.sum(-1) / mask.sum(
+                        -1
+                    )
+                    sequence_ratios_metric = sequence_ratios_metric.exp().detach()
+                    sequence_ratios = sequence_ratios_metric
 
                     sequence_ratios_clamped = sequence_ratios.clamp(
                         1.0 - self.ratio_clip_min, 1.0 + self.ratio_clip_max
@@ -242,6 +245,10 @@ class ClippedPGLossFn(LossFunction):
                 if self.use_generation_logprobs_in_ppo_baseline
                 else prev_logprobs
             )
+
+            sequence_ratios_metric = (curr_logprobs - ratio_to_compare) * mask
+            sequence_ratios_metric = sequence_ratios_metric.sum(-1) / mask.sum(-1)
+            sequence_ratios_metric = sequence_ratios_metric.exp().detach()
 
             s_i = (curr_logprobs - ratio_to_compare) * mask
             s_i = s_i.sum(-1) / mask.sum(-1)
@@ -377,31 +384,65 @@ class ClippedPGLossFn(LossFunction):
                 if clipped_max > 0:
                     clamped_max_ratios = ratios[clipped_max_mask.bool()].sum().item()
 
+        sequence_metrics = {}
         # If you provided a global_valid_{seqs/toks}, all metrics here are globally normalized
         # by either sequence or token count, depending on particular metric.
         # To get the true metric, you'll need to sum over the microbatch.
-        return (
-            loss,
-            {
-                "loss": loss.item(),
-                "log_probs_mean": log_probs_mean.item(),
-                "sequence_level_ratios": sequence_level_ratios.item(),
-                "tokens_min_clipped": clipped_min,
-                "tokens_max_clipped": clipped_max,
-                "clamped_min_ratios": clamped_min_ratios,
-                "clamped_max_ratios": clamped_max_ratios,
-                "probs_ratio": probs_ratio,
-                "probs_ratio_clamped": probs_ratio_clamped,
-                "kl_penalty": kl.item(),
-                "kl_penalty_for_metric": kl_for_metric.item(),
-                "kl_penalty_for_loss": kl_for_loss.item(),
-                "token_mult_prob_error": mult_prob_error,
-                "sampling_importance_ratio": sample_importance_ratio.item(),
-                "num_valid_samples": sample_mask.sum().item(),
-                "seq_approx_entropy": seq_entropy_approx.item(),
-                "token_level_entropy": token_level_entropy.item(),
-            },
-        )
+        metric = {
+            "loss": loss.item(),
+            "log_probs_mean": log_probs_mean.item(),
+            # "sequence_level_ratios": sequence_level_ratios.item(),
+            "tokens_min_clipped": clipped_min,
+            "tokens_max_clipped": clipped_max,
+            "clamped_min_ratios": clamped_min_ratios,
+            "clamped_max_ratios": clamped_max_ratios,
+            "probs_ratio": probs_ratio,
+            "probs_ratio_clamped": probs_ratio_clamped,
+            "kl_penalty": kl.item(),
+            "kl_penalty_for_metric": kl_for_metric.item(),
+            "kl_penalty_for_loss": kl_for_loss.item(),
+            "token_mult_prob_error": mult_prob_error,
+            "sampling_importance_ratio": sample_importance_ratio.item(),
+            "num_valid_samples": sample_mask.sum().item(),
+            "seq_approx_entropy": seq_entropy_approx.item(),
+            "token_level_entropy": token_level_entropy.item(),
+        }
+
+        if self.use_sequence_based_ratio:
+            advantages_neg = ((advantages < 0) * mask).sum(-1) > 0
+            advantages_pos = ((advantages > 0) * mask).sum(-1) > 0
+
+            clipped_min_mask = (
+                sequence_ratios_metric < 1 - self.ratio_clip_min
+            ) * advantages_neg
+            clipped_max_mask = (
+                sequence_ratios_metric > 1 + self.ratio_clip_max
+            ) * advantages_pos
+
+            clipped_min = clipped_min_mask.sum().item()
+            clipped_max = clipped_max_mask.sum().item()
+
+            clamped_min_ratios, clamped_max_ratios = 0, 0
+            if clipped_min > 0:
+                clamped_min_ratios = (
+                    sequence_ratios_metric[clipped_min_mask.bool()].sum().item()
+                )
+            if clipped_max > 0:
+                clamped_max_ratios = (
+                    sequence_ratios_metric[clipped_max_mask.bool()].sum().item()
+                )
+
+            sequence_metrics = {
+                "tokens_min_clipped_sequence": clipped_min,
+                "tokens_max_clipped_sequence": clipped_max,
+                "clamped_min_ratios_sequence": clamped_min_ratios,
+                "clamped_max_ratios_sequence": clamped_max_ratios,
+                "sequence_ratios": sequence_ratios_metric.sum().item(),
+            }
+
+        metric.update(sequence_metrics)
+
+        return (loss, metric)
 
 
 class NLLLoss(LossFunction):

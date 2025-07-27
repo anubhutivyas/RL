@@ -510,10 +510,10 @@ class DTensorPolicyWorker:
                         )
 
                         metric_dict = {k: v.cpu().item() for k, v in zip(keys, values)}
-                        metric_dict["sequence_level_ratios"] = (
-                            metric_dict["sequence_level_ratios"]
-                            / metric_dict["num_valid_samples"]
-                        )
+                        # metric_dict["sequence_level_ratios"] = (
+                        #     metric_dict["sequence_level_ratios"]
+                        #     / metric_dict["num_valid_samples"]
+                        # )
                         if metric_dict["tokens_min_clipped"] > 0:
                             metric_dict["clamped_min_ratios"] = (
                                 metric_dict["clamped_min_ratios"]
@@ -524,6 +524,32 @@ class DTensorPolicyWorker:
                             metric_dict["clamped_max_ratios"] = (
                                 metric_dict["clamped_max_ratios"]
                                 / metric_dict["tokens_max_clipped"]
+                            )
+
+                        if "tokens_min_clipped_sequence" in metric_dict:
+                            metric_dict["tokens_min_clipped_sequence"] = (
+                                metric_dict["tokens_min_clipped_sequence"]
+                                / metric_dict["num_valid_samples"]
+                            )
+                        if "tokens_max_clipped_sequence" in metric_dict:
+                            metric_dict["tokens_max_clipped_sequence"] = (
+                                metric_dict["tokens_max_clipped_sequence"]
+                                / metric_dict["num_valid_samples"]
+                            )
+                        if "sequence_ratios" in metric_dict:
+                            metric_dict["sequence_ratios"] = (
+                                metric_dict["sequence_ratios"]
+                                / metric_dict["num_valid_samples"]
+                            )
+                        if "clamped_min_ratios_sequence" in metric_dict:
+                            metric_dict["clamped_min_ratios_sequence"] = (
+                                metric_dict["clamped_min_ratios_sequence"]
+                                / metric_dict["num_valid_samples"]
+                            )
+                        if "clamped_max_ratios_sequence" in metric_dict:
+                            metric_dict["clamped_max_ratios_sequence"] = (
+                                metric_dict["clamped_max_ratios_sequence"]
+                                / metric_dict["num_valid_samples"]
                             )
 
                         synced_train_step_metrics.append(metric_dict)
