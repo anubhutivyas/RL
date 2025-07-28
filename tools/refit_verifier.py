@@ -538,7 +538,11 @@ def main():
     
     # Prepare input data
     generation_data = prepare_input_data(args.prompt, tokenizer)
-    
+
+    # prepare refit info
+    state_dict_info = policy.prepare_refit_info()
+    vllm_inference_policy.prepare_refit_info(state_dict_info)
+
     # Perform model refitting
     run_model_refitting(policy, vllm_inference_policy, args.refit_buffer_size_gb)
     
