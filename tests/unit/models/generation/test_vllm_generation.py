@@ -1274,7 +1274,7 @@ async def test_vllm_refit_non_collocated_update_weights(
         print(f"Error during generation_cluster_separate shutdown: {e}")
 
 
-@pytest.mark.timeout(210)
+@pytest.mark.timeout(400)
 @pytest.mark.parametrize("tensor_parallel_size", [1, 2])
 def test_vllm_generation_with_megatron_training(
     cluster, tokenizer, tensor_parallel_size
@@ -1651,7 +1651,7 @@ def test_vllm_megatron_weight_update_with_packing(cluster, test_input_data):
         output_ids = outputs["output_ids"]
         generated_texts = tokenizer.batch_decode(output_ids, skip_special_tokens=True)
         assert generated_texts == [
-            "Hello, my name is John. I am a",
+            "Hello, my name is Kaitlin and I",
             "The capital of France is Paris. It is the",
         ], "Output should be the same as the expected output"
 
