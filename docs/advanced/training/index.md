@@ -46,18 +46,4 @@ Design curricula that progressively increase task complexity based on model perf
 
 ::::
 
-```{toctree}
-:maxdepth: 2
-:hidden:
-
-adaptive-curriculum
-custom-loss-functions
-hyperparameter-optimization
-learning-rate-scheduling
-loss-function-design
-multi-objective-tuning
-pareto-optimization
-training-stability
-curriculum-learning
-multi-objective-training
-``` 
+ 

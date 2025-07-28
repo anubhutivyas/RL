@@ -8,7 +8,7 @@ content_type: "concept"
 modality: "universal"
 ---
 
-# Why NeMo RL?
+# Why NeMo RL
 
 **NeMo RL** is an open-source, scalable post-training library developed by NVIDIA for applying **reinforcement learning (RL)** to large language models (LLMs). It supports models ranging from compact architectures to 100B+ parameters and scales from single-GPU setups to thousand-GPU clusters. NeMo RL is part of the broader [NVIDIA NeMo framework](https://docs.nvidia.com/nemo/rl/latest/index.html), which focuses on training and aligning generative AI.
 

@@ -52,7 +52,7 @@ Master NeMo RL with organized guides covering training algorithms, model develop
 :::
 
 :::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Core Design and Architecture
-:link: design-docs/index
+:link: core-design/index
 :link-type: doc
 :class-body: text-center
 
@@ -172,15 +172,133 @@ Testing, debugging, packaging, and deployment strategies.
 :relative-docs: docs/
 ```
 
-```{toctree}
-:maxdepth: 3
+::::{toctree}
 :hidden:
-about/index
-get-started/index
-tutorials-examples/index
-guides/index
-design-docs/index
-advanced/index
-api-docs/index
-configuration-cli/index
-```
+Home <self>
+::::
+
+::::{toctree}
+:hidden:
+:caption: About
+:maxdepth: 1
+about/index.md
+about/key-features.md
+about/architecture.md
+::::
+
+::::{toctree}
+:hidden:
+:caption: Get Started
+:maxdepth: 2
+get-started/index.md
+get-started/quickstart.md
+get-started/installation.md
+get-started/local-workstation.md
+get-started/docker.md
+get-started/cluster.md
+::::
+
+::::{toctree}
+:hidden:
+:caption: Tutorials and Examples
+:maxdepth: 2
+tutorials-examples/index.md
+tutorials-examples/tutorials/index.md
+tutorials-examples/tutorials/sft-tutorial.md
+tutorials-examples/tutorials/dpo-tutorial.md
+tutorials-examples/tutorials/grpo-tutorial.md
+tutorials-examples/tutorials/evaluation-tutorial.md
+tutorials-examples/examples/index.md
+tutorials-examples/examples/sft-openmathinstruct2.md
+tutorials-examples/examples/grpo-deepscaler.md
+tutorials-examples/use-cases/index.md
+tutorials-examples/use-cases/code-generation.md
+tutorials-examples/use-cases/mathematical-reasoning.md
+::::
+
+::::{toctree}
+:hidden:
+:caption: Guides
+:maxdepth: 2
+guides/index.md
+guides/training-algorithms/index.md
+guides/training-algorithms/sft.md
+guides/training-algorithms/dpo.md
+guides/training-algorithms/grpo.md
+guides/training-algorithms/eval.md
+guides/model-development/index.md
+guides/model-development/adding-new-models.md
+guides/model-development/model-quirks.md
+guides/production-support/index.md
+guides/production-support/troubleshooting.md
+guides/production-support/testing.md
+guides/production-support/documentation.md
+guides/production-support/packaging.md
+guides/environment-data/index.md
+guides/environment-data/debugging.md
+guides/environment-data/environment-development.md
+guides/environment-data/nsys-profiling.md
+guides/training-optimization/index.md
+guides/training-optimization/learning-rate-scheduling.md
+guides/training-optimization/training-stability.md
+guides/training-optimization/hyperparameter-optimization.md
+guides/troubleshooting.md
+::::
+
+::::{toctree}
+:hidden:
+:caption: Core Design and Architecture
+:maxdepth: 2
+core-design/index.md
+core-design/core-architecture/index.md
+core-design/core-architecture/design-and-philosophy.md
+core-design/core-architecture/generation.md
+core-design/core-architecture/fsdp2-parallel-plan.md
+core-design/data-management/index.md
+core-design/data-management/chat-datasets.md
+core-design/data-management/padding.md
+core-design/computational-systems/index.md
+core-design/computational-systems/training-backends.md
+core-design/computational-systems/uv.md
+core-design/computational-systems/logger.md
+core-design/development-infrastructure/index.md
+core-design/development-infrastructure/checkpointing.md
+core-design/development-infrastructure/loss-functions.md
+::::
+
+::::{toctree}
+:hidden:
+:caption: Advanced Topics
+:maxdepth: 2
+advanced/index.md
+advanced/algorithm-implementation.md
+advanced/performance-scaling.md
+advanced/custom-loss-functions.md
+advanced/model-validation.md
+advanced/production-deployment.md
+advanced/performance/index.md
+advanced/research/index.md
+advanced/theory/index.md
+advanced/training/index.md
+::::
+
+::::{toctree}
+:hidden:
+:caption: References
+:maxdepth: 2
+references/index.md
+references/cli-reference.md
+references/configuration-reference.md
+::::
+
+::::{toctree}
+:hidden:
+:caption: API Documentation
+:maxdepth: 2
+api-docs/index.md
+api-docs/models.md
+api-docs/distributed.md
+api-docs/auto-generated.md
+::::
+
+

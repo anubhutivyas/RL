@@ -8,7 +8,7 @@ content_type: "reference"
 modality: "universal"
 ---
 
-# Troubleshooting
+# Troubleshoot NeMo RL
 
 This guide covers common issues, error messages, and solutions for NeMo RL. If you encounter a problem not covered here, please check the [GitHub Issues](https://github.com/your-repo/issues) or create a new one.
 

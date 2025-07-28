@@ -8,7 +8,7 @@ content_type: "reference"
 modality: "universal"
 ---
 
-# API Documentation
+# About NeMo RL API Documentation
 
 Welcome to the NeMo RL API documentation! This section provides comprehensive reference documentation for all the APIs, interfaces, and components that make up the NeMo RL framework.
 
@@ -230,11 +230,4 @@ When contributing to NeMo RL, please follow these guidelines:
 
 For more information on contributing, see the [Development Guide](../guides/production-support/testing).
 
-```{toctree}
-:maxdepth: 2
-:hidden:
-
-distributed
-models
-auto-generated
-``` 
+ 

@@ -9,7 +9,7 @@ modality: "universal"
 ---
 
 (gs-overview)=
-# Get Started
+# Get Started with NeMo RL
 
 Welcome to NeMo RL! This guide will help you set up your environment and run your first reinforcement learning training job with large language models.
 
@@ -131,18 +131,7 @@ After completing your first training run:
 
 ---
 
-```{toctree}
-:caption: Get Started
-:maxdepth: 2
-:hidden:
 
-
-installation
-quickstart
-local-workstation
-docker
-cluster
-```
 
 
 

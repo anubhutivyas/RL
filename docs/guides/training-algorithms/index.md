@@ -57,12 +57,4 @@ Model evaluation and benchmarking strategies for RL-trained models.
 
 ::::
 
-```{toctree}
-:maxdepth: 1
-:hidden:
-
-sft
-grpo
-dpo
-eval
-``` 
+ 

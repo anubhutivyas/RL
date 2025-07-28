@@ -111,12 +111,4 @@ After setting up your production environment:
 
 For additional support and troubleshooting, refer to the individual guides in this section.
 
-```{toctree}
-:maxdepth: 2
-:hidden:
-
-documentation
-packaging
-troubleshooting
-testing
-``` 
+ 

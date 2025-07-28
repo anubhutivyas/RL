@@ -37,10 +37,4 @@ Handle model-specific behaviors and quirks.
 
 ::::
 
-```{toctree}
-:maxdepth: 1
-:hidden:
-
-adding-new-models
-model-quirks
-``` 
+ 

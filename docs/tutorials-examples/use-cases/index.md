@@ -148,11 +148,4 @@ After implementing a use case:
 
 For additional learning resources, visit the main [Tutorials and Examples](../index) page.
 
-```{toctree}
-:maxdepth: 2
-:caption: Use Cases
-:hidden:
-
-code-generation
-mathematical-reasoning
-``` 
+ 

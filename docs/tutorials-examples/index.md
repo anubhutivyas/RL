@@ -8,7 +8,7 @@ content_type: "concept"
 modality: "universal"
 ---
 
-# Tutorials and Examples
+# About NeMo RL Tutorials and Examples
 
 Welcome to the NeMo RL Tutorials and Examples! This comprehensive collection provides everything you need to learn and master reinforcement learning with large language models using NeMo RL.
 
@@ -80,6 +80,16 @@ Advanced reinforcement learning with Group Relative Policy Optimization.
 
 +++
 {bdg-warning}`Advanced`
+:::
+
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Evaluation Tutorial
+:link: tutorials/evaluation-tutorial
+:link-type: doc
+
+Learn model evaluation and benchmarking strategies for RL-trained models.
+
++++
+{bdg-info}`Intermediate`
 :::
 
 ::::
@@ -301,12 +311,4 @@ For additional learning resources and community support, visit the NeMo RL GitHu
 
 Start with the learning path that matches your experience level, and gradually work your way through the tutorial series. The advanced tutorials will help you master complex scenarios and production deployments.
 
-```{toctree}
-:maxdepth: 2
-:caption: Tutorials and Examples
-:hidden:
 
-tutorials/index
-examples/index
-use-cases/index
-```

@@ -8,9 +8,9 @@ content_type: "reference"
 modality: "universal"
 ---
 
-# Configuration and CLI
+# About NeMo RL References
 
-Welcome to the NeMo RL Configuration and Command Line Interface guide! This section covers all configuration options, CLI commands, and usage patterns for NeMo RL.
+Welcome to the NeMo RL References guide! This section covers all configuration options, CLI commands, and usage patterns for NeMo RL.
 
 ## Overview
 
@@ -152,11 +152,4 @@ python -m nemo_rl.config --help
 - Check the [Troubleshooting](troubleshooting) guide for common issues
 - Review the [Guides](../guides/index) for practical examples
 
-```{toctree}
-:maxdepth: 2
-:hidden:
-
-cli-reference
-configuration-reference
-troubleshooting
-``` 
+ 

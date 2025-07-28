@@ -1,67 +1,67 @@
 ---
-description: "Advanced topics for AI researchers, performance engineers, and advanced practitioners including mathematical foundations, research methodologies, and optimization techniques"
+description: "Advanced topics for extending and customizing NeMo RL including algorithm implementation, performance scaling, custom loss functions, model validation, and production deployment"
 categories: ["research-advanced"]
-tags: ["advanced", "research", "theory", "performance", "optimization", "mathematics", "reinforcement-learning"]
+tags: ["advanced", "implementation", "scaling", "customization", "deployment", "reinforcement-learning"]
 personas: ["researcher-focused", "mle-focused"]
 difficulty: "advanced"
 content_type: "concept"
 modality: "universal"
 ---
 
-# Advanced Topics
+# About NeMo RL Advanced Topics
 
-Welcome to the NeMo RL Advanced Topics section! This comprehensive collection provides deep technical content for AI researchers, performance engineers, and advanced practitioners who need to understand the theoretical foundations, conduct research, and optimize performance.
+Welcome to the NeMo RL Advanced Topics section! This collection provides deep technical content for advanced AI developers who need to extend, customize, and deploy NeMo RL for production use cases.
 
-## Mathematical Foundations and Theory
+## Framework Extension & Customization
 
-::::{grid} 1 1 1 2
+::::{grid} 1 2 2 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} Mathematical Foundations
-:link: theory/mathematical-foundations
+:::{grid-item-card} {octicon}`code;1.5em;sd-mr-1` Algorithm Implementation
+:link: algorithm-implementation
 :link-type: doc
 
-Core RL theory, convergence proofs, and fundamental concepts that underpin all NeMo RL algorithms.
-
-+++
-{bdg-primary}`Foundation`
-:::
-
-:::{grid-item-card} GRPO Theory
-:link: theory/grpo-theory
-:link-type: doc
-
-Mathematical formulation of Group Relative Policy Optimization with dual-clipping and importance sampling.
+Implement custom DPO, GRPO, and SFT variants. Extend algorithms for new use cases and debug algorithm behavior.
 
 +++
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} DPO Theory
-:link: theory/dpo-theory
+:::{grid-item-card} {octicon}`zap;1.5em;sd-mr-1` Performance and Scaling
+:link: performance-scaling
 :link-type: doc
 
-Direct Preference Optimization theory with preference loss and SFT loss components.
+Scale NeMo RL to production with distributed training, memory optimization, and performance tuning techniques.
 
 +++
-{bdg-info}`Intermediate`
+{bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} SFT Theory
-:link: theory/sft-theory
+:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Custom Loss Functions
+:link: custom-loss-functions
 :link-type: doc
 
-Supervised Fine-Tuning mathematical foundations and negative log-likelihood loss.
+Design and implement custom training objectives. Debug loss functions and create new training patterns.
 
 +++
-{bdg-primary}`Foundation`
+{bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} Loss Functions
-:link: theory/loss-functions
+:::{grid-item-card} {octicon}`beaker;1.5em;sd-mr-1` Model Validation
+:link: model-validation
 :link-type: doc
 
-Comprehensive analysis of all loss function implementations and mathematical formulations.
+Proper evaluation methodologies, A/B testing frameworks, and reproducible comparison strategies.
+
++++
+{bdg-info}`Advanced`
+:::
+
+:::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Production Deployment
+:link: production-deployment
+:link-type: doc
+
+Deploy NeMo RL models to production with monitoring, debugging, and serving architectures.
 
 +++
 {bdg-warning}`Advanced`
@@ -69,153 +69,44 @@ Comprehensive analysis of all loss function implementations and mathematical for
 
 ::::
 
-## Research and Experimentation
+## When to Use Advanced Topics
 
-::::{grid} 1 1 1 2
-:gutter: 2 2 2 2
+These topics are for developers who need to:
 
-:::{grid-item-card} Experimental Design
-:link: research/experimental-design
-:link-type: doc
+- **Extend NeMo RL**: Implement custom algorithms and loss functions
+- **Scale to Production**: Optimize performance and deploy at scale
+- **Customize Behavior**: Modify framework behavior for specific use cases
+- **Validate Models**: Create robust evaluation and comparison frameworks
+- **Deploy Models**: Build production-ready serving systems
 
-Methodologies for designing robust experiments with proper controls and statistical analysis.
+## Learning Path
 
-+++
-{bdg-primary}`Foundation`
-:::
+1. **Start with Guides**: Master basic usage patterns first
+2. **Identify Extension Needs**: Determine what customizations you need
+3. **Implement Gradually**: Start with small extensions, then scale
+4. **Validate Thoroughly**: Use proper evaluation frameworks
+5. **Deploy Carefully**: Follow production deployment best practices
 
-:::{grid-item-card} Reproducibility
-:link: research/reproducibility
-:link-type: doc
+## Key Concepts
 
-Best practices for ensuring reproducible research including seed management and environment setup.
+### Framework Extension
+- Custom algorithm implementations
+- Loss function design patterns
+- Performance optimization techniques
+- Production deployment strategies
 
-+++
-{bdg-primary}`Foundation`
-:::
+### Customization Patterns
+- Extending base classes
+- Implementing custom interfaces
+- Debugging custom components
+- Testing custom implementations
 
-:::{grid-item-card} Ablation Studies
-:link: research/ablation-studies
-:link-type: doc
+### Production Readiness
+- Scalable architectures
+- Monitoring and debugging
+- Performance optimization
+- Deployment strategies
 
-Systematic ablation studies to understand component contributions and algorithm behavior.
+---
 
-+++
-{bdg-warning}`Advanced`
-:::
-
-:::{grid-item-card} Hyperparameter Optimization
-:link: research/hyperparameter-optimization
-:link-type: doc
-
-Advanced hyperparameter optimization techniques including Bayesian optimization and multi-objective search.
-
-+++
-{bdg-warning}`Advanced`
-:::
-
-:::{grid-item-card} Custom Algorithm Development
-:link: research/custom-algorithms
-:link-type: doc
-
-Guidelines for developing custom algorithms and extending NeMo RL with novel research contributions.
-
-+++
-{bdg-warning}`Advanced`
-:::
-
-:::{grid-item-card} Performance Analysis
-:link: research/performance-analysis
-:link-type: doc
-
-Deep analysis of training dynamics, convergence properties, and performance benchmarking.
-
-+++
-{bdg-info}`Intermediate`
-:::
-
-::::
-
-## Advanced Training Techniques
-
-::::{grid} 1 1 1 2
-:gutter: 2 2 2 2
-
-:::{grid-item-card} Multi-Objective Training
-:link: training/multi-objective-training
-:link-type: doc
-
-Combine multiple loss functions and objectives in a single training pipeline with dynamic weight balancing.
-
-+++
-{bdg-warning}`Advanced`
-:::
-
-:::{grid-item-card} Curriculum Learning
-:link: training/curriculum-learning
-:link-type: doc
-
-Implement progressive difficulty scheduling to improve training efficiency and model performance.
-
-+++
-{bdg-info}`Strategy`
-:::
-
-::::
-
-## Performance and Optimization
-
-::::{grid} 1 1 1 2
-:gutter: 2 2 2 2
-
-:::{grid-item-card} Performance Optimization
-:link: performance/index
-:link-type: doc
-
-Comprehensive performance optimization and profiling techniques.
-
-+++
-{bdg-warning}`Advanced`
-:::
-
-:::{grid-item-card} Memory Optimization
-:link: performance/memory-optimization
-:link-type: doc
-
-Memory optimization strategies for large-scale RL training.
-
-+++
-{bdg-warning}`Advanced`
-:::
-
-:::{grid-item-card} Training Monitoring
-:link: performance/monitoring
-:link-type: doc
-
-Real-time monitoring and logging for RL training.
-
-+++
-{bdg-info}`Monitoring`
-:::
-
-:::{grid-item-card} Profiling
-:link: performance/profiling
-:link-type: doc
-
-Profiling tools and techniques for performance analysis.
-
-+++
-{bdg-info}`Profiling`
-:::
-
-::::
-
-```{toctree}
-:maxdepth: 2
-:hidden:
-
-performance/index
-research/index
-theory/index
-training/index
-```
+For basic usage and optimization techniques, see the [Guides](../guides/index) section.

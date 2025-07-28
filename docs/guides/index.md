@@ -8,7 +8,7 @@ content_type: "concept"
 modality: "universal"
 ---
 
-# Guides
+# About NeMo RL Guides
 
 Welcome to the NeMo RL Guides! This comprehensive collection provides everything you need to master reinforcement learning with large language models using NeMo RL.
 
@@ -140,13 +140,4 @@ Testing, debugging, packaging, and deployment strategies.
 
 ::::
 
-```{toctree}
-:maxdepth: 2
-:caption: Guides
-:hidden:
 
-training-algorithms/index
-model-development/index
-environment-data/index
-production-support/index
-```

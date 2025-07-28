@@ -122,14 +122,4 @@ After understanding the mathematical foundations:
 3. **Apply to Research**: Use theory for custom algorithm development
 4. **Validate Results**: Use mathematical framework for result validation
 
-```{toctree}
-:caption: Theory
-:maxdepth: 2
-:hidden:
-
-mathematical-foundations
-grpo-theory
-dpo-theory
-sft-theory
-loss-functions
-``` 
+ 

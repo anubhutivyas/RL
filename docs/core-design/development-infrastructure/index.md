@@ -40,11 +40,4 @@ Understand the checkpointing mechanisms and strategies for model state persisten
 
 ::::
 
-```{toctree}
-:maxdepth: 1
-:caption: Development Infrastructure
-:hidden:
-
-loss-functions
-checkpointing
-``` 
+ 
