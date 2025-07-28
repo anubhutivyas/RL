@@ -21,27 +21,8 @@ You must specify the YAML config. It shares the same base template as the SFT co
 
 ## Datasets
 
-By default, NeMo RL supports the `HelpSteer3` dataset. This dataset is downloaded from Hugging Face and preprocessed on-the-fly, so there's no need to provide a path to any datasets on disk.
-
-You can also configure custom preference datasets (for training and/or validation) as follows:
-```
-data:
-  dataset_name: "PreferenceData:<NameOfDataset>:<LocalPathToDataset>"
-  val_dataset_name: ["PreferenceData:<NameOfValidationDataset>:<LocalPathToValidationDataset>"]
-```
-Note:
-- The name of any custom preference dataset must not contain `:`.
-- If you are using a custom preference dataset for training, you must specify a custom preference dataset for validation.
-- If you are using a logger, the prefix used for the custom validation preference dataset will be `validation-<NameOfValidationDataset>`.
-
-When using `HelpSteer3` as the training dataset, the default validation set is also used and logged under the prefix `validation`. You can replace it with a custom preference dataset as follows:
-```
-data:
-  dataset_name: "HelpSteer3"
-  val_dataset_name: ["PreferenceData:validation:<LocalPathToValidationDataset>"]
-```
-
-Each custom preference dataset should be a JSONL file, with each line containing a valid JSON object formatted like this:
+Each RM dataset class is expected to have the following attributes:
+1. `formatted_ds`: The dictionary of formatted datasets, where each dataset should be formatted like
 ```
 {
     "context": list of dicts, # The prompt message (including previous turns, if any)
@@ -52,6 +33,7 @@ Each custom preference dataset should be a JSONL file, with each line containing
         }
 }
 ```
+2. `task_spec`: The `TaskDataSpec` for this dataset. This should specify the name you choose for this dataset.
 
 Currently, RM training supports only two completions (where the lowest rank is preferred and the highest one is rejected), with each completion being a single response. For example:
 ```
@@ -93,12 +75,31 @@ Currently, RM training supports only two completions (where the lowest rank is p
 }
 ```
 
-NeMo RL supports using multiple custom validation preference datasets during RM training:
+NeMo RL supports the `HelpSteer3` dataset. This dataset is downloaded from Hugging Face and preprocessed on-the-fly, so there's no need to provide a path to any datasets on disk.
+
+We also provide a [PreferenceDataset](../../nemo_rl/data/hf_datasets/preference_dataset.py) class that is compatible with JSONL-formatted preference datasets. You can modify your config as follows:
 ```
 data:
-  dataset_name: "PreferenceData:<NameOfDataset>:<LocalPathToDataset>"
-  val_dataset_name: [
-    "PreferenceData:<NameOfValidationDataset1>:<LocalPathToValidationDataset1>",
-    "PreferenceData:<NameOfValidationDataset2>:<LocalPathToValidationDataset2>",
-   ]
+  dataset_name: PreferenceData
+  train_data_path: <LocalPathToTrainingDataset>
+  val_datasets:
+    - dataset_name: PreferenceData
+      val_data_name: <NameOfValidationDataset1>
+      val_data_path: <LocalPathToValidationDataset1>
+    - dataset_name: PreferenceData
+      val_data_name: <NameOfValidationDataset2>
+      val_data_path: <LocalPathToValidationDataset2>
+```
+Note:
+- If you are using a custom preference dataset for training, you must specify a custom preference dataset for validation.
+- If you are using a logger, the prefix used for the custom validation preference dataset will be `validation-<NameOfValidationDataset>`.
+
+When using `HelpSteer3` as the training dataset, the default validation set is also used and logged under the prefix `validation`. You can replace it with a custom preference dataset as follows:
+```
+data:
+  dataset_name: HelpSteer3
+  val_datasets:
+    - dataset_name: PreferenceData
+      val_data_name: validation
+      val_data_path: <LocalPathToValidationDataset>
 ```

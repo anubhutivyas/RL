@@ -82,23 +82,23 @@ def test_preference_dataset_initialization(mock_preference_data):
     """Test that PreferenceDataset initializes correctly with valid data files."""
     preference_path = mock_preference_data
 
-    dataset = PreferenceDataset(dataset_path=preference_path)
+    dataset = PreferenceDataset(dataset_path=preference_path, split="train")
 
     # Verify dataset initialization
     assert dataset.task_spec.task_name == "PreferenceData"
 
     # Verify formatted_ds structure
-    assert "local" in dataset.formatted_ds
-    assert len(dataset.formatted_ds["local"]) == 2
+    assert "train" in dataset.formatted_ds
+    assert len(dataset.formatted_ds["train"]) == 2
 
 
 def test_preference_dataset_data_format(mock_preference_data):
     """Test that PreferenceDataset correctly loads and formats the data."""
     preference_path = mock_preference_data
-    dataset = PreferenceDataset(dataset_path=preference_path)
+    dataset = PreferenceDataset(dataset_path=preference_path, split="train")
 
     # Verify data format
-    sample = dataset.formatted_ds["local"][0]
+    sample = dataset.formatted_ds["train"][0]
     assert "context" in sample
     assert "completions" in sample
 

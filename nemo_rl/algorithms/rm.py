@@ -231,14 +231,13 @@ def validate(
     loss_fn,
     step: int,
     master_config: MasterConfig,
-    rm_task_spec: TaskDataSpec,
     val_batches: int,
     val_batch_size: int,
     val_mbs: int,
     logger: Logger,
 ):
     for k, v in val_dataloader.items():
-        k_val_metrics, k_validation_timings = validate_one_dataset(policy, v, tokenizer, loss_fn, step, master_config, rm_task_spec, val_batches, val_batch_size, val_mbs)
+        k_val_metrics, k_validation_timings = validate_one_dataset(policy, v, tokenizer, loss_fn, step, master_config, val_batches, val_batch_size, val_mbs)
         if k == "validation":
             prefix = "validation"
         else:
@@ -256,7 +255,6 @@ def validate_one_dataset(
     loss_fn,
     step: int,
     master_config: MasterConfig,
-    rm_task_spec: TaskDataSpec,
     val_batches: int,
     val_batch_size: int,
     val_mbs: int,
@@ -433,7 +431,6 @@ def rm_train(
             loss_fn,
             step=0,
             master_config=master_config,
-            rm_task_spec=rm_task_spec,
             val_batches=rm_config["val_batches"],
             val_batch_size=rm_config["val_global_batch_size"],
             val_mbs=rm_config["val_micro_batch_size"],
@@ -511,7 +508,6 @@ def rm_train(
                         loss_fn,
                         step=total_steps + 1,
                         master_config=master_config,
-                        rm_task_spec=rm_task_spec,
                         val_batches=rm_config["val_batches"],
                         val_batch_size=rm_config["val_global_batch_size"],
                         val_mbs=rm_config["val_micro_batch_size"],
