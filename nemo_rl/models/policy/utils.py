@@ -99,7 +99,7 @@ def apply_top_k_only(
     Returns:
         Filtered logits with top-k applied
     """
-    if top_k >= logits.shape[-1]:
+    if top_k >= logits.shape[-1] or top_k == -1:
         return logits
 
     # Get top-k values and create mask
