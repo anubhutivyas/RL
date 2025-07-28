@@ -28,7 +28,7 @@ checkpointing:
   metric_name: "val_reward"
   higher_is_better: true
   keep_top_k: 3
-  save_period: -1
+  save_period: 10000
 
 policy:
   model_name: "moonshotai/Moonlight-16B-A3B-Instruct"
