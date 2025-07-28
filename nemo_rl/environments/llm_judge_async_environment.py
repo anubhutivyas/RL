@@ -192,7 +192,7 @@ class AsyncVLLMWorker:
         logging.info(f"Prompt: {prompt}")
 
         sampling_params = self.SamplingParams(
-            **sampling_params_dict, guided_decoding_params=self.guided_decoding_params
+            **sampling_params_dict, guided_decoding=self.guided_decoding_params
         )
         results_generator = self.engine.generate(prompt, sampling_params, request_id)
 
