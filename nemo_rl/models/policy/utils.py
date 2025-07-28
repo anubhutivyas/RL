@@ -41,8 +41,8 @@ def apply_top_k_top_p(
     Returns:
         Filtered logits with sampling parameters applied
     """
-    if top_p is None:
-        if top_k is None:
+    if top_p is None or top_p == 1.0:
+        if top_k is None or top_k == -1:
             return logits
         # Avoid sorting vocab for top-k only case
         return apply_top_k_only(logits, top_k)
@@ -50,7 +50,7 @@ def apply_top_k_top_p(
     # Apply top-p (requires sorting)
     logits_sort, logits_idx = logits.sort(dim=-1, descending=False)
 
-    if top_k is not None:
+    if top_k is not None and top_k > 0:
         # Apply top-k first
         top_k_index = logits_sort.size(-1) - top_k
         # Get all the top_k values - need to broadcast the index across all dimensions

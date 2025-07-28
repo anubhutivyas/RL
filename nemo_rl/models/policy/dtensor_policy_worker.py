@@ -434,9 +434,13 @@ class DTensorPolicyWorker:
                 logits.div_(self.cfg["generation"]["temperature"])
 
                 # Apply top-k and top-p sampling
+                top_k = self.cfg["generation"]["top_k"]
+                top_p = self.cfg["generation"]["top_p"]
+                # Skip if no sampling is configured
+                if (top_k is None or top_k == -1) and (top_p is None or top_p == 1.0):
+                    return logits
+
                 if self.tp_size == 1:
-                    top_p = self.cfg["generation"]["top_p"]
-                    top_k = self.cfg["generation"]["top_k"]
                     logits = apply_top_k_top_p(logits, top_k=top_k, top_p=top_p)
                 else:
                     raise ValueError(
