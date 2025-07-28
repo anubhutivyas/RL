@@ -13,7 +13,7 @@
 # limitations under the License.
 
 import os
-from megatron.hub import CausalLMBridge
+from megatron.bridge import CausalLMBridge
 
 def import_model_from_hf_name(hf_model_name: str, output_path: str):
     bridge = CausalLMBridge.from_hf_pretrained(hf_model_name)

@@ -95,6 +95,8 @@ def gather_params(model, keys, key_to_global_keys: Dict[str, List[str]]):
     gathered_params = {}
     ep_pattern = re.compile(r"mlp\.experts.*\.weight\d*$")
 
+    # 0-3 rank0, 0-3 rank1
+    # keys contain [(layer0, 0, ....), (layer0, 1, ....)]
     for local_key, owner_pp_local_rank_id, shape, dtype in sorted(keys):
         if local_key in state_dict and owner_pp_local_rank_id == pp_local_rank_id:
             param = state_dict[local_key]

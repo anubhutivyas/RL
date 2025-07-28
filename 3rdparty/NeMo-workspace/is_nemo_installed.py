@@ -20,7 +20,7 @@ try:
         contextlib.redirect_stderr(io.StringIO()),
     ):
         # Silence the logging because NeMo is very verbose
-        from megatron.hub.training.initialize import initialize_megatron  # noqa: F401
+        from megatron.bridge.training.initialize import initialize_megatron  # noqa: F401
     INSTALLED = True
 except ImportError:
     INSTALLED = False

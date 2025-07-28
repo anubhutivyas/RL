@@ -55,15 +55,16 @@ from megatron.inference.text_generation.mcore_engine_server import (
     run_mcore_engine,
 )
 from megatron.training.utils import get_ltor_masks_and_position_ids
-from megatron.hub.training import fault_tolerance
-from megatron.hub.training.checkpointing import (
+from megatron.bridge import CausalLMBridge
+from megatron.bridge.training import fault_tolerance
+from megatron.bridge.training.checkpointing import (
     checkpoint_exists,
     load_checkpoint,
     save_checkpoint,
     init_checkpointing_context,
     maybe_finalize_async_save,
 )
-from megatron.hub.training.config import (
+from megatron.bridge.training.config import (
     CheckpointConfig,
     ConfigContainer,
     DistributedDataParallelConfig,
@@ -73,20 +74,20 @@ from megatron.hub.training.config import (
     TokenizerConfig,
     TrainingConfig,
 )
-from megatron.hub.training.initialize import initialize_megatron, set_jit_fusion_options
-from megatron.hub.training.optim import setup_optimizer
-from megatron.hub.training.setup import (
+from megatron.bridge.training.initialize import initialize_megatron, set_jit_fusion_options
+from megatron.bridge.training.optim import setup_optimizer
+from megatron.bridge.training.setup import (
     HAVE_FSDP2,
     _update_model_config_funcs,
 )
-from megatron.hub.training.state import GlobalState
-from megatron.hub.training.tokenizers.tokenizer import build_tokenizer
-from megatron.hub.training.utils.train_utils import (
+from megatron.bridge.training.state import GlobalState
+from megatron.bridge.training.tokenizers.tokenizer import build_tokenizer
+from megatron.bridge.training.utils.train_utils import (
     logical_and_across_model_parallel_group,
     reduce_max_stat_across_model_parallel_group,
 )
-from megatron.hub.core.models.model_provider import get_model
-from megatron.hub.core.utils.common_utils import get_rank_safe
+from megatron.bridge.core.models.model_provider import get_model
+from megatron.bridge.core.utils.common_utils import get_rank_safe
 
 from ray.util.queue import Queue
 from transformers import PreTrainedTokenizerBase
@@ -669,7 +670,7 @@ class MegatronPolicyWorker:
             align_grad_reduce=self.megatron_cfg.dist.align_grad_reduce,
         )
 
-        from megatron.hub.training.tokenizers.tokenizer import build_tokenizer
+        from megatron.bridge.training.tokenizers.tokenizer import build_tokenizer
 
         tokenizer_config = TokenizerConfig(
             tokenizer_type="HuggingFaceTokenizer",
@@ -686,7 +687,7 @@ class MegatronPolicyWorker:
         )
         self.final_padded_vocab_size = tokenizer_config.padded_vocab_size
         self.dp_size = worker_sharding_annotations.get_axis_size("data_parallel")
-        self.megatron_to_hf_converter = MegatronToHFConverter(hf_model_name, self.model)
+        self.megatron_bridge = CausalLMBridge.from_hf_pretrained(hf_model_name)
 
         self.should_disable_forward_pre_hook = (
             self.cfg["megatron_cfg"]["optimizer"]["use_distributed_optimizer"]
@@ -1434,15 +1435,12 @@ class MegatronPolicyWorker:
             del self._held_gather_buffer
             self._held_gather_buffer = None
 
-        gathered_megatron_params = gather_params(
-            self.model,
-            keys,
-            key_to_global_keys=self.local_key_to_global_keys,
+        hf_params_generator = self.megatron_bridge.export_hf_weights(
+            [self.model], mode="replicate",
         )
-
-        gathered_hf_params = self.megatron_to_hf_converter.convert(
-            gathered_megatron_params, self.model.config
-        )
+        gathered_hf_params = {
+            key: param for key, param in hf_params_generator
+        }
 
         # Get device UUID for IPC handles
         device_uuid = self.report_device_id()
