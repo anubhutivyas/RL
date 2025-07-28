@@ -475,7 +475,6 @@ def _detailed_token_comparison(vllm_logprobs, megatron_logprobs, vllm_logprobs_d
     
     if total_length > input_length:
         # Get generated tokens if available
-        print("####", vllm_logprobs_data)
         if "output_ids" in vllm_logprobs_data:
             generated_tokens = vllm_logprobs_data["output_ids"][0, input_length:total_length]
         else:
