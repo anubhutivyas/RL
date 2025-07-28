@@ -86,8 +86,8 @@ from megatron.bridge.training.utils.train_utils import (
     logical_and_across_model_parallel_group,
     reduce_max_stat_across_model_parallel_group,
 )
-from megatron.bridge.core.models.model_provider import get_model
-from megatron.bridge.core.utils.common_utils import get_rank_safe
+from megatron.bridge.models.model_provider import get_model
+from megatron.bridge.utils.common_utils import get_rank_safe
 
 from ray.util.queue import Queue
 from transformers import PreTrainedTokenizerBase
