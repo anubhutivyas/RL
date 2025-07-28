@@ -705,6 +705,8 @@ class MegatronPolicyWorker:
             ]
         )
 
+        self._held_gather_buffer = None
+
     def is_alive(self):
         return True
 
