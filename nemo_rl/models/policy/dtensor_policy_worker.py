@@ -18,37 +18,49 @@ import itertools
 import os
 from collections import defaultdict
 from contextlib import AbstractContextManager, contextmanager, nullcontext
-from typing import Any, Generator, Iterable, Optional, Set, Union, cast
+from typing import Any, Generator, Iterable, Optional, Set, cast
 
 import ray
 import torch
 from accelerate import init_empty_weights
+from nemo_automodel import NeMoAutoModelForCausalLM
+from nemo_automodel.components._transformers.utils import sliding_window_overwrite
+from nemo_automodel.components.distributed.cp_utils import (
+    create_context_parallel_ctx,
+    get_train_context,
+)
+from nemo_automodel.components.distributed.grad_utils import (
+    clip_grad_by_total_norm_,
+    get_grad_norm,
+)
+from nemo_automodel.components.distributed.parallelizer import (
+    fsdp2_strategy_parallelize,
+    unshard_fsdp2_model,
+)
+from nemo_automodel.components.distributed.tensor_utils import (
+    get_cpu_state_dict,
+    to_local_if_dtensor,
+)
 from torch import nn
 from torch.distributed.checkpoint.state_dict import (
     StateDictOptions,
     set_model_state_dict,
 )
-from torch.distributed.fsdp import (
-    FSDPModule,
-)
+from torch.distributed.fsdp import CPUOffloadPolicy, MixedPrecisionPolicy, OffloadPolicy
 from torch.distributed.tensor import DTensor, Shard
 from torch.distributed.tensor.experimental import context_parallel
 from torch.distributed.tensor.experimental._attention import (
     set_rotate_method,
 )
-from transformers import AutoConfig, AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoConfig, AutoTokenizer
 from transformers.integrations.accelerate import find_tied_parameters
 from transformers.models.gemma3.modeling_gemma3 import Gemma3ForCausalLM
 
 from nemo_rl.algorithms.interfaces import LossFunction, LossType
 from nemo_rl.algorithms.loss_functions import SequencePackingLossWrapper
 from nemo_rl.distributed.batched_data_dict import BatchedDataDict
-from nemo_rl.models.dtensor.parallelize import (
-    _parallelize_model,
-    clip_grad_by_total_norm_,
-    get_grad_norm,
+from nemo_rl.distributed.model_utils import (
     get_logprobs_from_vocab_parallel_logits,
-    to_local_if_dtensor,
 )
 from nemo_rl.models.huggingface.common import (
     ModelFlag,
@@ -66,60 +78,11 @@ from nemo_rl.models.policy.utils import (
     get_runtime_env_for_policy_worker,
     import_class_from_path,
     is_vllm_v1_engine_enabled,
-    sliding_window_overwrite,
 )
 from nemo_rl.utils.native_checkpoint import (
     load_checkpoint,
     save_checkpoint,
 )
-
-
-@contextmanager
-def unshard_fsdp2_model(model: nn.Module) -> Generator[None, None, None]:
-    """Explicitly unshard and then reshard the FSDP2 modules. Useful for logprob inference."""
-    try:
-        for module in model.modules():
-            if isinstance(module, FSDPModule):
-                module.unshard()
-        yield
-    finally:
-        for module in model.modules():
-            if isinstance(module, FSDPModule):
-                module.reshard()
-
-
-@torch.no_grad()
-def get_cpu_state_dict(
-    state_generator: Iterable[tuple[str, Union[torch.Tensor, DTensor]]],
-    pin_memory: bool = False,
-) -> dict[str, torch.Tensor]:
-    """Copy the state dict generator to CPU memory.
-
-    Args:
-        state_generator (Iterable[tuple[str, Union[torch.Tensor, DTensor]]]):
-            An iterable that yields (key, tensor) pairs from a model state.
-        pin_memory (bool, optional):
-            Whether to allocate the CPU tensors in pinned memory for faster GPU transfer.
-            Defaults to False.
-
-    Returns:
-        dict[str, torch.Tensor]: A dictionary mapping parameter names to CPU tensors.
-    """
-    new_state_dict = {}
-    for k, v in state_generator:
-        val = to_local_if_dtensor(v)
-
-        if len(val.shape) == 0:
-            new_state_dict[k] = val.cpu()
-        else:
-            cpu_tensor = torch.empty(
-                *val.shape, device="cpu", pin_memory=pin_memory, dtype=val.dtype
-            )
-            cpu_tensor.copy_(val, non_blocking=True)
-            new_state_dict[k] = cpu_tensor
-
-    torch.cuda.synchronize()
-    return new_state_dict
 
 
 @ray.remote(
@@ -202,7 +165,7 @@ class DTensorPolicyWorker:
         full_state_dict = None
         if self.rank == 0:
             print(f"[Rank {self.rank}] Loading model {model_name} on CPU...")
-            model = AutoModelForCausalLM.from_pretrained(
+            model = NeMoAutoModelForCausalLM.from_pretrained(
                 model_name,
                 device_map="cpu",  # load weights onto CPU initially
                 trust_remote_code=True,
@@ -216,7 +179,7 @@ class DTensorPolicyWorker:
         # The actual weights will be broadcast from rank 0.
 
         with init_empty_weights():
-            self.model = AutoModelForCausalLM.from_config(
+            self.model = NeMoAutoModelForCausalLM.from_config(
                 model_config,
             )
 
@@ -277,19 +240,26 @@ class DTensorPolicyWorker:
         self.cp_size = cp_size
         self.device_mesh = device_mesh
 
-        self.model = _parallelize_model(
+
+        self.model = fsdp2_strategy_parallelize(
             self.model,
-            self.dp_cp_mesh,
-            self.tp_mesh,
-            param_dtype=self.dtype,
+            device_mesh=self.device_mesh,
             sequence_parallel=sequence_parallel_enabled,
-            cpu_offload=self.cpu_offload,
             activation_checkpointing=self.cfg["dtensor_cfg"][
                 "activation_checkpointing"
             ],
-            custom_parallel_plan=self.cfg["dtensor_cfg"]["custom_parallel_plan"],
+            mp_policy=MixedPrecisionPolicy(
+                param_dtype=self.dtype,
+                reduce_dtype=torch.float32,
+                output_dtype=torch.float32,
+            ),
+            offload_policy=CPUOffloadPolicy(pin_memory=False)
+            if self.cpu_offload
+            else OffloadPolicy,
+            tp_shard_plan=self.cfg["dtensor_cfg"]["custom_parallel_plan"],
+            dp_mesh_name="dp_cp",
+            tp_mesh_name="tp",
         )
-
         print(f"[Rank {self.rank}] Loading state dict from rank 0...")
         # This will broadcast the state dict from rank 0 to all other ranks
         # and load it into the FSDP model.
@@ -643,14 +613,14 @@ class DTensorPolicyWorker:
                         )
 
                         # Create context parallel context
-                        context_parallel_ctx = self.create_context_parallel_ctx(
+                        context_parallel_ctx = create_context_parallel_ctx(
                             cp_mesh=self.cp_mesh,
                             cp_buffers=cp_buffers,
                             cp_seq_dims=[sequence_dim] * len(cp_buffers),
                             cp_no_restore_buffers=set(cp_buffers),
                         )
 
-                    with DTensorPolicyWorker.train_context(context_parallel_ctx):
+                    with get_train_context(False, False, context_parallel_ctx)():
                         with torch.autocast(device_type="cuda", dtype=self.dtype):
                             outputs = self.model(
                                 input_ids=input_ids,
@@ -935,7 +905,7 @@ class DTensorPolicyWorker:
                         cp_no_restore_buffers=set(cp_buffers),
                     )
 
-                with DTensorPolicyWorker.train_context(context_parallel_ctx):
+                with get_train_context(False, False, context_parallel_ctx)():
                     with torch.autocast(device_type="cuda", dtype=self.dtype):
                         outputs = self.model(
                             input_ids=input_ids,
