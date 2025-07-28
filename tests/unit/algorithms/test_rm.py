@@ -93,7 +93,10 @@ def mock_components():
         "policy": {
             "train_global_batch_size": 1,
             "make_sequence_length_divisible_by": 1,
-            "reward_model_type": "bradley_terry",
+            "reward_model_cfg": {
+                "enabled": True,
+                "reward_model_type": "bradley_terry",
+            },
             "train_micro_batch_size": 1,
         },
         "checkpointing": {"enabled": False},
