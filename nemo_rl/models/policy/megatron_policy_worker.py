@@ -449,7 +449,7 @@ class MegatronPolicyWorker:
                 f"Pretrained run config not found at {pretrained_run_config} on rank={get_rank_safe()}. This usually means that the one-time HF->mcore conversion on rank=0 saved to a directory not being mounted on this node. Please check "
             )
 
-        cfg_from_pretrained = ConfigContainer.from_yaml(pretrained_run_config)
+        cfg_from_pretrained = ConfigContainer.from_yaml(pretrained_run_config, mode=0)  # strict loading
         model_cfg = cfg_from_pretrained.model
         cfg_from_pretrained.logger = LoggerConfig()
 
