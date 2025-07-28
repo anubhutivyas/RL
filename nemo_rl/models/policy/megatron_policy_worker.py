@@ -142,11 +142,11 @@ def setup_megatron_model(
     state.cfg = cfg
     # TODO: Freeze state.cfg
 
+    cfg.dist.external_gpu_device_mapping = True
     initialize_megatron(
         cfg=cfg,
         get_embedding_ranks=get_embedding_ranks,
         get_position_embedding_ranks=get_position_embedding_ranks,
-        external_gpu_device_mapping=True,
     )
 
     if cfg.ft and cfg.ft.enable_ft_package:
