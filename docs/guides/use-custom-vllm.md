@@ -28,7 +28,7 @@ dependencies = [
 
 [project.optional-dependencies]
 vllm = [
-    #"vllm==0.9.0",  # <-- BEFORE
+    #"vllm==0.9.2",  # <-- BEFORE
     "vllm",          # <-- AFTER
 ]
 
