@@ -200,6 +200,7 @@ class DTensorPolicyWorker:
         with init_empty_weights():
             self.model = AutoModelForCausalLM.from_config(
                 model_config,
+                trust_remote_code=True,
             )
 
         # caching since this property is not always preserved after FSDP

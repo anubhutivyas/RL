@@ -405,7 +405,7 @@ class DiffusionNLLLoss(LossFunction):
         #print("*** ANSWER_LENGTHS_SHAPE: ", answer_lengths.shape, flush=True)
         #print("*** GLOBAL_VALID_SEQS: ", global_valid_seqs, flush=True)
         #print("*** GLOBAL_VALID_TOKS: ", global_valid_toks, flush=True)
-        mask = token_mask * sample_mask.unsqueeze(-1)
+        mask = (token_mask * masked_indices.to(torch.int32)) * sample_mask.unsqueeze(-1)
 
         next_token_logits = next_token_logits.to(torch.float32)
 
@@ -446,14 +446,12 @@ class DiffusionNLLLoss(LossFunction):
         else:
             ## single scalar loss
             ## scale by the total number of tokens in the batch
-            #print("*** TOKEN_LOGPROBS_SHAPE_A: ", token_logprobs.shape, flush=True)
-            token_logprobs = token_logprobs[masked_indices] / p_mask[masked_indices]
-            token_logprobs = token_logprobs / answer_lengths[masked_indices]
-            #print("*** TOKEN_LOGPROBS_SHAPE_B: ", token_logprobs.shape, flush=True)
+            token_logprobs = token_logprobs / p_mask
+            token_logprobs = token_logprobs / answer_lengths
             loss = -masked_mean(
                 token_logprobs,
-                mask[masked_indices],
-                global_normalization_factor=global_valid_toks,
+                mask,
+                global_normalization_factor=global_valid_seqs,
             )
 
         return loss, {
