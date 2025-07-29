@@ -1,20 +1,22 @@
 ---
-description: "Comprehensive overview of NeMo RL's modular, scalable architecture for distributed reinforcement learning with Ray-based coordination"
+description: "High-level architecture overview of NeMo RL's modular, scalable design for distributed reinforcement learning with Ray-based coordination"
 categories: ["concepts-architecture"]
-tags: ["architecture", "distributed", "ray", "virtual-cluster", "worker-groups", "reinforcement-learning", "scalability"]
+tags: ["architecture-overview", "distributed", "ray", "virtual-cluster", "worker-groups", "reinforcement-learning", "scalability"]
 personas: ["mle-focused", "researcher-focused", "admin-focused"]
 difficulty: "intermediate"
 content_type: "concept"
 modality: "universal"
 ---
 
-# Architecture
+# Architecture Overview
 
-NeMo RL is built on a modular, scalable architecture designed to handle the complexities of distributed reinforcement learning while maintaining simplicity and flexibility.
+NeMo RL is built on a modular, scalable architecture designed to handle the complexities of distributed reinforcement learning while maintaining simplicity and flexibility. This overview provides a high-level understanding of NeMo RL's architectural components and design principles.
 
-## System Overview
+## Design Philosophy
 
 NeMo RL coordinates various software components (RL Actors) through a unified interface that handles resource allocation, isolation, coordination, and communication. This design enables seamless scaling from 1 to 1000+ GPUs while remaining independent of specific RL Actor implementations.
+
+For detailed design philosophy, implementation specifics, and advanced architectural concepts, see the [Core Design & Architecture](../core-design/index) documentation.
 
 ## Core Components
 
@@ -69,20 +71,13 @@ Data flows through multiple communication channels:
 
 NeMo RL supports multiple training backends to accommodate different model sizes and requirements:
 
-### Hugging Face Backend
-- **Model Support**: 1-32B parameter models
-- **Easy Integration**: Direct Hugging Face model loading
-- **Flexibility**: Custom model architectures and tokenizers
+| Backend         | Model Support | Key Features                                   | Best Use Case              |
+|----------------|---------------|------------------------------------------------|----------------------------|
+| **Hugging Face** | 1-32B parameters | Easy integration, custom architectures | Broad model support        |
+| **Megatron Core** | Up to 70B+ parameters | Advanced parallelism, long context | Extremely large models     |
+| **DTensor (FSDP2)** | Variable | Memory efficiency, PyTorch native | Memory-constrained setups  |
 
-### Megatron Backend
-- **Large Model Support**: Up to 70B parameter models
-- **Advanced Parallelism**: Tensor, Pipeline, and Context Parallelism
-- **High Performance**: Optimized for large-scale training
-
-### DTensor (FSDP2) Backend
-- **Memory Efficiency**: Improved memory utilization
-- **PyTorch Native**: Built on PyTorch's distributed training
-- **Easy Migration**: Simple migration from existing PyTorch code
+Backends are configurable and interchangeable without altering core algorithm logic.
 
 ## Data Flow
 
@@ -164,4 +159,8 @@ NeMo RL supports multiple training backends to accommodate different model sizes
 ### API Design
 - **Interface-Based**: Clean interfaces for all components
 - **Type Hints**: Full type annotation support
-- **Documentation**: Comprehensive API documentation 
+- **Documentation**: Comprehensive API documentation
+
+## Further Reading
+
+This overview provides a high-level understanding of NeMo RL's architecture. For detailed design philosophy, implementation specifics, and advanced architectural concepts, see the [Core Design & Architecture](../core-design/index) documentation. 

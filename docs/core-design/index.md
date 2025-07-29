@@ -1,7 +1,7 @@
 ---
 description: "Explore NeMo RL's design documents, architectural decisions, and technical specifications for understanding the framework's internals"
 categories: ["concepts-architecture"]
-tags: ["design", "architecture", "technical", "specifications", "internals", "core-architecture"]
+tags: ["design", "architecture", "technical", "specifications", "internals", "design-principles"]
 personas: ["mle-focused", "researcher-focused"]
 difficulty: "advanced"
 content_type: "concept"
@@ -9,15 +9,21 @@ modality: "universal"
 ---
 
 (design-overview)=
-# About NeMo RL Core Design and Architecture
+# About NeMo RL Core Design & Architecture
 
-This section contains detailed design documents, architectural decisions, and technical specifications for NeMo RL. These documents provide insights into the framework's internals and design philosophy.
+This section contains detailed design documents, architectural decisions, and technical specifications for NeMo RL. These documents provide insights into the framework's internals and design philosophy for advanced users who want to understand, extend, or contribute to the framework.
 
 ## What You'll Find Here
 
-Our design documents are organized into four main categories to help you understand the framework's architecture and implementation:
+Our design documents are organized into four main categories to help you understand the framework's architecture and implementation. These documents are essential for:
 
-### **Core Architecture** 
+- **Understanding the Framework**: Deep dive into how NeMo RL works internally
+- **Extending Functionality**: Learn how to add custom algorithms, backends, or environments  
+- **Contributing Code**: Understand the codebase structure and design patterns
+- **Debugging Issues**: Trace problems through the system architecture
+- **Performance Optimization**: Learn about bottlenecks and optimization strategies
+
+### **Design Principles** 
 Explore the fundamental architectural decisions and design principles that shape NeMo RL. Understand the core abstractions, training backends, and parallelization strategies that enable scalable reinforcement learning.
 
 ### **Data Management**
@@ -29,13 +35,34 @@ Dive into the mathematical foundations and computational components that power N
 ### **Development Infrastructure**
 Master the development tools and infrastructure that support NeMo RL development. Learn about package management, logging systems, and other development utilities.
 
-## Core Architecture
+## Prerequisites
+
+Before diving into these documents, you should have:
+
+- **Basic RL Knowledge**: Understanding of reinforcement learning concepts (PPO, DPO, etc.)
+- **Python Experience**: Familiarity with Python and PyTorch
+- **Distributed Systems**: Basic understanding of distributed computing concepts
+- **NeMo RL Usage**: Experience using NeMo RL for training (recommended)
+
+## Recommended Reading Order
+
+For the best learning experience, we recommend reading these documents in the following order:
+
+1. **Design Philosophy** - Start with the core design principles and philosophy
+2. **Training Backends** - Understand the different model backends and their capabilities
+3. **Loss Functions** - Learn about the mathematical foundations of RL algorithms
+4. **Data Management** - Explore data processing and persistence mechanisms
+5. **Generation** - Understand the text generation pipeline
+6. **FSDP2 Parallel Plan** - Dive into advanced parallelization strategies
+7. **Development Infrastructure** - Master the tools for extending the framework
+
+## Design Principles
 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`light-bulb;1.5em;sd-mr-1` Design Philosophy
-:link: core-architecture/design-and-philosophy
+:link: design-principles/design-and-philosophy
 :link-type: doc
 
 Understand the core design principles and philosophical approach behind NeMo RL's architecture.
@@ -45,7 +72,7 @@ Understand the core design principles and philosophical approach behind NeMo RL'
 :::
 
 :::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` FSDP2 Parallel Plan
-:link: core-architecture/fsdp2-parallel-plan
+:link: design-principles/fsdp2-parallel-plan
 :link-type: doc
 
 Learn about the FSDP2 parallelization strategy and implementation details.
@@ -55,7 +82,7 @@ Learn about the FSDP2 parallelization strategy and implementation details.
 :::
 
 :::{grid-item-card} {octicon}`play;1.5em;sd-mr-1` Generation
-:link: core-architecture/generation
+:link: design-principles/generation
 :link-type: doc
 
 Explore the text generation pipeline and inference mechanisms.

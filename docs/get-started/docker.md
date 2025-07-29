@@ -8,7 +8,7 @@ content_type: "tutorial"
 modality: "universal"
 ---
 
-# Docker Setup
+# Build Docker Images
 
 This guide provides three methods for building Docker images:
 

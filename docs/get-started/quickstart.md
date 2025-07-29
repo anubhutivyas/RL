@@ -8,7 +8,7 @@ content_type: "tutorial"
 modality: "universal"
 ---
 
-# Quickstart
+# Quick Start
 
 Get started with NeMo RL in minutes! This guide will walk you through your first training run with progressive complexity.
 

@@ -1,10 +1,10 @@
 ---
 description: "Core architectural decisions and design principles that shape NeMo RL."
 tags: ["architecture", "design", "core", "foundation"]
-categories: ["core-architecture"]
+categories: ["design-principles"]
 ---
 
-# Core Architecture
+# Design Principles
 
 This section contains the fundamental architectural decisions and design principles that shape NeMo RL. These documents provide insights into the core abstractions, training backends, and parallelization strategies that enable scalable reinforcement learning.
 
@@ -14,7 +14,7 @@ This section contains the fundamental architectural decisions and design princip
 - **FSDP2 Parallel Plan**: Learn about the FSDP2 parallelization strategy and implementation details  
 - **Generation**: Explore the text generation pipeline and inference mechanisms
 
-## Core Architecture
+## Design Principles
 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
@@ -55,7 +55,7 @@ Explore the text generation pipeline and inference mechanisms.
 
 ::::{toctree}
 :hidden:
-:caption: Core Architecture
+:caption: Design Principles
 :maxdepth: 2
 design-and-philosophy
 fsdp2-parallel-plan

@@ -8,7 +8,7 @@ content_type: "concept"
 modality: "universal"
 ---
 
-# About NeMo RL Tutorials and Examples
+# About NeMo RL Tutorials & Examples
 
 Welcome to the NeMo RL Tutorials and Examples! This comprehensive collection provides everything you need to learn and master reinforcement learning with large language models using NeMo RL.
 

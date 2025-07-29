@@ -92,7 +92,7 @@ Extend and customize NeMo RL for production deployment and research.
 :gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Distributed Training
-:link: about/architecture
+:link: about/architecture-overview
 :link-type: doc
 
 Scale training across multiple GPUs and nodes with Ray-based distributed computing.
@@ -102,7 +102,7 @@ Scale training across multiple GPUs and nodes with Ray-based distributed computi
 :::
 
 :::{grid-item-card} {octicon}`beaker;1.5em;sd-mr-1` Multiple Backends
-:link: core-design/core-architecture/index
+:link: core-design/design-principles/index
 :link-type: doc
 
 Support for Hugging Face Transformers, Megatron-LM, and custom model backends.
@@ -220,7 +220,7 @@ Home <self>
 :maxdepth: 2
 about/index
 about/key-features
-about/architecture
+about/architecture-overview
 :::: 
 
 ::::{toctree}
@@ -260,7 +260,7 @@ tutorials-examples/use-cases/index
 :caption: Core Design & Architecture
 :maxdepth: 3
 core-design/index
-core-design/core-architecture/index
+core-design/design-principles/index
 core-design/data-management/index
 core-design/computational-systems/index
 core-design/development-infrastructure/index
@@ -282,7 +282,6 @@ advanced/production-deployment/index
 :caption: API Documentation
 :maxdepth: 2
 api-docs/index
-api-docs/nemo_rl/nemo_rl
 :::: 
 
 ::::{toctree}
