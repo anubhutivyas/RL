@@ -185,4 +185,14 @@ After running the examples:
 
 For additional learning resources, visit the main [Tutorials and Examples](../index) page.
 
+---
+
+::::{toctree}
+:hidden:
+:caption: Examples
+:maxdepth: 2
+sft-openmathinstruct2
+grpo-deepscaler
+:::: 
+
  

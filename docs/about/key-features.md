@@ -56,5 +56,5 @@ NeMo RL provides a robust, modular toolkit for scalable reinforcement learning a
 
 ---
 
-For more details, see the [API Documentation](../api-docs/index), [Guides](../guides/index), and [Core Design](../core-design/index).
+For more details, see the [API Documentation](../api-docs/index), [Guides](../guides/index), and [Core Design & Architecture](../core-design/index).
 

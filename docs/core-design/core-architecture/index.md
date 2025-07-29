@@ -51,4 +51,13 @@ Explore the text generation pipeline and inference mechanisms.
 
 ::::
 
- 
+---
+
+::::{toctree}
+:hidden:
+:caption: Core Architecture
+:maxdepth: 2
+design-and-philosophy
+fsdp2-parallel-plan
+generation
+:::: 

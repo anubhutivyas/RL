@@ -308,4 +308,17 @@ nemo-rl train --config config.yaml --debug
 - [Advanced Performance](../../advanced/performance/index) - Deep dive into optimization
 - [Distributed Training](../../advanced/performance/distributed-training) - Scale across nodes
 
+For additional learning resources, visit the main [Guides](../index) page.
+
+---
+
+::::{toctree}
+:hidden:
+:caption: Environment and Data
+:maxdepth: 2
+debugging
+environment-development
+nsys-profiling
+:::: 
+
  

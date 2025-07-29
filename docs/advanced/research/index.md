@@ -197,4 +197,20 @@ After understanding the research methodologies:
 4. **Develop Custom Algorithms**: Extend NeMo RL with novel contributions
 5. **Publish Research**: Share findings with the research community
 
+For additional learning resources, visit the main [Advanced](../index) page.
+
+---
+
+::::{toctree}
+:hidden:
+:caption: Research
+:maxdepth: 2
+experimental-design
+reproducibility
+performance-analysis
+hyperparameter-optimization
+ablation-studies
+custom-algorithms
+:::: 
+
  

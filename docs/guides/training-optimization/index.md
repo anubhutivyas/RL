@@ -93,4 +93,15 @@ These techniques are essential when:
 
 ---
 
-For advanced training techniques and framework extensions, see the [Advanced Topics](../advanced/index) section. 
+For advanced training techniques and framework extensions, see the [Advanced Topics](../advanced/index) section.
+
+---
+
+::::{toctree}
+:hidden:
+:caption: Training Optimization
+:maxdepth: 2
+learning-rate-scheduling
+training-stability
+hyperparameter-optimization
+:::: 

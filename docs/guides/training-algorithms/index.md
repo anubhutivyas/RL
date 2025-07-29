@@ -12,49 +12,18 @@ modality: "universal"
 
 Guides for all core RL training algorithms in NeMo RL.
 
-::::{grid} 1 1 1 2
-:gutter: 2 2 2 2
+For additional learning resources, visit the main [Guides](../index) page.
 
-:::{grid-item-card} {octicon}`play;1.5em;sd-mr-1` SFT Training
-:link: sft
-:link-type: doc
+---
 
-Supervised Fine-Tuning for language models - the foundation of RL training.
-
-+++
-{bdg-primary}`Beginner`
-:::
-
-:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` GRPO Training
-:link: grpo
-:link-type: doc
-
-Group Relative Policy Optimization for advanced reinforcement learning training.
-
-+++
-{bdg-warning}`Advanced`
-:::
-
-:::{grid-item-card} {octicon}`heart;1.5em;sd-mr-1` DPO Training
-:link: dpo
-:link-type: doc
-
-Direct Preference Optimization for preference learning and model alignment.
-
-+++
-{bdg-info}`Intermediate`
-:::
-
-:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Evaluation
-:link: eval
-:link-type: doc
-
-Model evaluation and benchmarking strategies for RL-trained models.
-
-+++
-{bdg-secondary}`Analysis`
-:::
-
-::::
+::::{toctree}
+:hidden:
+:caption: Training Algorithms
+:maxdepth: 2
+sft
+dpo
+grpo
+eval
+:::: 
 
  

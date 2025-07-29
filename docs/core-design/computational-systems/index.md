@@ -51,4 +51,15 @@ Learn about UV integration and package management strategies.
 
 ::::
 
+---
+
+::::{toctree}
+:hidden:
+:caption: Computational Systems
+:maxdepth: 2
+training-backends
+logger
+uv
+:::: 
+
  

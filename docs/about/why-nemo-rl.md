@@ -14,6 +14,18 @@ modality: "universal"
 
 Built for scalability, efficiency, and ease of use, NeMo RL provides researchers and practitioners with the tools needed to train, evaluate, and deploy RL-enhanced language models at scale.
 
+## NeMo Ecosystem Position
+
+NeMo RL is a specialized component within NVIDIA's comprehensive NeMo ecosystem, designed specifically for reinforcement learning and post-training alignment of large language models. While other NeMo repositories focus on different aspects of generative AI development, NeMo RL fills the critical gap in RL-based model alignment and optimization.
+
+**NeMo RL's Role in the Ecosystem:**
+
+NeMo RL complements other NeMo repositories by providing the RL-specific tooling and algorithms needed for advanced model alignment. While [NeMo Framework](https://github.com/NVIDIA/NeMo) handles the core training infrastructure and model development, and [NeMo Guardrails](https://github.com/NVIDIA/NeMo-Guardrails) focuses on safety and alignment, NeMo RL specializes in reinforcement learning techniques for preference learning, reasoning enhancement, and behavioral alignment. This specialization allows researchers and practitioners to leverage state-of-the-art RL algorithms like GRPO and DPO within the familiar NeMo ecosystem, ensuring seamless integration with existing NeMo workflows and infrastructure.
+
+**Integration with NeMo Framework:**
+
+NeMo RL builds upon the foundational capabilities provided by the main NeMo Framework, leveraging its distributed training infrastructure, model backends, and data processing pipelines. This integration enables users to transition smoothly from supervised fine-tuning in NeMo Framework to reinforcement learning in NeMo RL, using the same model checkpoints, data formats, and deployment strategies. The shared ecosystem ensures consistency in model handling, checkpointing, and production deployment across the entire NeMo suite.
+
 ## Architecture and Design Principles
 
 - **Modular and Backend-Agnostic**  

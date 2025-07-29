@@ -1,176 +1,213 @@
 ﻿---
-description: "Comprehensive documentation for NeMo RL - a scalable, modular, and efficient post-training library for reinforcement learning and supervised fine-tuning of large language models"
+description: "Explore comprehensive documentation for NeMo RL, including tutorials, guides, and deployment instructions for reinforcement learning with large language models."
+tags: ["overview", "quickstart", "getting-started", "reinforcement-learning", "large-language-models"]
 categories: ["getting-started"]
-tags: ["reinforcement-learning", "supervised-fine-tuning", "large-language-models", "documentation", "overview"]
-personas: ["mle-focused", "researcher-focused", "admin-focused"]
-difficulty: "beginner"
-content_type: "concept"
-modality: "universal"
 ---
 
 # NeMo RL Documentation
 
-Welcome to the NeMo RL documentation! NeMo RL is a scalable, modular, and efficient post-training 
-library for reinforcement learning and supervised fine-tuning of large language models.
+Welcome to the NeMo RL documentation. NeMo RL is an open-source, comprehensive framework for reinforcement learning and supervised fine-tuning of large language models.
 
-## Quick Navigation
+## What is NeMo RL?
 
-::::{grid} 1 2 2 2
+NeMo RL is a production-ready framework that combines the power of reinforcement learning with large language models. It provides a unified platform for training, fine-tuning, and deploying language models using state-of-the-art RL algorithms like DPO, GRPO, and SFT.
+
+## Quick Start
+
+::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`rocket;1.5em;sd-mr-1` Get Started
-:link: get-started/index
+:::{grid-item-card} {octicon}`rocket;1.5em;sd-mr-1` Quick Start
+:link: get-started/quickstart
 :link-type: doc
-:class-body: text-center
 
-Set up your environment and run your first reinforcement learning training job with large language models.
+Get up and running with your first RL training job in minutes.
 
 +++
-{bdg-success}`Beginner` {bdg-secondary}`Setup`
+{bdg-primary}`Beginner`
 :::
 
-:::{grid-item-card} {octicon}`play;1.5em;sd-mr-1` Tutorials and Examples
+:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Installation
+:link: get-started/installation
+:link-type: doc
+
+Complete setup instructions for all environments and platforms.
+
++++
+{bdg-success}`Essential`
+:::
+
+::::
+
+## Core Learning Path
+
+::::{grid} 1 1 1 2
+:gutter: 2 2 2 2
+
+:::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` About NeMo RL
+:link: about/index
+:link-type: doc
+
+Learn about NeMo RL's core concepts, key features, and fundamental architecture.
+
++++
+{bdg-primary}`Foundation`
+:::
+
+:::{grid-item-card} {octicon}`play;1.5em;sd-mr-1` Training Algorithms
+:link: guides/training-algorithms/index
+:link-type: doc
+
+Master SFT, DPO, and GRPO training algorithms with comprehensive guides.
+
++++
+{bdg-info}`Training`
+:::
+
+:::{grid-item-card} {octicon}`mortar-board;1.5em;sd-mr-1` Tutorials & Examples
 :link: tutorials-examples/index
 :link-type: doc
-:class-body: text-center
 
-Learn NeMo RL with step-by-step tutorials, working examples, and real-world use cases for reinforcement learning with language models.
-
-+++
-{bdg-primary}`Learning` {bdg-secondary}`Hands-on`
-:::
-
-:::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` Guides
-:link: guides/index
-:link-type: doc
-:class-body: text-center
-
-Master NeMo RL with organized guides covering training algorithms, model development, infrastructure, and production workflows.
+Step-by-step tutorials and working examples for hands-on learning.
 
 +++
-{bdg-warning}`Advanced` {bdg-secondary}`Reference`
+{bdg-secondary}`Learning`
 :::
 
-:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Core Design and Architecture
-:link: core-design/index
-:link-type: doc
-:class-body: text-center
-
-Explore NeMo RL's core architecture, data management, computational systems, and development infrastructure.
-
-+++
-{bdg-secondary}`Architecture` {bdg-secondary}`Design`
-:::
-
-:::{grid-item-card} {octicon}`beaker;1.5em;sd-mr-1` Advanced Topics
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Advanced Topics
 :link: advanced/index
 :link-type: doc
-:class-body: text-center
 
-Deep technical content for researchers and advanced practitioners including mathematical foundations, research methodologies, and optimization techniques.
+Extend and customize NeMo RL for production deployment and research.
 
 +++
-{bdg-warning}`Advanced` {bdg-secondary}`Research`
+{bdg-warning}`Advanced`
+:::
+
+::::
+
+## Key Features
+
+::::{grid} 1 1 1 2
+:gutter: 2 2 2 2
+
+:::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Distributed Training
+:link: about/architecture
+:link-type: doc
+
+Scale training across multiple GPUs and nodes with Ray-based distributed computing.
+
++++
+{bdg-info}`Scalability`
+:::
+
+:::{grid-item-card} {octicon}`beaker;1.5em;sd-mr-1` Multiple Backends
+:link: core-design/core-architecture/index
+:link-type: doc
+
+Support for Hugging Face Transformers, Megatron-LM, and custom model backends.
+
++++
+{bdg-secondary}`Flexibility`
+:::
+
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` RL Algorithms
+:link: guides/training-algorithms/index
+:link-type: doc
+
+State-of-the-art algorithms: DPO, GRPO, SFT with custom loss functions.
+
++++
+{bdg-primary}`Algorithms`
+:::
+
+:::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Environments
+:link: guides/environment-data/index
+:link-type: doc
+
+Built-in environments for math problems, games, and custom environment development.
+
++++
+{bdg-info}`Environments`
+:::
+
+::::
+
+## Reference Documentation
+
+::::{grid} 1 1 1 2
+:gutter: 2 2 2 2
+
+:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Configuration Reference
+:link: references/configuration-reference
+:link-type: doc
+
+Complete reference for all configuration options and parameters.
+
++++
+{bdg-primary}`Reference`
+:::
+
+:::{grid-item-card} {octicon}`terminal;1.5em;sd-mr-1` CLI Reference
+:link: references/cli-reference
+:link-type: doc
+
+Command-line interface commands and usage patterns.
+
++++
+{bdg-info}`CLI`
 :::
 
 :::{grid-item-card} {octicon}`code;1.5em;sd-mr-1` API Documentation
 :link: api-docs/index
 :link-type: doc
-:class-body: text-center
 
-Complete API documentation including high-level guides and detailed auto-generated reference for all NeMo RL components.
+Comprehensive API documentation for all NeMo RL components.
 
 +++
-{bdg-primary}`Technical` {bdg-secondary}`API`
+{bdg-warning}`Development`
 :::
 
-:::{grid-item-card} {octicon}`terminal;1.5em;sd-mr-1` Configuration and CLI
-:link: configuration-cli/index
+:::{grid-item-card} {octicon}`light-bulb;1.5em;sd-mr-1` Core Design & Architecture
+:link: core-design/index
 :link-type: doc
-:class-body: text-center
 
-Access comprehensive reference documentation including configuration options and CLI tools.
+Architectural decisions and technical specifications for framework internals.
 
 +++
-{bdg-info}`Technical` {bdg-secondary}`Reference`
+{bdg-warning}`Advanced`
 :::
 
 ::::
 
-## Learning Path
+## Getting Help
 
-Follow this structured progression to master NeMo RL:
-
-### **Beginner Path** (0-2 weeks)
-1. **Installation and Setup** → [Installation Guide](get-started/installation)
-2. **First Training Run** → [Quickstart Guide](get-started/quickstart)
-3. **SFT Tutorial** → [Supervised Fine-Tuning Tutorial](tutorials-examples/tutorials/sft-tutorial)
-4. **Basic Examples** → [SFT on OpenMathInstruct-2](tutorials-examples/examples/sft-openmathinstruct2)
-
-### **Intermediate Path** (2-4 weeks)
-1. **DPO Tutorial** → [Direct Preference Optimization Tutorial](tutorials-examples/tutorials/dpo-tutorial)
-2. **Evaluation Tutorial** → [Model Evaluation Tutorial](tutorials-examples/tutorials/evaluation-tutorial)
-3. **Advanced Examples** → [GRPO on DeepScaleR](tutorials-examples/examples/grpo-deepscaler)
-4. **Use Cases** → [Code Generation](tutorials-examples/use-cases/code-generation) and [Mathematical Reasoning](tutorials-examples/use-cases/mathematical-reasoning)
-
-### **Advanced Path** (4+ weeks)
-1. **GRPO Tutorial** → [Group Relative Policy Optimization Tutorial](tutorials-examples/tutorials/grpo-tutorial)
-2. **Advanced Performance** → [Performance and Optimization](advanced/performance/index)
-3. **Distributed Training** → [Distributed Training Guide](advanced/performance/distributed-training)
-4. **Production Deployment** → [Production and Support](guides/production-support/index)
-
-## Key Resources
-
-::::{grid} 1 2 2 2
+::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Distributed Training
-:link: advanced/performance/distributed-training
+:::{grid-item-card} {octicon}`bug;1.5em;sd-mr-1` Troubleshooting
+:link: guides/troubleshooting
 :link-type: doc
 
-Scale RL training across multiple GPUs and nodes with Ray clusters.
+Common issues, error messages, and solutions.
 
 +++
-{bdg-warning}`Advanced`
+{bdg-warning}`Support`
 :::
 
-:::{grid-item-card} {octicon}`plus;1.5em;sd-mr-1` Add New Models
-:link: guides/model-development/adding-new-models
-:link-type: doc
-
-Extend NeMo RL with custom model architectures and backends.
-
-+++
-{bdg-info}`Development`
-:::
-
-:::{grid-item-card} {octicon}`zap;1.5em;sd-mr-1` Performance and Optimization
-:link: advanced/performance/index
-:link-type: doc
-
-Optimize training performance, benchmarking, and profiling techniques.
-
-+++
-{bdg-warning}`Advanced`
-:::
-
-:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Production and Support
+:::{grid-item-card} {octicon}`question;1.5em;sd-mr-1` Production Support
 :link: guides/production-support/index
 :link-type: doc
 
-Testing, debugging, packaging, and deployment strategies.
+Deployment guides, monitoring, and production best practices.
 
 +++
-{bdg-secondary}`Production`
+{bdg-info}`Production`
 :::
 
 ::::
 
 ---
-
-```{include} ../README.md
-:relative-docs: docs/
-```
 
 ::::{toctree}
 :hidden:
@@ -179,126 +216,80 @@ Home <self>
 
 ::::{toctree}
 :hidden:
-:caption: About
-:maxdepth: 1
-about/index.md
-about/key-features.md
-about/architecture.md
-::::
+:caption: About 
+:maxdepth: 2
+about/index
+about/key-features
+about/architecture
+:::: 
 
 ::::{toctree}
 :hidden:
 :caption: Get Started
 :maxdepth: 2
-get-started/index.md
-get-started/quickstart.md
-get-started/installation.md
-get-started/local-workstation.md
-get-started/docker.md
-get-started/cluster.md
-::::
-
-::::{toctree}
-:hidden:
-:caption: Tutorials and Examples
-:maxdepth: 2
-tutorials-examples/index.md
-tutorials-examples/tutorials/index.md
-tutorials-examples/tutorials/sft-tutorial.md
-tutorials-examples/tutorials/dpo-tutorial.md
-tutorials-examples/tutorials/grpo-tutorial.md
-tutorials-examples/tutorials/evaluation-tutorial.md
-tutorials-examples/examples/index.md
-tutorials-examples/examples/sft-openmathinstruct2.md
-tutorials-examples/examples/grpo-deepscaler.md
-tutorials-examples/use-cases/index.md
-tutorials-examples/use-cases/code-generation.md
-tutorials-examples/use-cases/mathematical-reasoning.md
-::::
+get-started/index
+get-started/quickstart
+get-started/installation
+get-started/docker
+get-started/cluster
+:::: 
 
 ::::{toctree}
 :hidden:
 :caption: Guides
 :maxdepth: 2
-guides/index.md
-guides/training-algorithms/index.md
-guides/training-algorithms/sft.md
-guides/training-algorithms/dpo.md
-guides/training-algorithms/grpo.md
-guides/training-algorithms/eval.md
-guides/model-development/index.md
-guides/model-development/adding-new-models.md
-guides/model-development/model-quirks.md
-guides/production-support/index.md
-guides/production-support/troubleshooting.md
-guides/production-support/testing.md
-guides/production-support/documentation.md
-guides/production-support/packaging.md
-guides/environment-data/index.md
-guides/environment-data/debugging.md
-guides/environment-data/environment-development.md
-guides/environment-data/nsys-profiling.md
-guides/training-optimization/index.md
-guides/training-optimization/learning-rate-scheduling.md
-guides/training-optimization/training-stability.md
-guides/training-optimization/hyperparameter-optimization.md
-guides/troubleshooting.md
-::::
+guides/index
+guides/training-algorithms/index
+guides/model-development/index
+guides/environment-data/index
+guides/production-support/index
+:::: 
 
 ::::{toctree}
 :hidden:
-:caption: Core Design and Architecture
-:maxdepth: 2
-core-design/index.md
-core-design/core-architecture/index.md
-core-design/core-architecture/design-and-philosophy.md
-core-design/core-architecture/generation.md
-core-design/core-architecture/fsdp2-parallel-plan.md
-core-design/data-management/index.md
-core-design/data-management/chat-datasets.md
-core-design/data-management/padding.md
-core-design/computational-systems/index.md
-core-design/computational-systems/training-backends.md
-core-design/computational-systems/uv.md
-core-design/computational-systems/logger.md
-core-design/development-infrastructure/index.md
-core-design/development-infrastructure/checkpointing.md
-core-design/development-infrastructure/loss-functions.md
-::::
+:caption: Tutorials & Examples
+:maxdepth: 3
+tutorials-examples/index
+tutorials-examples/tutorials/index
+tutorials-examples/examples/index
+tutorials-examples/use-cases/index
+:::: 
+
+::::{toctree}
+:hidden:
+:caption: Core Design & Architecture
+:maxdepth: 3
+core-design/index
+core-design/core-architecture/index
+core-design/data-management/index
+core-design/computational-systems/index
+core-design/development-infrastructure/index
+:::: 
 
 ::::{toctree}
 :hidden:
 :caption: Advanced Topics
-:maxdepth: 2
-advanced/index.md
-advanced/algorithm-implementation.md
-advanced/performance-scaling.md
-advanced/custom-loss-functions.md
-advanced/model-validation.md
-advanced/production-deployment.md
-advanced/performance/index.md
-advanced/research/index.md
-advanced/theory/index.md
-advanced/training/index.md
-::::
-
-::::{toctree}
-:hidden:
-:caption: References
-:maxdepth: 2
-references/index.md
-references/cli-reference.md
-references/configuration-reference.md
-::::
+:maxdepth: 3
+advanced/index
+advanced/algorithm-customization/index
+advanced/performance-scaling/index
+advanced/research-validation/index
+advanced/production-deployment/index
+:::: 
 
 ::::{toctree}
 :hidden:
 :caption: API Documentation
 :maxdepth: 2
-api-docs/index.md
-api-docs/models.md
-api-docs/distributed.md
-api-docs/auto-generated.md
+api-docs/index
+api-docs/nemo_rl/nemo_rl
+:::: 
+
+::::{toctree}
+:hidden:
+:caption: References
+:maxdepth: 2
+references/index
+references/configuration-reference
+references/cli-reference
 ::::
-
-

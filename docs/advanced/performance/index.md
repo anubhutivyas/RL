@@ -396,4 +396,20 @@ def benchmark_memory():
 
 For more specific optimization techniques, see [Distributed Training](distributed-training.md) and [Performance Analysis](../research/performance-analysis.md). 
 
+For additional learning resources, visit the main [Advanced](../index) page.
+
+---
+
+::::{toctree}
+:hidden:
+:caption: Performance
+:maxdepth: 2
+distributed-training
+profiling
+monitoring
+memory-optimization
+benchmarking
+mixed-precision
+:::: 
+
  

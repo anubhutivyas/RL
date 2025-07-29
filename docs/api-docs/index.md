@@ -230,4 +230,16 @@ When contributing to NeMo RL, please follow these guidelines:
 
 For more information on contributing, see the [Development Guide](../guides/production-support/testing).
 
+---
+
+::::{toctree}
+:hidden:
+:caption: API Documentation
+:maxdepth: 2
+auto-generated
+distributed
+models
+nemo_rl/nemo_rl
+:::: 
+
  

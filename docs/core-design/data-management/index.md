@@ -40,4 +40,14 @@ Learn about padding strategies and their impact on training efficiency.
 
 ::::
 
+---
+
+::::{toctree}
+:hidden:
+:caption: Data Management
+:maxdepth: 2
+chat-datasets
+padding
+:::: 
+
  

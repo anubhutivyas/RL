@@ -140,4 +140,6 @@ Testing, debugging, packaging, and deployment strategies.
 
 ::::
 
+For additional learning resources, visit the main [Guides](../index) page.
+
 

@@ -111,4 +111,18 @@ After setting up your production environment:
 
 For additional support and troubleshooting, refer to the individual guides in this section.
 
+For additional learning resources, visit the main [Guides](../index) page.
+
+---
+
+::::{toctree}
+:hidden:
+:caption: Production and Support
+:maxdepth: 2
+troubleshooting
+testing
+documentation
+packaging
+:::: 
+
  

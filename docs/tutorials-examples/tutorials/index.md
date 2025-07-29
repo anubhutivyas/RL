@@ -151,13 +151,14 @@ After completing the tutorials:
 
 For additional learning resources, visit the main [Tutorials and Examples](../index) page.
 
-```{toctree}
-:maxdepth: 2
-:caption: Tutorials
-:hidden:
+---
 
+::::{toctree}
+:hidden:
+:caption: Tutorials
+:maxdepth: 2
 sft-tutorial
 dpo-tutorial
 grpo-tutorial
 evaluation-tutorial
-``` 
+:::: 
