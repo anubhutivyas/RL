@@ -1,8 +1,18 @@
 # Nemo RL: A Scalable and Efficient Post-Training Library
 
+## 📣 News
+* [7/25/2025] [Release v0.3.0!](https://github.com/NVIDIA-NeMo/RL/releases/tag/v0.3.0)
+    * 📝 [v0.3.0 Blog Post](https://nvidia-nemo.github.io/blog/2025/07/21/nemo-rl-v0.3/)
+    * 📊 View the release run metrics on [Google Colab](https://colab.research.google.com/drive/15kpesCV1m_C5UQFStssTEjaN2RsBMeZ0?usp=sharing) to get a head start on your experimentation.
+* [5/14/2025] [Reproduce DeepscaleR with NeMo RL!](docs/guides/grpo-deepscaler.md)
+* [5/14/2025] [Release v0.2.1!](https://github.com/NVIDIA-NeMo/RL/releases/tag/v0.2.1)
+    * 📊 View the release run metrics on [Google Colab](https://colab.research.google.com/drive/1o14sO0gj_Tl_ZXGsoYip3C0r5ofkU1Ey?usp=sharing) to get a head start on your experimentation.
+
+## Table of Contents
 <!-- markdown all in one -->
 - [Nemo RL: A Scalable and Efficient Post-Training Library](#nemo-rl-a-scalable-and-efficient-post-training-library)
   - [📣 News](#-news)
+  - [Table of Contents](#table-of-contents)
   - [Features](#features)
   - [Prerequisites](#prerequisites)
   - [Training Backends](#training-backends)
@@ -38,13 +48,6 @@ What you can expect:
 - **Efficient resource management using Ray**, enabling scalable and flexible deployment across different hardware configurations.
 - **Flexibility** with a modular design that allows easy integration and customization.
 - **Comprehensive documentation** that is both detailed and user-friendly, with practical examples.
-
-## 📣 News
-* [7/25/2025] [Release v0.3.0!](https://github.com/NVIDIA-NeMo/RL/releases/tag/v0.3.0)
-    * 📊 View the release run metrics on [Google Colab](https://colab.research.google.com/drive/15kpesCV1m_C5UQFStssTEjaN2RsBMeZ0?usp=sharing) to get a head start on your experimentation.
-* [5/14/2025] [Reproduce DeepscaleR with NeMo RL!](docs/guides/grpo-deepscaler.md)
-* [5/14/2025] [Release v0.2.1!](https://github.com/NVIDIA-NeMo/RL/releases/tag/v0.2.1)
-    * 📊 View the release run metrics on [Google Colab](https://colab.research.google.com/drive/1o14sO0gj_Tl_ZXGsoYip3C0r5ofkU1Ey?usp=sharing) to get a head start on your experimentation.
 
 ## Features
 
@@ -135,6 +138,7 @@ bash tools/build-flash-attn-in-uv-cache.sh
 - Use the `uv run <command>` to execute scripts within the managed environment. This helps maintain consistency across different shells and sessions.
 - Ensure you have the necessary CUDA drivers and PyTorch installed compatible with your hardware.
 - On the first install, `flash-attn` can take a while to install (~45min with 48 CPU hyperthreads). After it is built once, it is cached in your `uv`'s cache dir making subsequent installs much quicker.
+- If you update your environment in `pyproject.toml`, it is necessary to force a rebuild of the virtual environments by setting `NRL_FORCE_REBUILD_VENVS=true` next time you launch a run.
 - **Reminder**: Don't forget to set your `HF_HOME`, `WANDB_API_KEY`, and `HF_DATASETS_CACHE` (if needed). You'll need to do a `huggingface-cli login` as well for Llama models.
 
 ## Training Backends
@@ -456,7 +460,7 @@ For detailed instructions on how to set up and launch NeMo RL on Slurm or Kubern
   git submodule update --init --recursive
   ```
 
-  and then force a rebuild of the virutal environments by setting `NRL_FORCE_REBUILD_VENVS=true` next time you launch a run:
+  and then force a rebuild of the virtual environments by setting `NRL_FORCE_REBUILD_VENVS=true` next time you launch a run:
 
   ```sh
   NRL_FORCE_REBUILD_VENVS=true uv run examples/run_grpo.py ...
