@@ -325,7 +325,9 @@ class VllmGenerationWorker:
         llm_kwargs = dict(
             model=self.model_name,
             load_format=load_format,
-            skip_tokenizer_init=self.cfg["vllm_cfg"]["skip_tokenizer_init"],
+            # vllm==0.10.0 will break when skip_tokenizer_init=True
+            # will reverted back to `self.cfg["vllm_cfg"]["skip_tokenizer_init"]` once it fixed
+            skip_tokenizer_init=False,
             tensor_parallel_size=self.tensor_parallel_size,
             pipeline_parallel_size=self.pipeline_parallel_size,
             gpu_memory_utilization=self.gpu_memory_utilization,
