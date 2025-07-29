@@ -14,13 +14,13 @@
 import os
 import warnings
 from pathlib import Path
-from typing import Any, Optional, TypedDict, TypeVar, cast
+from typing import Any, NotRequired, Optional, TypedDict, TypeVar, cast
 
 import numpy as np
 import ray
 import torch
 from torchdata.stateful_dataloader import StatefulDataLoader
-from transformers import PreTrainedTokenizerBase
+from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
 from nemo_rl.algorithms.interfaces import LossFunction
 from nemo_rl.algorithms.loss_functions import (
@@ -83,12 +83,13 @@ class GRPOConfig(TypedDict):
     val_batch_size: int
     val_at_start: bool
     max_val_samples: int
-    checkpoint_dir: str
 
 
 class GRPOSaveState(TypedDict):
     step: int
-    val_reward: float
+    val_reward: NotRequired[
+        float
+    ]  # Optional field - may not be present during training
     consumed_samples: int
 
 
@@ -165,8 +166,8 @@ def setup(
     # ==========================
     checkpointer = CheckpointManager(master_config["checkpointing"])
     last_checkpoint_path = checkpointer.get_latest_checkpoint_path()
-    grpo_save_state: Optional[GRPOSaveState] = checkpointer.load_training_info(
-        last_checkpoint_path
+    grpo_save_state: Optional[GRPOSaveState] = cast(
+        Optional[GRPOSaveState], checkpointer.load_training_info(last_checkpoint_path)
     )
     if grpo_save_state is None:
         grpo_save_state = _default_grpo_save_state()
@@ -348,6 +349,10 @@ def setup(
         # wait for all futures to complete
         ray.get(futures_train + futures_inference)
 
+    # prepare refit info
+    state_dict_info = policy.prepare_refit_info()
+    policy_generation.prepare_refit_info(state_dict_info)
+
     loss_fn = ClippedPGLossFn(loss_config)
 
     print("\n" + "=" * 60)
@@ -423,17 +428,15 @@ def refit_policy_generation(
         # do update
         for keys in grouped_param_keys:
             ipc_handles = policy.get_weights_ipc_handles(keys)
-            update_success = policy_generation.update_weights(ipc_handles)
+            update_success = policy_generation.update_weights_from_ipc_handles(
+                ipc_handles
+            )
             if not update_success:
                 break
     else:
-        # prepare info for update weights
-        state_dict_info = policy.prepare_info_for_collective()
         # update weights through nccl
         futures_train = policy.broadcast_weights_for_collective()
-        futures_inference = policy_generation.update_weights_from_collective(
-            state_dict_info
-        )
+        futures_inference = policy_generation.update_weights_from_collective()
         # wait for all futures to complete
         ray.get(futures_train)
         results = ray.get(futures_inference)
