@@ -24,9 +24,13 @@ The profiling trace will be saved in the following file structure
 $NRL_TORCH_PROFILE_DIR/
     <controller trace json files>
     dtensor_policy_worker/
-        <dtensor policy worker trace json files>
+        0/
+            <dtensor policy worker trace json files for rank 0>
+        ...
     megatron_policy_worker/
-        <megatron policy worker trace json files>
+        0/
+            <megatron policy worker trace json files for rank 0>
+        ...
     vllm_generation_worker/
         <vllm generation worker trace json files>
 ```
