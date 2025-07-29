@@ -254,7 +254,7 @@ class ClippedPGLossFn(LossFunction):
             s_i = s_i.sum(-1) / mask.sum(-1)
             s_i = s_i.exp().detach().view(-1, 1)
 
-            sequence_ratios = s_i * (curr_logprobs - curr_logprobs.detach())
+            sequence_ratios = s_i * (curr_logprobs - curr_logprobs.detach()).exp()
             sequence_ratios_clamped = sequence_ratios.clamp(
                 1.0 - self.ratio_clip_min, 1.0 + self.ratio_clip_max
             )
