@@ -71,6 +71,8 @@ from nemo_rl.utils.native_checkpoint import (
     load_checkpoint,
     save_checkpoint,
 )
+from nemo_rl.utils.torch_profiler import NRL_TORCH_PROFILE_ENABLED, NRL_TORCH_PROFILE_DIR
+from nemo_rl.utils.torch_profiler import pattern_match as torch_profile_pattern_match
 
 
 @contextmanager
@@ -386,6 +388,23 @@ class DTensorPolicyWorker:
             None
         )
         self._held_streamed_param_reference: Optional[dict[str, torch.Tensor]] = None
+
+        # profiler
+        if (
+            NRL_TORCH_PROFILE_ENABLED
+            and torch_profile_pattern_match("dtensor_policy_worker")
+        ):
+            os.makedirs(f"{NRL_TORCH_PROFILE_DIR}/dtensor_policy_worker", exist_ok=True)
+            os.makedirs(f"{NRL_TORCH_PROFILE_DIR}/dtensor_policy_worker/{self.rank}", exist_ok=True)
+            self.torch_profiler = torch.profiler.profile(
+                activities=[torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA],
+                with_stack=True,
+                on_trace_ready=torch.profiler.tensorboard_trace_handler(
+                    f"{NRL_TORCH_PROFILE_DIR}/dtensor_policy_worker/{self.rank}"
+                ),
+            )
+        else:
+            self.torch_profiler = None
 
     # Refer to nemo impl. Below is original comment.
     # based on https://github.com/pytorch/torchtitan/blob/main/torchtitan/distributed/utils.py#L113
@@ -1370,3 +1389,13 @@ class DTensorPolicyWorker:
     def stop_gpu_profiling(self) -> None:
         """Stop GPU profiling."""
         torch.cuda.profiler.stop()
+
+    def start_torch_profiling(self) -> None:
+        """Start Torch profiling."""
+        if self.torch_profiler is not None:
+            self.torch_profiler.start()
+
+    def stop_torch_profiling(self) -> None:
+        """Stop Torch profiling."""
+        if self.torch_profiler is not None:
+            self.torch_profiler.stop()

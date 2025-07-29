@@ -121,6 +121,8 @@ from nemo_rl.models.policy.utils import (
     get_megatron_checkpoint_dir,
     get_runtime_env_for_policy_worker,
 )
+from nemo_rl.utils.torch_profiler import NRL_TORCH_PROFILE_ENABLED, NRL_TORCH_PROFILE_DIR
+from nemo_rl.utils.torch_profiler import pattern_match as torch_profile_pattern_match
 
 TokenizerType = TypeVar("TokenizerType", bound=PreTrainedTokenizerBase)
 
@@ -696,6 +698,23 @@ class MegatronPolicyWorker:
         self.local_key_to_global_keys = None
         ## used for streaming update inference engine weights
         self._held_gather_buffer = None
+
+        # profiler
+        if (
+            NRL_TORCH_PROFILE_ENABLED
+            and torch_profile_pattern_match("megatron_policy_worker")
+        ):
+            os.makedirs(f"{NRL_TORCH_PROFILE_DIR}/megatron_policy_worker", exist_ok=True)
+            os.makedirs(f"{NRL_TORCH_PROFILE_DIR}/megatron_policy_worker/{get_rank_safe()}", exist_ok=True)
+            self.torch_profiler = torch.profiler.profile(
+                activities=[torch.profiler.ProfilerActivity.CPU, torch.profiler.ProfilerActivity.CUDA],
+                with_stack=True,
+                on_trace_ready=torch.profiler.tensorboard_trace_handler(
+                    f"{NRL_TORCH_PROFILE_DIR}/megatron_policy_worker/{get_rank_safe()}"
+                ),
+            )
+        else:
+            self.torch_profiler = None
 
     def is_alive(self):
         return True
@@ -1744,3 +1763,13 @@ class MegatronPolicyWorker:
     def stop_gpu_profiling(self) -> None:
         """Stop GPU profiling."""
         torch.cuda.profiler.stop()
+    
+    def start_torch_profiling(self) -> None:
+        """Start torch profiling."""
+        if self.torch_profiler is not None:
+            self.torch_profiler.start()
+    
+    def stop_torch_profiling(self) -> None:
+        """Stop torch profiling."""
+        if self.torch_profiler is not None:
+            self.torch_profiler.stop()

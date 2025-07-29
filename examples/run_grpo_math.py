@@ -244,6 +244,7 @@ def main() -> None:
         checkpointer,
         grpo_state,
         master_config,
+        torch_profiler,
     ) = setup(config, tokenizer, dataset, val_dataset)
 
     grpo_train(
@@ -259,6 +260,7 @@ def main() -> None:
         checkpointer,
         grpo_state,
         master_config,
+        torch_profiler,
     )
 
 

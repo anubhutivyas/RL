@@ -52,7 +52,8 @@ from nemo_rl.models.generation.interfaces import (
     verify_right_padding,
 )
 from nemo_rl.models.huggingface.common import ModelFlag
-
+from nemo_rl.utils.torch_profiler import NRL_TORCH_PROFILE_ENABLED, NRL_TORCH_PROFILE_DIR
+from nemo_rl.utils.torch_profiler import pattern_match as torch_profile_pattern_match
 
 class VllmSpecificArgs(TypedDict):
     tensor_parallel_size: int
@@ -350,6 +351,23 @@ class VllmGenerationWorker:
         # will be initialized in post_init
         # used in update_weights_from_ipc_handles
         self.vllm_device_ids = None
+
+        # profiler
+        if (
+            NRL_TORCH_PROFILE_ENABLED
+            and torch_profile_pattern_match("vllm_generation_worker")
+            and self.is_model_owner
+        ):
+            os.makedirs(f"{NRL_TORCH_PROFILE_DIR}/vllm_generation_worker", exist_ok=True)
+            self.torch_profiler = torch.profiler.profile(
+                activities=[torch.profiler.ProfilerActivity.CPU],
+                with_stack=True,
+                on_trace_ready=torch.profiler.tensorboard_trace_handler(
+                    f"{NRL_TORCH_PROFILE_DIR}/vllm_generation_worker"
+                ),
+            )
+        else:
+            self.torch_profiler = None
 
     def post_init(self):
         self.vllm_device_ids = self.report_device_id()
@@ -1318,6 +1336,17 @@ class VllmGenerationWorker:
         """Stop GPU profiling."""
         torch.cuda.profiler.stop()
 
+    def start_torch_profiling(self) -> None:
+        """Start Torch profiling."""
+        if self.torch_profiler is None:
+            return
+        self.torch_profiler.start()
+
+    def stop_torch_profiling(self) -> None:
+        """Stop Torch profiling."""
+        if self.torch_profiler is None:
+            return
+        self.torch_profiler.stop()
 
 class VllmGeneration(GenerationInterface):
     def __init__(
@@ -2009,6 +2038,14 @@ class VllmGeneration(GenerationInterface):
         """Stop GPU profiling."""
         futures = self.worker_group.run_all_workers_single_data("stop_gpu_profiling")
         ray.get(futures)
+
+    def start_torch_profiling(self) -> None:
+        """Start Torch profiling."""
+        ray.get(self.worker_group.run_all_workers_single_data("start_torch_profiling"))
+
+    def stop_torch_profiling(self) -> None:
+        """Stop Torch profiling."""
+        ray.get(self.worker_group.run_all_workers_single_data("stop_torch_profiling"))
 
     def __del__(self) -> None:
         """Shuts down the worker groups when the object is deleted or is garbage collected.

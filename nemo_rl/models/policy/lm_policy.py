@@ -589,3 +589,13 @@ class Policy(ColocatablePolicyInterface, GenerationInterface):
         """Stop GPU profiling."""
         futures = self.worker_group.run_all_workers_single_data("stop_gpu_profiling")
         ray.get(futures)
+
+    def start_torch_profiling(self) -> None:
+        """Start Torch profiling."""
+        futures = self.worker_group.run_all_workers_single_data("start_torch_profiling")
+        ray.get(futures)
+
+    def stop_torch_profiling(self) -> None:
+        """Stop Torch profiling."""
+        futures = self.worker_group.run_all_workers_single_data("stop_torch_profiling")
+        ray.get(futures)

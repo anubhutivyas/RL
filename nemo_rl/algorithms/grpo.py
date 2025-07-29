@@ -64,6 +64,7 @@ from nemo_rl.utils.logger import (
     print_message_log_samples,
 )
 from nemo_rl.utils.nsys import maybe_gpu_profile_step
+from nemo_rl.utils.torch_profiler import maybe_torch_profile_step, NRL_TORCH_PROFILE_DIR
 from nemo_rl.utils.timer import Timer
 
 # ===============================================================================
@@ -135,6 +136,7 @@ def setup(
     CheckpointManager,
     GRPOSaveState,
     MasterConfig,
+    torch.profiler,
 ]:
     """Main entry point for running GRPO algorithm.
 
@@ -353,6 +355,16 @@ def setup(
 
     loss_fn = ClippedPGLossFn(loss_config)
 
+    # profiler
+    os.makedirs(f"{NRL_TORCH_PROFILE_DIR}", exist_ok=True)
+    torch_profiler = torch.profiler.profile(
+        activities=[torch.profiler.ProfilerActivity.CPU],
+        with_stack=True,
+        on_trace_ready=torch.profiler.tensorboard_trace_handler(
+            f"{NRL_TORCH_PROFILE_DIR}"
+        ),
+    )
+
     print("\n" + "=" * 60)
     print(" " * 18 + "SETUP COMPLETE")
     print("=" * 60 + "\n")
@@ -368,6 +380,7 @@ def setup(
         checkpointer,
         grpo_save_state,
         master_config,
+        torch_profiler,
     )
 
 
@@ -473,6 +486,7 @@ def grpo_train(
     checkpointer: CheckpointManager,
     grpo_save_state: GRPOSaveState,
     master_config: MasterConfig,
+    torch_profiler: torch.profiler,
 ) -> None:
     """Run GRPO training algorithm."""
     timer = Timer()
@@ -516,6 +530,12 @@ def grpo_train(
     for batch in dataloader:
         print(
             f"\n{'=' * 25} Step {step + 1}/{min(len(dataloader), master_config['grpo']['max_num_steps'])} {'=' * 25}"
+        )
+        maybe_torch_profile_step(
+            torch_profiler,
+            step + 1,
+            policy,
+            policy_generation if policy != policy_generation else None,
         )
         maybe_gpu_profile_step(policy, step + 1)
         if policy != policy_generation:
