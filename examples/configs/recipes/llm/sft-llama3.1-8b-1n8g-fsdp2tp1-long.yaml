@@ -1,53 +1,54 @@
 sft:
   max_num_epochs: 1
-  max_num_steps: 350
-  val_period: 10
-  val_batches: 8
-  val_global_batch_size: 32
-  val_micro_batch_size: 1
-  val_at_start: true
+  max_num_steps: 10000
+  val_period: 500
+  val_batches: 4
+  val_global_batch_size: 128
+  val_micro_batch_size: 2
+  val_at_start: false
   seed: 42
 checkpointing:
   enabled: true
-  checkpoint_dir: results/sft-llama3.1-8b-instruct-1n8g-fsdp2tp2sp
+  checkpoint_dir: results/sft-llama3.1-8b-instruct-1n8g-fsdp2tp1-long
   metric_name: val_loss
   higher_is_better: false
   keep_top_k: 3
-  save_period: 10
+  save_period: 500
 policy:
-  model_name: meta-llama/Llama-3.1-8B-Instruct
+  model_name: meta-llama/Llama-3.1-8B
   tokenizer:
     name: meta-llama/Llama-3.1-8B-Instruct
-    chat_template: '{% for message in messages %}{%- if message[''role''] == ''system''  %}{{''Context: '' + message[''content''].strip()}}{%- elif message[''role''] == ''user''  %}{{'' Question: '' + message[''content''].strip() + '' Answer:''}}{%- elif message[''role''] == ''assistant''  %}{{'' '' + message[''content''].strip()}}{%- endif %}{% endfor %}'
-  train_global_batch_size: 32
-  train_micro_batch_size: 1
-  max_total_sequence_length: 1024
+  train_global_batch_size: 512
+  train_micro_batch_size: 2
+  max_total_sequence_length: 4096
   precision: bfloat16
   fsdp_offload_enabled: false
   activation_checkpointing_enabled: false
   dtensor_cfg:
     enabled: true
     cpu_offload: false
-    sequence_parallel: true
+    sequence_parallel: false
     activation_checkpointing: false
-    tensor_parallel_size: 2
+    tensor_parallel_size: 1
     context_parallel_size: 1
     custom_parallel_plan: null
   dynamic_batching:
     enabled: false
+    train_mb_tokens: ${mul:${policy.max_total_sequence_length}, ${policy.train_micro_batch_size}}
+    sequence_length_round: 64
   sequence_packing:
     enabled: false
-  make_sequence_length_divisible_by: 2
+  make_sequence_length_divisible_by: 1
   max_grad_norm: 1
   optimizer:
     name: torch.optim.AdamW
     kwargs:
-      lr: 5e-06
-      weight_decay: 0.1
+      lr: 2e-5
+      weight_decay: 0.01
       betas:
         - 0.9
         - 0.98
-      eps: 1e-05
+      eps: 1e-08
       foreach: false
       fused: false
 data:
@@ -60,16 +61,16 @@ data:
   add_generation_prompt: true
   output_key: 'generated_solution'
 logger:
-  log_dir: logs/sft-llama3.1-8b-instruct-1n8g-fsdp2tp2sp
+  log_dir: logs/sft-llama3.1-8b-instruct-1n8g-fsdp2tp1-long
   wandb_enabled: true
   tensorboard_enabled: true
   mlflow_enabled: false
   monitor_gpus: true
   wandb:
     project: nemo-rl
-    name: sft-llama3.1-8b-instruct-1n8g-fsdp2tp2sp
+    name: sft-llama3.1-8b-instruct-1n8g-fsdp2tp1-long
   tensorboard:
-    log_dir: tb_logs-sft-dev-openmathinstruct2
+    log_dir: tb_logs-sft-dev-squad
   gpu_monitoring:
     collection_interval: 10
     flush_interval: 10

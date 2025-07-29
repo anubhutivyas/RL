@@ -24,7 +24,6 @@ PYTHONPATH=$HF_HOME/modules:$PYTHONPATH uv run examples/run_grpo_math.py \
     logger.monitor_gpus=True \
     logger.tensorboard_enabled=True \
     checkpointing.enabled=False \
-    checkpointing.checkpoint_dir=$CKPT_DIR \
     $@ \
     2>&1 | tee $RUN_LOG
 
