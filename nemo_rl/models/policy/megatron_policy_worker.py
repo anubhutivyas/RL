@@ -369,6 +369,13 @@ class MegatronPolicyWorker:
         }
         self.dtype = dtype_map[self.cfg["precision"]]
 
+        # Reward models are not yet supported with Megatron.
+        if self.cfg.get("reward_model_cfg", {}).get("enabled", False):
+            raise NotImplementedError(
+                "Reward models are not yet supported with the Megatron backend, this issue is "
+                "tracked in https://github.com/NVIDIA-NeMo/RL/issues/720"
+            )
+
         # Only enable expandable_segments on Hopper and newer architectures (compute capability 9.x+)
         configure_expandable_segments()
 
@@ -1606,7 +1613,13 @@ class MegatronPolicyWorker:
         no_grad.__exit__(None, None, None)
 
     @torch.no_grad()
-    def move_model(self, model, device: str, move_params=True, move_grads=True):
+    def move_model(
+        self,
+        model: torch.nn.Module,
+        device: str,
+        move_params: bool = True,
+        move_grads: bool = True,
+    ) -> torch.nn.Module:
         # move all param and grad buffers to the device
         if isinstance(model, DistributedDataParallel):
             # DDP case

@@ -22,8 +22,6 @@ policy:
   train_micro_batch_size: 2
   max_total_sequence_length: 4096
   precision: bfloat16
-  fsdp_offload_enabled: false
-  activation_checkpointing_enabled: false
   dtensor_cfg:
     enabled: true
     cpu_offload: false
@@ -64,6 +62,7 @@ logger:
   tensorboard_enabled: true
   mlflow_enabled: false
   monitor_gpus: true
+  num_val_samples_to_print: 0  # Number of validation samples to pretty print on terminal
   wandb:
     project: nemo-rl
     name: sft-llama3.1-8b-instruct-1n8g-fsdp2tp2sp
