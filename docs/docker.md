@@ -20,9 +20,14 @@ docker buildx build --target release -f docker/Dockerfile --tag <registry>/nemo-
 # Self-contained build (specific git ref):
 docker buildx build --target release -f docker/Dockerfile --build-arg NRL_GIT_REF=r0.3.0 --tag <registry>/nemo-rl:r0.3.0 --push .
 
+# Self-contained build (remote NeMo RL source; no need for a local clone of NeMo RL):
+docker buildx build --target release -f docker/Dockerfile --build-arg NRL_GIT_REF=r0.3.0 --tag <registry>/nemo-rl:r0.3.0 --push https://github.com/NVIDIA-NeMo/RL.git
+
 # Local NeMo RL source override:
 docker buildx build --target release --build-context nemo-rl=. -f docker/Dockerfile --tag <registry>/nemo-rl:latest --push .
 ```
+
+**Note:** The `--tag <registry>/nemo-rl:latest --push` flags are not necessary if you just want to build locally.
 
 ## Hermetic Image
 
@@ -35,6 +40,11 @@ docker buildx build --target hermetic -f docker/Dockerfile --tag <registry>/nemo
 # Self-contained build (specific git ref):
 docker buildx build --target hermetic -f docker/Dockerfile --build-arg NRL_GIT_REF=r0.3.0 --tag <registry>/nemo-rl:r0.3.0 --push .
 
-# Local source override:
+# Self-contained build (remote NeMo RL source; no need for a local clone of NeMo RL):
+docker buildx build --target hermetic -f docker/Dockerfile --build-arg NRL_GIT_REF=r0.3.0 --tag <registry>/nemo-rl:r0.3.0 --push https://github.com/NVIDIA-NeMo/RL.git
+
+# Local NeMo RL source override:
 docker buildx build --target hermetic --build-context nemo-rl=. -f docker/Dockerfile --tag <registry>/nemo-rl:latest --push .
 ```
+
+**Note:** The `--tag <registry>/nemo-rl:latest --push` flags are not necessary if you just want to build locally.
