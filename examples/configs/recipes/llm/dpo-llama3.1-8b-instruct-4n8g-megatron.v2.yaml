@@ -28,7 +28,7 @@ policy:
     name: ${policy.model_name}
   train_global_batch_size: 256
   train_micro_batch_size: 1
-  max_total_sequence_length: 2048
+  max_total_sequence_length: 8192
   precision: "bfloat16"
   fsdp_offload_enabled: false
   activation_checkpointing_enabled: false
@@ -51,7 +51,7 @@ policy:
     enabled: true
     empty_unused_memory_level: 1
     activation_checkpointing: false
-    tensor_model_parallel_size: 2
+    tensor_model_parallel_size: 4
     expert_tensor_parallel_size: 1
     expert_model_parallel_size: 1
     pipeline_model_parallel_size: 1
@@ -118,7 +118,7 @@ logger:
   monitor_gpus: true
   wandb:
     project: nemo-rl
-    name: dpo-llama3.1-8b-instruct-4n8g-fsdp2tp1
+    name: dpo-llama3.1-8b-instruct-4n8g-fsdp2tp1-megatron
   tensorboard: {}
   gpu_monitoring:
     collection_interval: 10
