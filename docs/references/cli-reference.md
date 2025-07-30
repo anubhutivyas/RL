@@ -294,5 +294,5 @@ nemo-rl train --config config_with_mlflow.yaml
 ## Reference
 
 - [Configuration Reference](configuration-reference)
-- [Troubleshooting Guide](troubleshooting)
+- [Troubleshoot NeMo RL](troubleshooting)
 - [API Documentation](../api-docs/index) 

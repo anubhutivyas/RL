@@ -23,10 +23,10 @@ Our production and support guides help you:
 
 ## Production and Support Guides
 
-::::{grid} 1 2 2 2
+::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} Testing
+:::{grid-item-card} {octicon}`checklist;1.5em;sd-mr-1` Testing
 :link: testing
 :link-type: doc
 
@@ -36,7 +36,17 @@ Comprehensive testing strategies including unit tests, functional tests, Docker 
 {bdg-success}`Quality`
 :::
 
-:::{grid-item-card} Documentation Development
+:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Packaging
+:link: packaging
+:link-type: doc
+
+Package models and training code for deployment in production environments.
+
++++
+{bdg-secondary}`Production`
+:::
+
+:::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` Documentation Development
 :link: documentation-development
 :link-type: doc
 
@@ -46,17 +56,17 @@ Guidelines and best practices for developing and maintaining NeMo RL documentati
 {bdg-info}`Docs`
 :::
 
-:::{grid-item-card} Documentation
-:link: documentation
+:::{grid-item-card} {octicon}`bug;1.5em;sd-mr-1` Troubleshooting
+:link: troubleshooting
 :link-type: doc
 
-Best practices for maintaining, writing, and organizing production documentation for NeMo RL deployments.
+Resolve common problems and errors in production environments.
 
 +++
-{bdg-info}`Docs`
+{bdg-warning}`Support`
 :::
 
-::::
+:::::
 
 ## Production Workflow
 
@@ -131,7 +141,7 @@ For additional learning resources, visit the main [Guides](../index) page.
 :maxdepth: 2
 troubleshooting
 testing
-documentation
+documentation-development
 packaging
 :::: 
 

@@ -72,6 +72,16 @@ Data processing, dataset interfaces, and environment implementations.
 {bdg-secondary}`Data`
 :::
 
+:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Converters
+:link: converters
+:link-type: doc
+
+Model conversion and export utilities for deployment and production.
+
++++
+{bdg-info}`Deployment`
+:::
+
 ::::
 
 ## Key Components
@@ -108,6 +118,14 @@ The data layer handles data processing, dataset management, and environment inte
 - **Dataset Interfaces**: Standardized dataset loading and processing
 - **Environment Interfaces**: RL environment abstractions
 - **Data Processing**: Tokenization, batching, and preprocessing utilities
+
+### Converters
+
+The converters layer provides model conversion and export utilities:
+
+- **HuggingFace Converters**: Convert to vLLM, ONNX, TensorRT formats
+- **Megatron Converters**: Convert Megatron models to HuggingFace format
+- **Deployment Utilities**: Model export and production deployment tools
 
 ## Design Philosophy
 
@@ -205,19 +223,12 @@ The following sections provide detailed API documentation for each component:
 - [Models and Policies](nemo_rl/nemo_rl.models): Policy interfaces, generation backends, and model implementations
 - [Algorithms](nemo_rl/nemo_rl.algorithms): RL algorithms, loss functions, and training utilities
 - [Data and Environments](nemo_rl/nemo_rl.data): Dataset interfaces, environment abstractions, and data processing
+- [Converters](converters): Model conversion and export utilities for deployment
 - [Utilities](nemo_rl/nemo_rl.utils): Logging, configuration, and utility functions
 - [Auto-Generated Reference](auto-generated): Complete API reference with all functions, classes, and parameters
 - [Complete API Reference](nemo_rl/nemo_rl): Full auto-generated documentation for all modules
 
-## Examples
 
-See the [Guides](../guides/index) section for practical examples and tutorials covering:
-
-- [DPO Training](../guides/training-algorithms/dpo)
-- [GRPO Training](../guides/training-algorithms/grpo) 
-- [SFT Training](../guides/training-algorithms/sft)
-- [Model Evaluation](../guides/training-algorithms/eval)
-- [Add New Models](../guides/model-development/adding-new-models)
 
 ## Contributing
 
@@ -230,16 +241,3 @@ When contributing to NeMo RL, please follow these guidelines:
 
 For more information on contributing, see the [Development Guide](../guides/production-support/testing).
 
----
-
-::::{toctree}
-:hidden:
-:caption: API Documentation
-:maxdepth: 2
-auto-generated
-distributed
-models
-nemo_rl/nemo_rl
-:::: 
-
- 

@@ -1,4 +1,4 @@
-# Troubleshooting Guide
+# Troubleshoot NeMo RL
 
 This guide helps you diagnose and resolve common issues when using NeMo RL.
 

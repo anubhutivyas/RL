@@ -282,6 +282,10 @@ advanced/production-deployment/index
 :caption: API Documentation
 :maxdepth: 2
 api-docs/index
+api-docs/distributed
+api-docs/models
+api-docs/converters
+api-docs/auto-generated.md
 :::: 
 
 ::::{toctree}

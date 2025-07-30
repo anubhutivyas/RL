@@ -15,7 +15,7 @@ This section covers how to deploy NeMo RL models to production with reliable ser
 
 ## Production Deployment
 
-::::{grid} 1 1
+::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Model Serving

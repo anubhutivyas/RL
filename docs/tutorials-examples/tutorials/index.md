@@ -30,7 +30,7 @@ For experienced practitioners. Master advanced reinforcement learning, distribut
 ::::{grid} 1 1 1 1
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`play;1.5em;sd-mr-1` SFT Tutorial
+:::{grid-item-card} {octicon}`play;1.5em;sd-mr-1` Supervised Fine-Tuning (SFT)
 :link: sft-tutorial
 :link-type: doc
 
@@ -40,7 +40,7 @@ Learn supervised fine-tuning fundamentals with step-by-step guidance.
 {bdg-primary}`Beginner`
 :::
 
-:::{grid-item-card} {octicon}`heart;1.5em;sd-mr-1` DPO Tutorial
+:::{grid-item-card} {octicon}`heart;1.5em;sd-mr-1` Direct Preference Optimization (DPO)
 :link: dpo-tutorial
 :link-type: doc
 
@@ -50,7 +50,7 @@ Master Direct Preference Optimization for preference learning and alignment.
 {bdg-info}`Intermediate`
 :::
 
-:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Evaluation Tutorial
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Model Evaluation and Benchmarking
 :link: evaluation-tutorial
 :link-type: doc
 
@@ -75,13 +75,13 @@ Advanced reinforcement learning with Group Relative Policy Optimization.
 ## Learning Progression
 
 ### **Beginner Path** (0-2 weeks)
-1. **SFT Tutorial** → Learn supervised fine-tuning fundamentals
+1. **Supervised Fine-Tuning (SFT)** → Learn supervised fine-tuning fundamentals
 2. **Basic Examples** → Apply SFT to real datasets
-3. **Evaluation Tutorial** → Learn to evaluate your models
+3. **Model Evaluation and Benchmarking** → Learn to evaluate your models
 
 ### **Intermediate Path** (2-4 weeks)
-1. **DPO Tutorial** → Master preference-based training
-2. **Evaluation Tutorial** → Learn comprehensive evaluation
+1. **Direct Preference Optimization (DPO)** → Master preference-based training
+2. **Model Evaluation and Benchmarking** → Learn comprehensive evaluation
 3. **Advanced Examples** → Work with complex datasets
 
 ### **Advanced Path** (4+ weeks)
@@ -91,13 +91,13 @@ Advanced reinforcement learning with Group Relative Policy Optimization.
 
 ## Tutorial Descriptions
 
-### **SFT (Supervised Fine-Tuning) Tutorial**
+### **Supervised Fine-Tuning (SFT)**
 - **Beginner-Friendly**: Start with basic supervised fine-tuning concepts
 - **Domain Adaptation**: Learn to adapt pre-trained models to specific domains
 - **Best Practices**: Understand data preparation, training configuration, and evaluation
 - **Real Examples**: Work with actual datasets and model configurations
 
-### **DPO (Direct Preference Optimization) Tutorial**
+### **Direct Preference Optimization (DPO)**
 - **Preference Learning**: Master the fundamentals of preference-based training
 - **Human Feedback**: Learn to incorporate human feedback into model training
 - **Alignment Techniques**: Understand how to align models with human preferences
@@ -110,7 +110,7 @@ Advanced reinforcement learning with Group Relative Policy Optimization.
 
 For comprehensive performance optimization strategies, see the [Performance and Optimization Guide](../../advanced/performance/index).
 
-### **Evaluation Tutorial**
+### **Model Evaluation and Benchmarking**
 - **Model Assessment**: Learn comprehensive evaluation strategies
 - **Metrics and Benchmarks**: Understand key performance indicators
 - **Human Evaluation**: Incorporate human feedback in evaluation

@@ -12,6 +12,26 @@ modality: "universal"
 
 Welcome to the NeMo RL Guides! This comprehensive collection provides everything you need to master reinforcement learning with large language models using NeMo RL.
 
+## What You'll Find Here
+
+Our guides are organized into four core areas that cover the essential needs of NeMo RL practitioners:
+
+### **Training Algorithms**
+Master the fundamental training techniques for reinforcement learning with language models. Learn supervised fine-tuning, preference optimization, and advanced RL algorithms like DPO and GRPO. This section provides the foundation for training high-quality language models with human feedback.
+
+### **Model Development**
+Integrate custom models and architectures into NeMo RL training pipelines. Handle model-specific behaviors, special cases, and learn how to extend the framework for new model types. This section is essential for researchers and developers working with custom architectures.
+
+### **Environment and Data**
+Set up robust development environments and optimize your training infrastructure. Learn debugging techniques, performance profiling, and data management strategies. This section helps you build reliable, efficient training workflows.
+
+### **Production and Support**
+Deploy and maintain NeMo RL models in production environments. Learn testing strategies, debugging techniques, packaging, and deployment best practices. This section ensures your models are ready for real-world applications.
+
+
+
+
+
 ## Training Algorithms
 
 ::::{grid} 1 1 1 2
@@ -128,14 +148,44 @@ Comprehensive performance optimization and profiling techniques.
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Production and Support
-:link: production-support/index
+:::{grid-item-card} {octicon}`checklist;1.5em;sd-mr-1` Testing
+:link: production-support/testing
 :link-type: doc
 
-Testing, debugging, packaging, and deployment strategies.
+Comprehensive testing strategies including unit tests, functional tests, and metrics tracking.
+
++++
+{bdg-success}`Quality`
+:::
+
+:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Packaging
+:link: production-support/packaging
+:link-type: doc
+
+Package models and training code for deployment in production environments.
 
 +++
 {bdg-secondary}`Production`
+:::
+
+:::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` Documentation Development
+:link: production-support/documentation-development
+:link-type: doc
+
+Guidelines and best practices for developing and maintaining NeMo RL documentation.
+
++++
+{bdg-info}`Docs`
+:::
+
+:::{grid-item-card} {octicon}`bug;1.5em;sd-mr-1` Troubleshooting
+:link: production-support/troubleshooting
+:link-type: doc
+
+Resolve common problems and errors in production environments.
+
++++
+{bdg-warning}`Support`
 :::
 
 ::::

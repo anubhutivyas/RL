@@ -1,4 +1,4 @@
-# Environment Development
+# Develop Custom Environments
 
 This guide covers how to develop custom environments for reinforcement learning training in NeMo RL.
 

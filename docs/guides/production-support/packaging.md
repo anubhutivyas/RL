@@ -1,4 +1,4 @@
-# Model Packaging Guide
+# Package and Deploy NeMo RL Models
 
 This guide covers how to package and deploy NeMo RL models for production use.
 
@@ -500,4 +500,4 @@ def test_batch_inference():
    - Verify network connectivity
    - Monitor resource usage
 
-For more help with packaging and deployment, see the [Troubleshooting Guide](troubleshooting.md). 
+For more help with packaging and deployment, see the [Troubleshoot NeMo RL](troubleshooting.md). 

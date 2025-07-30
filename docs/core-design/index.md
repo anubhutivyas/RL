@@ -9,7 +9,7 @@ modality: "universal"
 ---
 
 (design-overview)=
-# About NeMo RL Core Design & Architecture
+# About NeMo RL Core Design and Architecture
 
 This section contains detailed design documents, architectural decisions, and technical specifications for NeMo RL. These documents provide insights into the framework's internals and design philosophy for advanced users who want to understand, extend, or contribute to the framework.
 
@@ -35,26 +35,7 @@ Dive into the mathematical foundations and computational components that power N
 ### **Development Infrastructure**
 Master the development tools and infrastructure that support NeMo RL development. Learn about package management, logging systems, and other development utilities.
 
-## Prerequisites
 
-Before diving into these documents, you should have:
-
-- **Basic RL Knowledge**: Understanding of reinforcement learning concepts (PPO, DPO, etc.)
-- **Python Experience**: Familiarity with Python and PyTorch
-- **Distributed Systems**: Basic understanding of distributed computing concepts
-- **NeMo RL Usage**: Experience using NeMo RL for training (recommended)
-
-## Recommended Reading Order
-
-For the best learning experience, we recommend reading these documents in the following order:
-
-1. **Design Philosophy** - Start with the core design principles and philosophy
-2. **Training Backends** - Understand the different model backends and their capabilities
-3. **Loss Functions** - Learn about the mathematical foundations of RL algorithms
-4. **Data Management** - Explore data processing and persistence mechanisms
-5. **Generation** - Understand the text generation pipeline
-6. **FSDP2 Parallel Plan** - Dive into advanced parallelization strategies
-7. **Development Infrastructure** - Master the tools for extending the framework
 
 ## Design Principles
 

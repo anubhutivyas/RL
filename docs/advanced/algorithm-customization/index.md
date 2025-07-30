@@ -13,10 +13,11 @@ This section covers how to customize and extend NeMo RL algorithms for your spec
 - **Custom DPO Implementation**: Extend DPO for specific use cases and domains
 - **Custom GRPO Implementation**: Adapt GRPO for new domains and use cases  
 - **Custom Loss Functions**: Design and implement novel training objectives
+- **Algorithm Adaptation**: Adapt existing algorithms for new domains and specialized use cases
 
 ## Algorithm Customization
 
-::::{grid} 1 1 1
+::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`code;1.5em;sd-mr-1` Custom DPO Implementation
@@ -49,6 +50,16 @@ Design and implement novel training objectives. Create custom loss functions for
 {bdg-warning}`Advanced`
 :::
 
+:::{grid-item-card} {octicon}`light-bulb;1.5em;sd-mr-1` Algorithm Adaptation
+:link: algorithm-adaptation
+:link-type: doc
+
+Adapt existing algorithms for new domains and specialized use cases. Learn techniques for modifying algorithm behavior, integrating domain knowledge, and creating hybrid approaches for complex applications.
+
++++
+{bdg-warning}`Advanced`
+:::
+
 ::::
 
 ---
@@ -60,4 +71,5 @@ Design and implement novel training objectives. Create custom loss functions for
 custom-dpo
 custom-grpo
 custom-loss-functions
+algorithm-adaptation
 ::::

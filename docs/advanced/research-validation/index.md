@@ -4,7 +4,7 @@ tags: ["research", "validation", "experiments", "evaluation", "reproducibility"]
 categories: ["research-validation"]
 ---
 
-# Research & Validation
+# Research and Validation
 
 This section covers how to design rigorous experiments, evaluate model performance, and ensure reproducible research. Build robust evaluation frameworks and maintain scientific rigor in your RL research.
 
@@ -14,9 +14,9 @@ This section covers how to design rigorous experiments, evaluate model performan
 - **Model Evaluation**: Build comprehensive evaluation frameworks
 - **Reproducible Research**: Ensure reproducible results and scientific rigor
 
-## Research & Validation
+## Research and Validation
 
-::::{grid} 1 1 1
+::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`beaker;1.5em;sd-mr-1` Experimental Design
@@ -55,9 +55,9 @@ Ensure reproducible results and scientific rigor. Implement proper versioning, e
 
 ::::{toctree}
 :hidden:
-:caption: Research & Validation
+:caption: Research and Validation
 :maxdepth: 2
 experimental-design
 model-evaluation
 reproducible-research
-::::
+:::: 
