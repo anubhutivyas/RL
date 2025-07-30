@@ -4,146 +4,143 @@ This document provides comprehensive reference documentation for all NeMo RL com
 
 ## Overview
 
-NeMo RL provides a rich set of CLI tools for training, evaluation, and model management. All commands follow a consistent pattern and provide detailed help information.
+NeMo RL provides Python scripts for training, evaluation, and model management. These scripts follow a consistent pattern and provide detailed help information.
 
 ## Command Structure
 
 ```bash
-nemo-rl <command> [subcommand] [options]
+python examples/run_<algorithm>.py --config path/to/config.yaml [options]
 ```
 
 ## Main Commands
 
 ### Training Commands
 
-#### `nemo-rl train`
+#### `python examples/run_dpo.py`
 
-Start a training job with the specified configuration.
+Start DPO (Direct Preference Optimization) training with the specified configuration.
 
 ```bash
-nemo-rl train --config path/to/config.yaml [options]
+python examples/run_dpo.py --config path/to/config.yaml [options]
 ```
 
 **Options:**
 - `--config`: Path to configuration file (required)
-- `--checkpoint`: Path to checkpoint for resuming training
-- `--local`: Run in local mode (single node)
-- `--cluster`: Run on Ray cluster
-- `--debug`: Enable debug mode with verbose logging
+- Additional Hydra overrides can be passed as command-line arguments
 
 **Examples:**
 ```bash
-# Basic training
-nemo-rl train --config examples/configs/dpo.yaml
+# Basic DPO training
+python examples/run_dpo.py --config examples/configs/dpo.yaml
 
-# Resume from checkpoint
-nemo-rl train --config examples/configs/dpo.yaml --checkpoint checkpoints/model_1000.pt
-
-# Local development
-nemo-rl train --config examples/configs/dpo.yaml --local --debug
+# With Hydra overrides
+python examples/run_dpo.py --config examples/configs/dpo.yaml data.train_data_path=/path/to/data
 ```
 
-#### `nemo-rl eval`
+#### `python examples/run_grpo_math.py`
 
-Evaluate a trained model.
+Start GRPO (Group Relative Policy Optimization) training for mathematical reasoning tasks.
 
 ```bash
-nemo-rl eval --config path/to/eval_config.yaml [options]
+python examples/run_grpo_math.py --config path/to/config.yaml [options]
+```
+
+**Options:**
+- `--config`: Path to configuration file (required)
+- Additional Hydra overrides can be passed as command-line arguments
+
+**Examples:**
+```bash
+# Basic GRPO math training
+python examples/run_grpo_math.py --config examples/configs/grpo_deepscaler-1.5b-24K.yaml
+
+# With custom parameters
+python examples/run_grpo_math.py --config examples/configs/grpo_deepscaler-1.5b-24K.yaml policy.model_name=deepscaler-1.5b
+```
+
+#### `python examples/run_grpo_sliding_puzzle.py`
+
+Start GRPO training for sliding puzzle tasks.
+
+```bash
+python examples/run_grpo_sliding_puzzle.py --config path/to/config.yaml [options]
+```
+
+**Options:**
+- `--config`: Path to configuration file (required)
+- Additional Hydra overrides can be passed as command-line arguments
+
+#### `python examples/run_sft.py`
+
+Start SFT (Supervised Fine-Tuning) training.
+
+```bash
+python examples/run_sft.py --config path/to/config.yaml [options]
+```
+
+**Options:**
+- `--config`: Path to configuration file (required)
+- Additional Hydra overrides can be passed as command-line arguments
+
+### Evaluation Commands
+
+#### `python examples/run_eval.py`
+
+Evaluate a trained model on mathematical reasoning tasks.
+
+```bash
+python examples/run_eval.py --config path/to/eval_config.yaml [options]
 ```
 
 **Options:**
 - `--config`: Path to evaluation configuration file (required)
-- `--model`: Path to model checkpoint
-- `--output`: Output directory for results
-- `--metrics`: Comma-separated list of metrics to compute
+- Additional Hydra overrides can be passed as command-line arguments
 
 **Examples:**
 ```bash
 # Basic evaluation
-nemo-rl eval --config examples/configs/eval.yaml
+python examples/run_eval.py --config examples/configs/eval.yaml
 
-# Custom metrics
-nemo-rl eval --config examples/configs/eval.yaml --metrics accuracy,bleu,rouge
+# With custom model path
+python examples/run_eval.py --config examples/configs/eval.yaml policy.model_name=deepscaler-1.5b
 ```
 
 ### Model Management
 
-#### `nemo-rl convert`
+#### `python examples/converters/convert_dcp_to_hf.py`
 
-Convert models between different formats.
+Convert models from DCP (Distributed Checkpoint) format to HuggingFace format.
 
 ```bash
-nemo-rl convert --input path/to/model --output path/to/output --format [hf|megatron|vllm]
+python examples/converters/convert_dcp_to_hf.py --input path/to/model --output path/to/output
 ```
 
 **Options:**
 - `--input`: Input model path (required)
 - `--output`: Output path (required)
-- `--format`: Target format (required)
 - `--config`: Conversion configuration file
 
-**Examples:**
-```bash
-# Convert to HuggingFace format
-nemo-rl convert --input checkpoints/model.pt --output hf_model --format hf
+#### `python examples/converters/convert_megatron_to_hf.py`
 
-# Convert to VLLM format
-nemo-rl convert --input checkpoints/model.pt --output vllm_model --format vllm
-```
-
-#### `nemo-rl export`
-
-Export models for deployment.
+Convert models from Megatron format to HuggingFace format.
 
 ```bash
-nemo-rl export --model path/to/model --output path/to/output [options]
+python examples/converters/convert_megatron_to_hf.py --input path/to/model --output path/to/output
 ```
 
 **Options:**
-- `--model`: Model checkpoint path (required)
-- `--output`: Output directory (required)
-- `--format`: Export format (onnx, torchscript, etc.)
-- `--quantize`: Enable quantization
-
-### Utility Commands
-
-#### `nemo-rl validate`
-
-Validate configuration files.
-
-```bash
-nemo-rl validate --config path/to/config.yaml
-```
-
-**Options:**
-- `--config`: Configuration file to validate (required)
-- `--strict`: Enable strict validation
-
-#### `nemo-rl info`
-
-Display information about models and configurations.
-
-```bash
-nemo-rl info --model path/to/model
-nemo-rl info --config path/to/config.yaml
-```
-
-**Options:**
-- `--model`: Model path to inspect
-- `--config`: Configuration file to inspect
-- `--detailed`: Show detailed information
+- `--input`: Input model path (required)
+- `--output`: Output path (required)
+- `--config`: Conversion configuration file
 
 ## Configuration Options
 
 ### Global Options
 
-All commands support these global options:
+All scripts support these global options:
 
-- `--log-level`: Set logging level (DEBUG, INFO, WARNING, ERROR)
-- `--log-file`: Log to file instead of console
-- `--quiet`: Suppress output
-- `--version`: Show version information
-- `--help`: Show help information
+- `--config`: Path to YAML configuration file (required)
+- Additional Hydra overrides can be passed as command-line arguments
 
 ### Environment Variables
 
@@ -153,36 +150,37 @@ NeMo RL respects these environment variables:
 - `NEMO_RL_CONFIG_PATH`: Default configuration directory
 - `NEMO_RL_CACHE_DIR`: Cache directory for models and data
 - `RAY_ADDRESS`: Ray cluster address
+- `NRL_NSYS_WORKER_PATTERNS`: Enable nsys profiling
 
 ## Examples
 
 ### Complete Training Workflow
 
 ```bash
-# 1. Validate configuration
-nemo-rl validate --config examples/configs/dpo.yaml
+# 1. Start DPO training
+python examples/run_dpo.py --config examples/configs/dpo.yaml
 
-# 2. Start training
-nemo-rl train --config examples/configs/dpo.yaml --cluster
+# 2. Start GRPO training for math
+python examples/run_grpo_math.py --config examples/configs/grpo_deepscaler-1.5b-24K.yaml
 
 # 3. Evaluate model
-nemo-rl eval --config examples/configs/eval.yaml --model checkpoints/best.pt
+python examples/run_eval.py --config examples/configs/eval.yaml
 
-# 4. Export for deployment
-nemo-rl export --model checkpoints/best.pt --output deployed_model
+# 4. Convert model to HuggingFace format
+python examples/converters/convert_dcp_to_hf.py --input checkpoints/model.pt --output hf_model
 ```
 
 ### Development Workflow
 
 ```bash
-# Local development with debug
-nemo-rl train --config examples/configs/dpo.yaml --local --debug
+# Local development with custom parameters
+python examples/run_dpo.py --config examples/configs/dpo.yaml data.train_data_path=/path/to/data
 
 # Quick evaluation
-nemo-rl eval --config examples/configs/eval.yaml --model checkpoints/latest.pt
+python examples/run_eval.py --config examples/configs/eval.yaml
 
-# Model inspection
-nemo-rl info --model checkpoints/model.pt --detailed
+# Model conversion
+python examples/converters/convert_megatron_to_hf.py --input megatron_model --output hf_model
 ```
 
 ## Troubleshooting
@@ -191,14 +189,14 @@ nemo-rl info --model checkpoints/model.pt --detailed
 
 1. **Configuration Errors**
    ```bash
-   # Validate configuration first
-   nemo-rl validate --config your_config.yaml
+   # Check configuration file syntax
+   python -c "from omegaconf import OmegaConf; OmegaConf.load('your_config.yaml')"
    ```
 
 2. **Memory Issues**
    ```bash
-   # Use local mode for debugging
-   nemo-rl train --config config.yaml --local
+   # Use smaller batch size
+   python examples/run_dpo.py --config examples/configs/dpo.yaml data.batch_size=1
    ```
 
 3. **Ray Connection Issues**
@@ -213,22 +211,18 @@ nemo-rl info --model checkpoints/model.pt --detailed
 ### Getting Help
 
 ```bash
-# General help
-nemo-rl --help
+# General help for any script
+python examples/run_dpo.py --help
 
-# Command-specific help
-nemo-rl train --help
-nemo-rl eval --help
-
-# Configuration help
-nemo-rl validate --config config.yaml
+# Check configuration
+python -c "from omegaconf import OmegaConf; print(OmegaConf.load('config.yaml'))"
 ```
 
 ## Advanced Usage
 
 ### Custom Scripts
 
-You can integrate NeMo RL CLI into custom scripts:
+You can integrate NeMo RL scripts into custom workflows:
 
 ```bash
 #!/bin/bash
@@ -237,15 +231,12 @@ You can integrate NeMo RL CLI into custom scripts:
 CONFIG="examples/configs/dpo.yaml"
 CHECKPOINT_DIR="checkpoints"
 
-# Validate config
-nemo-rl validate --config $CONFIG || exit 1
-
 # Start training
-nemo-rl train --config $CONFIG --cluster
+python examples/run_dpo.py --config $CONFIG
 
 # Wait for completion and evaluate
 if [ -f "$CHECKPOINT_DIR/best.pt" ]; then
-    nemo-rl eval --config examples/configs/eval.yaml --model $CHECKPOINT_DIR/best.pt
+    python examples/run_eval.py --config examples/configs/eval.yaml
 fi
 ```
 
@@ -255,7 +246,7 @@ fi
 # Process multiple configurations
 for config in configs/*.yaml; do
     echo "Processing $config"
-    nemo-rl train --config "$config" --local
+    python examples/run_dpo.py --config "$config"
 done
 ```
 
@@ -279,17 +270,17 @@ NeMo RL integrates with MLflow for experiment tracking:
 
 ```bash
 # Enable MLflow logging in configuration
-nemo-rl train --config config_with_mlflow.yaml
+python examples/run_dpo.py --config config_with_mlflow.yaml
 ```
 
 ## Best Practices
 
 1. **Always validate configurations** before training
-2. **Use local mode** for development and debugging
+2. **Use descriptive configuration names** for organization
 3. **Monitor resources** when using clusters
 4. **Save checkpoints regularly** for recovery
-5. **Use descriptive configuration names** for organization
-6. **Log all experiments** for reproducibility
+5. **Log all experiments** for reproducibility
+6. **Use Hydra overrides** for quick parameter changes
 
 ## Reference
 

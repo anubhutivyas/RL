@@ -4,7 +4,7 @@ tags: ["monitoring", "alerting", "production", "metrics", "health-checks"]
 categories: ["production-deployment"]
 ---
 
-# Monitoring & Alerting
+# Monitoring and Alerting
 
 This guide covers how to implement comprehensive monitoring and alerting systems for NeMo RL production deployments.
 
@@ -1033,5 +1033,5 @@ def debug_monitoring_system(self):
 ## Next Steps
 
 - Learn about [Model Serving](model-serving) for deployment strategies
-- Review [Performance & Scaling](../performance-scaling/index) for optimization
+- Review [Performance & Scaling](../performance/index) for optimization
 - Explore [Algorithm Customization](../algorithm-customization/index) for advanced training 

@@ -8,9 +8,9 @@ content_type: "tutorial"
 modality: "universal"
 ---
 
-# Evaluation Tutorial: Model Evaluation and Benchmarking
+# Model Evaluation and Benchmarking
 
-Welcome to the Model Evaluation tutorial. This comprehensive guide will teach you how to evaluate and benchmark your NeMo RL models using various metrics and techniques.
+Welcome to the Model Evaluation and Benchmarking tutorial. This comprehensive guide will teach you how to evaluate and benchmark your NeMo RL models using various metrics and techniques.
 
 ## What You'll Learn
 

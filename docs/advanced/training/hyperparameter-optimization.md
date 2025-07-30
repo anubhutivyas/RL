@@ -2,6 +2,8 @@
 
 This guide covers advanced hyperparameter optimization techniques for NeMo RL, including Bayesian optimization, multi-objective search, and automated tuning strategies to find optimal training configurations.
 
+> **Note**: This guide focuses on **practical training optimization**. For research methodology and experimental design approaches to hyperparameter optimization, see [Research Hyperparameter Optimization](../research/hyperparameter-optimization.md).
+
 ## Overview
 
 Hyperparameter optimization is crucial for achieving the best performance from NeMo RL models. This guide covers systematic approaches to finding optimal hyperparameters, including learning rates, batch sizes, model architectures, and training strategies.

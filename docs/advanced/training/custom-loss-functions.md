@@ -2,6 +2,8 @@
 
 This guide covers creating and implementing custom loss functions in NeMo RL, enabling you to design specialized training objectives for specific use cases and model behaviors.
 
+> **Note**: This guide focuses on **training-specific loss functions**. For domain-specific and novel loss function implementations, see [Algorithm Customization Loss Functions](../algorithm-customization/custom-loss-functions.md).
+
 ## Overview
 
 Custom loss functions allow you to define training objectives that go beyond standard loss functions, enabling specialized training for specific tasks, constraints, or model behaviors. NeMo RL provides a flexible framework for implementing and integrating custom loss functions.

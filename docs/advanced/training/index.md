@@ -12,12 +12,15 @@ Learn to combine multiple loss functions and objectives in a single training pip
 ### **Curriculum Learning**
 Implement progressive difficulty scheduling to improve training efficiency and model performance. Design adaptive curricula that respond to model progress and learning dynamics.
 
+### **Practical Hyperparameter Optimization**
+Systematic approaches to finding optimal training configurations using Bayesian optimization, multi-objective search, and automated tuning strategies.
+
 ## Multi-Objective Training
 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} Multi-Objective Training
+:::{grid-item-card} {octicon}`target;1.5em;sd-mr-1` Multi-Objective Training
 :link: multi-objective-training
 :link-type: doc
 
@@ -34,7 +37,7 @@ Combine multiple objectives in a single training pipeline with dynamic weight ba
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} Curriculum Learning
+:::{grid-item-card} {octicon}`mortar-board;1.5em;sd-mr-1` Curriculum Learning
 :link: curriculum-learning
 :link-type: doc
 

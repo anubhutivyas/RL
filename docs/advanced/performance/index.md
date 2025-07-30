@@ -14,363 +14,142 @@ Performance optimization is crucial for efficient RL training, especially when w
 
 ## Performance Optimization Strategies
 
+::::{grid} 1 1 1 2
+:gutter: 2 2 2 2
+
+:::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Memory Optimization
+:link: memory-optimization
+:link-type: doc
+
+Optimize memory usage with gradient checkpointing, mixed precision, and model sharding techniques.
+
++++
+{bdg-warning}`Advanced`
+:::
+
+:::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Distributed Training
+:link: distributed-training
+:link-type: doc
+
+Scale training across multiple GPUs and nodes with efficient communication and load balancing.
+
++++
+{bdg-warning}`Advanced`
+:::
+
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Profiling
+:link: profiling
+:link-type: doc
+
+Profile and analyze training performance with PyTorch profiler and memory analysis tools.
+
++++
+{bdg-info}`Intermediate`
+:::
+
+:::{grid-item-card} {octicon}`eye;1.5em;sd-mr-1` Monitoring
+:link: monitoring
+:link-type: doc
+
+Monitor training performance in real-time with comprehensive metrics and alerting.
+
++++
+{bdg-info}`Intermediate`
+:::
+
+:::{grid-item-card} {octicon}`target;1.5em;sd-mr-1` Benchmarking
+:link: benchmarking
+:link-type: doc
+
+Benchmark training speed, memory usage, and scalability across different configurations.
+
++++
+{bdg-warning}`Advanced`
+:::
+
+:::{grid-item-card} {octicon}`zap;1.5em;sd-mr-1` Mixed Precision
+:link: mixed-precision
+:link-type: doc
+
+Use lower precision training to reduce memory usage and speed up training.
+
++++
+{bdg-info}`Intermediate`
+:::
+
+::::
+
+## Key Performance Areas
+
 ### Memory Optimization
-
-#### Gradient Checkpointing
-
-Reduce memory usage by recomputing intermediate activations:
-
-```yaml
-# Enable gradient checkpointing
-training:
-  gradient_checkpointing: true
-  gradient_accumulation_steps: 4
-```
-
-#### Mixed Precision Training
-
-Use lower precision to reduce memory and speed up training:
-
-```yaml
-training:
-  precision: "bf16"  # or "fp16"
-  autocast: true
-  scaler: "dynamic"
-```
-
-#### Model Sharding
-
-Distribute model across multiple GPUs:
-
-```yaml
-cluster:
-  name: "fsdp"
-  fsdp_config:
-    mixed_precision: true
-    activation_checkpointing: true
-    sharding_strategy: "FULL_SHARD"
-```
-
-### Data Loading Optimization
-
-#### Efficient Data Loading
-
-```python
-# Optimize data loading
-from nemo_rl.data import optimize_dataloader
-
-dataloader = optimize_dataloader(
-    dataset,
-    batch_size=8,
-    num_workers=4,
-    pin_memory=True,
-    prefetch_factor=2
-)
-```
-
-#### Memory-Mapped Files
-
-For large datasets, use memory-mapped files:
-
-```python
-import mmap
-
-def create_memory_mapped_dataset(file_path):
-    """Create memory-mapped dataset for efficient loading."""
-    with open(file_path, 'rb') as f:
-        mm = mmap.mmap(f.fileno(), 0, access=mmap.ACCESS_READ)
-        return mm
-```
-
-### Computational Optimization
-
-#### Kernel Fusion
-
-Fuse operations to reduce kernel launches:
-
-```python
-# Enable kernel fusion
-import torch
-
-torch.backends.cudnn.benchmark = True
-torch.backends.cudnn.deterministic = False
-```
-
-#### Compilation
-
-Use PyTorch compilation for faster execution:
-
-```python
-# Compile model for faster inference
-model = torch.compile(model, mode="reduce-overhead")
-```
-
-## Profiling and Monitoring
-
-### Performance Profiling
-
-#### PyTorch Profiler
-
-```python
-from torch.profiler import profile, record_function, ProfilerActivity
-
-with profile(
-    activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA],
-    record_shapes=True,
-    with_stack=True
-) as prof:
-    with record_function("model_inference"):
-        outputs = model(inputs)
-
-# Print profiling results
-print(prof.key_averages().table(sort_by="cuda_time_total"))
-```
-
-#### Memory Profiling
-
-```python
-import torch
-
-def profile_memory():
-    """Profile GPU memory usage."""
-    print(f"Allocated: {torch.cuda.memory_allocated() / 1024**3:.2f} GB")
-    print(f"Cached: {torch.cuda.memory_reserved() / 1024**3:.2f} GB")
-    print(f"Max allocated: {torch.cuda.max_memory_allocated() / 1024**3:.2f} GB")
-```
-
-### Real-Time Monitoring
-
-#### Training Metrics
-
-```python
-from nemo_rl.utils.monitoring import TrainingMonitor
-
-monitor = TrainingMonitor()
-
-# Monitor during training
-for batch in dataloader:
-    with monitor.record_step():
-        loss = model(batch)
-        loss.backward()
-        optimizer.step()
-    
-    # Log metrics
-    monitor.log_metrics({
-        'loss': loss.item(),
-        'memory_usage': torch.cuda.memory_allocated() / 1024**3,
-        'throughput': monitor.get_throughput()
-    })
-```
-
-## Distributed Training Optimization
-
-### Communication Optimization
-
-#### Gradient Compression
-
-```yaml
-cluster:
-  name: "fsdp"
-  fsdp_config:
-    mixed_precision: true
-    activation_checkpointing: true
-    sharding_strategy: "FULL_SHARD"
-    gradient_compression: "fp16"  # or "bf16"
-```
-
-#### Overlap Communication
-
-```python
-# Overlap communication with computation
-from torch.distributed import all_reduce
-
-def overlap_allreduce(gradients):
-    """Overlap gradient allreduce with computation."""
-    handles = []
-    for grad in gradients:
-        handle = all_reduce(grad, async_op=True)
-        handles.append(handle)
-    
-    # Continue with computation while communication happens
-    # ...
-    
-    # Wait for communication to complete
-    for handle in handles:
-        handle.wait()
-```
-
-### Load Balancing
-
-#### Dynamic Batching
-
-```python
-class DynamicBatcher:
-    def __init__(self, max_batch_size=32):
-        self.max_batch_size = max_batch_size
-        self.current_batch = []
-    
-    def add_sample(self, sample):
-        """Add sample to current batch."""
-        self.current_batch.append(sample)
-        
-        if len(self.current_batch) >= self.max_batch_size:
-            return self.get_batch()
-        return None
-    
-    def get_batch(self):
-        """Get current batch and reset."""
-        batch = self.current_batch
-        self.current_batch = []
-        return batch
-```
-
-## Hardware-Specific Optimizations
-
-### GPU Optimizations
-
-#### Memory Management
-
-```python
-# Optimize GPU memory usage
-import torch
-
-def optimize_gpu_memory():
-    """Optimize GPU memory usage."""
-    # Clear cache
-    torch.cuda.empty_cache()
-    
-    # Set memory fraction
-    torch.cuda.set_per_process_memory_fraction(0.8)
-    
-    # Enable memory pool
-    torch.cuda.memory.set_per_process_memory_fraction(0.8)
-```
-
-#### Kernel Optimization
-
-```python
-# Optimize CUDA kernels
-import torch
-
-# Enable cuDNN benchmarking
-torch.backends.cudnn.benchmark = True
-
-# Use deterministic algorithms for reproducibility
-torch.backends.cudnn.deterministic = False
-```
-
-### CPU Optimizations
-
-#### Data Loading
-
-```python
-# Optimize CPU data loading
-import torch
-
-def optimize_data_loading(dataloader):
-    """Optimize data loading performance."""
-    dataloader.num_workers = min(8, torch.multiprocessing.cpu_count())
-    dataloader.pin_memory = True
-    dataloader.prefetch_factor = 2
-    return dataloader
-```
-
-#### Multiprocessing
-
-```python
-# Use multiprocessing for data preprocessing
-import multiprocessing as mp
-
-def preprocess_parallel(dataset, num_workers=4):
-    """Preprocess dataset using multiple processes."""
-    with mp.Pool(num_workers) as pool:
-        processed_data = pool.map(preprocess_function, dataset)
-    return processed_data
-```
-
-## Benchmarking
-
-### Performance Benchmarks
-
-#### Training Speed
-
-```python
-import time
-from nemo_rl.utils.benchmarking import TrainingBenchmark
-
-benchmark = TrainingBenchmark()
-
-# Benchmark training speed
-start_time = time.time()
-for epoch in range(num_epochs):
-    for batch in dataloader:
-        loss = model(batch)
-        loss.backward()
-        optimizer.step()
-end_time = time.time()
-
-training_time = end_time - start_time
-samples_per_second = len(dataset) / training_time
-
-print(f"Training time: {training_time:.2f} seconds")
-print(f"Samples per second: {samples_per_second:.2f}")
-```
-
-#### Memory Usage
-
-```python
-def benchmark_memory():
-    """Benchmark memory usage during training."""
-    memory_usage = []
-    
-    for batch in dataloader:
-        # Record memory before forward pass
-        memory_before = torch.cuda.memory_allocated()
-        
-        # Forward pass
-        outputs = model(batch)
-        loss = criterion(outputs, targets)
-        
-        # Record memory after forward pass
-        memory_after = torch.cuda.memory_allocated()
-        
-        memory_usage.append(memory_after - memory_before)
-        
-        # Backward pass
-        loss.backward()
-        optimizer.step()
-    
-    return memory_usage
-```
+NeMo RL provides advanced memory optimization techniques:
+
+- **Gradient Checkpointing**: Reduce memory usage by recomputing intermediate activations
+- **Mixed Precision Training**: Use lower precision to reduce memory and speed up training
+- **Model Sharding**: Distribute model across multiple GPUs
+- **Memory Profiling**: Monitor and optimize memory usage patterns
+
+### Distributed Training
+Scale training across multiple devices:
+
+- **Communication Optimization**: Efficient gradient compression and overlap
+- **Load Balancing**: Dynamic batching and workload distribution
+- **Sharding Strategies**: Choose appropriate model sharding approaches
+- **Network Optimization**: Optimize inter-node communication
+
+### Performance Monitoring
+Comprehensive monitoring and profiling:
+
+- **Real-Time Metrics**: Monitor training speed, memory usage, and throughput
+- **Profiling Tools**: Use PyTorch profiler for detailed performance analysis
+- **Benchmarking**: Compare performance across different configurations
+- **Alerting**: Set up alerts for performance issues
+
+## Performance Optimization Workflow
+
+### 1. Baseline Measurement
+- Profile current training performance
+- Identify bottlenecks and memory issues
+- Establish performance baselines
+
+### 2. Memory Optimization
+- Enable gradient checkpointing for large models
+- Use mixed precision training
+- Optimize data loading and preprocessing
+
+### 3. Distributed Training
+- Scale training across multiple GPUs
+- Optimize communication patterns
+- Balance workload across nodes
+
+### 4. Continuous Monitoring
+- Monitor key performance metrics
+- Set up performance alerts
+- Regularly profile and optimize
 
 ## Best Practices
 
 ### 1. Start Simple
-
 - Begin with basic optimizations
 - Profile before optimizing
 - Measure impact of each change
 
 ### 2. Memory First
-
 - Optimize memory usage before speed
 - Use gradient checkpointing for large models
 - Enable mixed precision training
 
 ### 3. Data Loading
-
 - Use multiple workers for data loading
 - Enable pin memory for GPU transfers
 - Prefetch data when possible
 
 ### 4. Distributed Training
-
 - Use appropriate sharding strategy
 - Overlap communication with computation
 - Balance load across nodes
 
 ### 5. Monitoring
-
 - Monitor key metrics continuously
 - Set up alerts for performance issues
 - Use profiling tools regularly

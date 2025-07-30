@@ -64,7 +64,7 @@ Master SFT, DPO, and GRPO training algorithms with comprehensive guides.
 {bdg-info}`Training`
 :::
 
-:::{grid-item-card} {octicon}`mortar-board;1.5em;sd-mr-1` Tutorials & Examples
+:::{grid-item-card} {octicon}`mortar-board;1.5em;sd-mr-1` Tutorials and Examples
 :link: tutorials-examples/index
 :link-type: doc
 
@@ -168,7 +168,7 @@ Comprehensive API documentation for all NeMo RL components.
 {bdg-warning}`Development`
 :::
 
-:::{grid-item-card} {octicon}`light-bulb;1.5em;sd-mr-1` Core Design & Architecture
+:::{grid-item-card} {octicon}`light-bulb;1.5em;sd-mr-1` Core Design and Architecture
 :link: core-design/index
 :link-type: doc
 
@@ -230,6 +230,7 @@ about/architecture-overview
 get-started/index
 get-started/quickstart
 get-started/installation
+get-started/model-selection
 get-started/docker
 get-started/cluster
 :::: 
@@ -247,7 +248,7 @@ guides/production-support/index
 
 ::::{toctree}
 :hidden:
-:caption: Tutorials & Examples
+:caption: Tutorials and Examples
 :maxdepth: 3
 tutorials-examples/index
 tutorials-examples/tutorials/index
@@ -257,7 +258,7 @@ tutorials-examples/use-cases/index
 
 ::::{toctree}
 :hidden:
-:caption: Core Design & Architecture
+:caption: Core Design and Architecture
 :maxdepth: 3
 core-design/index
 core-design/design-principles/index
@@ -272,7 +273,7 @@ core-design/development-infrastructure/index
 :maxdepth: 3
 advanced/index
 advanced/algorithm-customization/index
-advanced/performance-scaling/index
+advanced/performance/index
 advanced/research-validation/index
 advanced/production-deployment/index
 :::: 

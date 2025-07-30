@@ -23,7 +23,7 @@ This section covers how to design rigorous experiments, evaluate model performan
 :link: experimental-design
 :link-type: doc
 
-Design controlled experiments and research studies. Implement proper experimental methodology for RL research.
+Design controlled experiments with validation frameworks and reproducibility approaches. Implement proper experimental methodology for RL research validation.
 
 +++
 {bdg-info}`Research`

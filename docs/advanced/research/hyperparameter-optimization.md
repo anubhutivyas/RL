@@ -2,6 +2,8 @@
 
 This guide covers hyperparameter optimization techniques for NeMo RL, including automated tuning strategies, search algorithms, and best practices.
 
+> **Note**: This guide focuses on **research methodology and experimental design**. For practical training optimization techniques, see [Training Hyperparameter Optimization](../training/hyperparameter-optimization.md).
+
 ## Overview
 
 Hyperparameter optimization is crucial for achieving optimal performance in NeMo RL training. This guide covers automated tuning methods, search strategies, and practical implementation.

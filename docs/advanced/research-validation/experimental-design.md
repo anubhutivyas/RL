@@ -8,6 +8,8 @@ categories: ["research-validation"]
 
 This guide covers how to design controlled experiments and research studies with proper experimental methodology for NeMo RL research.
 
+> **Note**: This guide focuses on **validation frameworks and reproducibility approaches**. For research methodology and statistical analysis, see [Research Experimental Design](../research/experimental-design.md).
+
 ## Overview
 
 Proper experimental design is crucial for conducting rigorous research in reinforcement learning. This guide provides frameworks and methodologies for designing experiments that produce reliable, reproducible results.

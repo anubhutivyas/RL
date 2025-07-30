@@ -16,7 +16,7 @@ NeMo RL is built on a modular, scalable architecture designed to handle the comp
 
 NeMo RL coordinates various software components (RL Actors) through a unified interface that handles resource allocation, isolation, coordination, and communication. This design enables seamless scaling from 1 to 1000+ GPUs while remaining independent of specific RL Actor implementations.
 
-For detailed design philosophy, implementation specifics, and advanced architectural concepts, see the [Core Design & Architecture](../core-design/index) documentation.
+For detailed design philosophy, implementation specifics, and advanced architectural concepts, see the [Core Design and Architecture](../core-design/index) documentation.
 
 ## Core Components
 
@@ -163,4 +163,4 @@ Backends are configurable and interchangeable without altering core algorithm lo
 
 ## Further Reading
 
-This overview provides a high-level understanding of NeMo RL's architecture. For detailed design philosophy, implementation specifics, and advanced architectural concepts, see the [Core Design & Architecture](../core-design/index) documentation. 
+This overview provides a high-level understanding of NeMo RL's architecture. For detailed design philosophy, implementation specifics, and advanced architectural concepts, see the [Core Design and Architecture](../core-design/index) documentation. 

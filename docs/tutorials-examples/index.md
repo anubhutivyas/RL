@@ -156,7 +156,7 @@ Build models that can solve complex mathematical problems with step-by-step reas
 
 After completing the tutorials:
 
-- **Explore Advanced Features**: Dive into [distributed computing](../advanced/performance-scaling/distributed-training) and [performance optimization](../advanced/performance-scaling/memory-optimization)
+- **Explore Advanced Features**: Dive into [distributed computing](../advanced/performance/distributed-training) and [performance optimization](../advanced/performance/memory-optimization)
 - **Build Your Workflows**: Create custom experiment pipelines with [algorithm customization](../advanced/algorithm-customization/index)
 - **Optimize Performance**: Learn best practices for [production deployment](../advanced/production-deployment/index)
 - **Research and Validation**: Design rigorous experiments with [research methodologies](../advanced/research-validation/index)

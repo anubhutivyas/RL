@@ -904,6 +904,6 @@ def debug_model_serving(self):
 
 ## Next Steps
 
-- Learn about [Monitoring & Alerting](monitoring-alerting) for production monitoring
-- Review [Performance & Scaling](../performance-scaling/index) for optimization
+- Learn about [Monitoring and Alerting](monitoring-alerting) for production monitoring
+- Review [Performance & Scaling](../performance/index) for optimization
 - Explore [Algorithm Customization](../algorithm-customization/index) for advanced training 

@@ -50,7 +50,7 @@ NeMo RL offers several key advantages for reinforcement learning with language m
 - **Benchmarking**: Built-in evaluation frameworks and standardized metrics
 - **Collaboration**: Standardized workflows for multi-institution research projects
 
-**Performance Highlights**: GRPO achieves 3.2× faster convergence compared to PPO on mathematical reasoning tasks, while maintaining stable training across diverse model sizes and architectures.
+**Performance Highlights**: GRPO provides stable training across diverse model sizes and architectures with advanced optimization techniques.
 
 ## NeMo RL in the NeMo Ecosystem
 
@@ -90,7 +90,7 @@ NeMo RL's architecture is designed for distributed reinforcement learning with m
 
 For comprehensive details on system design, components, scalability, and technical specifications, see the [Architecture Overview](architecture-overview) documentation.
 
-## API & Development
+## API and Development
 
 NeMo RL provides a comprehensive Python API for implementing custom reinforcement learning algorithms, environments, and training workflows. The framework offers clean interfaces for algorithm development, environment creation, and distributed training orchestration.
 

@@ -28,6 +28,23 @@ Design rigorous experiments, evaluate model performance, and ensure reproducible
 ### **Production Deployment**
 Deploy NeMo RL models to production with reliable serving architectures, comprehensive monitoring, and production-ready infrastructure.
 
+## Navigation Guide
+
+Some topics have similar names but different focuses:
+
+- **Hyperparameter Optimization**: 
+  - [Training](../training/hyperparameter-optimization.md) - Practical optimization techniques
+  - [Research](../research/hyperparameter-optimization.md) - Research methodology and experimental design
+- **Custom Loss Functions**:
+  - [Training](../training/custom-loss-functions.md) - Training-specific loss functions
+  - [Algorithm Customization](../algorithm-customization/custom-loss-functions.md) - Domain-specific and novel loss functions
+- **Experimental Design**:
+  - [Research](../research/experimental-design.md) - Research methodology and statistical analysis
+  - [Research Validation](../research-validation/experimental-design.md) - Validation frameworks and reproducibility
+- **Monitoring**:
+  - [Performance](../performance/monitoring.md) - Training performance monitoring
+  - [Production](../production-deployment/monitoring-alerting.md) - Production deployment monitoring
+
 ## When to Use Advanced Topics
 
 These topics are for developers and scientists who need to:
@@ -89,8 +106,18 @@ Adapt existing algorithms for new domains and specialized use cases.
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
+:::{grid-item-card} {octicon}`zap;1.5em;sd-mr-1` Performance Optimization
+:link: performance/index
+:link-type: doc
+
+Advanced performance optimization techniques and strategies.
+
++++
+{bdg-warning}`Advanced` {bdg-secondary}`Performance`
+:::
+
 :::{grid-item-card} {octicon}`zap;1.5em;sd-mr-1` Distributed Training
-:link: performance-scaling/distributed-training
+:link: performance/distributed-training
 :link-type: doc
 
 Scale from single GPU to multi-node clusters.
@@ -100,7 +127,7 @@ Scale from single GPU to multi-node clusters.
 :::
 
 :::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Memory Optimization
-:link: performance-scaling/memory-optimization
+:link: performance/memory-optimization
 :link-type: doc
 
 Optimize memory usage for large models.

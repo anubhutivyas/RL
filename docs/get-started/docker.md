@@ -173,7 +173,7 @@ docker run --gpus all \
 
 ### Getting Help
 
-- Check the [troubleshooting guide](../configuration-cli/troubleshooting)
+- Check the [troubleshooting guide](../references/troubleshooting)
 - Review [cluster setup](cluster.md) for multi-node configurations
 - Join the [NeMo Discord](https://discord.gg/nvidia-nemo) for community support
 

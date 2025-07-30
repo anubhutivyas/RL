@@ -394,4 +394,4 @@ def debug_grouping(self, groups, embeddings):
 
 - Explore [Custom DPO Implementation](custom-dpo) for alternative RL algorithms
 - Learn about [Custom Loss Functions](custom-loss-functions) for more advanced customization
-- Review [Performance & Scaling](../performance-scaling/index) for training optimization 
+- Review [Performance & Scaling](../performance/index) for training optimization 

@@ -30,7 +30,7 @@ NeMo RL provides a robust, modular toolkit for scalable reinforcement learning a
 
 NeMo RL also supports **multi-turn RL**, enabling training for agentic tasks like games or tool use.
 
-**Benchmark Performance**: GRPO achieves **3.2× faster convergence** compared to PPO on math-based tasks.
+**Benchmark Performance**: GRPO provides stable and efficient training for large language models with advanced optimization techniques.
 
 ## 3. Backend and Model Support
 
@@ -82,5 +82,5 @@ Backends are configurable and interchangeable without altering core algorithm lo
 
 ---
 
-For more details, see the [API Documentation](../api-docs/index), [Guides](../guides/index), and [Core Design & Architecture](../core-design/index).
+For more details, see the [API Documentation](../api-docs/index), [Guides](../guides/index), and [Core Design and Architecture](../core-design/index).
 

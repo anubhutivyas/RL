@@ -57,7 +57,7 @@ experimental.md :only: internal
 ### 3. Grid Card Filtering
 
 ```rst
-:::{grid-item-card} EA Feature
+:::{grid-item-card} {octicon}`star;1.5em;sd-mr-1` EA Feature
 :only: ea
 
 This card only shows in EA builds.

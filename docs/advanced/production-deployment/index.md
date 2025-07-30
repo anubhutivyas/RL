@@ -11,7 +11,7 @@ This section covers how to deploy NeMo RL models to production with reliable ser
 ## What You'll Find Here
 
 - **Model Serving**: Deploy models with REST/gRPC APIs and serving architectures
-- **Monitoring & Alerting**: Implement comprehensive monitoring and alerting systems
+- **Monitoring and Alerting**: Implement comprehensive monitoring and alerting systems
 
 ## Production Deployment
 
@@ -28,7 +28,7 @@ Deploy models with REST/gRPC APIs and serving architectures. Build production-re
 {bdg-warning}`Production`
 :::
 
-:::{grid-item-card} {octicon}`eye;1.5em;sd-mr-1` Monitoring & Alerting
+:::{grid-item-card} {octicon}`eye;1.5em;sd-mr-1` Monitoring and Alerting
 :link: monitoring-alerting
 :link-type: doc
 

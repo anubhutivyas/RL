@@ -12,6 +12,8 @@ modality: "universal"
 
 This document provides comprehensive methodologies for designing robust experiments with NeMo RL, including hypothesis testing, control groups, and statistical analysis frameworks.
 
+> **Note**: This guide focuses on **research methodology and statistical analysis**. For validation frameworks and reproducibility approaches, see [Research Validation Experimental Design](../research-validation/experimental-design.md).
+
 ## Overview
 
 Proper experimental design is crucial for conducting rigorous research with NeMo RL. This guide covers systematic approaches to algorithm comparison, hyperparameter optimization, and ablation studies.

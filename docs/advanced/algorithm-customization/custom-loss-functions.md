@@ -8,6 +8,8 @@ categories: ["algorithm-customization"]
 
 This guide covers how to design and implement novel training objectives and custom loss functions for specific domains in NeMo RL.
 
+> **Note**: This guide focuses on **domain-specific and novel loss functions**. For training-specific loss function implementation, see [Training Custom Loss Functions](../training/custom-loss-functions.md).
+
 ## Overview
 
 NeMo RL provides a flexible framework for implementing custom loss functions that can be tailored to specific domains, tasks, and requirements. This allows you to go beyond standard RL objectives and create specialized training objectives.
@@ -541,4 +543,4 @@ def debug_loss_computation(self, batch, model_outputs):
 
 - Explore [Custom DPO Implementation](custom-dpo) for algorithm customization
 - Learn about [Custom GRPO Implementation](custom-grpo) for alternative approaches
-- Review [Performance & Scaling](../performance-scaling/index) for training optimization 
+- Review [Performance & Scaling](../performance/index) for training optimization 

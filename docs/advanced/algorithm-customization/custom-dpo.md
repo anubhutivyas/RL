@@ -289,4 +289,4 @@ def debug_loss(self, chosen_rewards, rejected_rewards):
 
 - Explore [Custom GRPO Implementation](custom-grpo) for alternative RL algorithms
 - Learn about [Custom Loss Functions](custom-loss-functions) for more advanced customization
-- Review [Performance & Scaling](../performance-scaling/index) for training optimization 
+- Review [Performance & Scaling](../performance/index) for training optimization 

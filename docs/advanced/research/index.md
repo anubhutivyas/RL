@@ -29,7 +29,7 @@ Deep analysis of training dynamics, convergence properties, and performance benc
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} Experimental Design
+:::{grid-item-card} {octicon}`beaker;1.5em;sd-mr-1` Experimental Design
 :link: experimental-design
 :link-type: doc
 
@@ -39,7 +39,7 @@ Methodologies for designing robust experiments with proper controls and statisti
 {bdg-primary}`Foundation`
 :::
 
-:::{grid-item-card} Reproducibility
+:::{grid-item-card} {octicon}`checklist;1.5em;sd-mr-1` Reproducibility
 :link: reproducibility
 :link-type: doc
 
@@ -49,7 +49,7 @@ Best practices for ensuring reproducible research including seed management and 
 {bdg-primary}`Foundation`
 :::
 
-:::{grid-item-card} Ablation Studies
+:::{grid-item-card} {octicon}`search;1.5em;sd-mr-1` Ablation Studies
 :link: ablation-studies
 :link-type: doc
 
@@ -59,17 +59,17 @@ Systematic ablation studies to understand component contributions and algorithm 
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} Hyperparameter Optimization
+:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Hyperparameter Optimization
 :link: hyperparameter-optimization
 :link-type: doc
 
-Advanced hyperparameter optimization techniques including Bayesian optimization and multi-objective search.
+Research methodology and experimental design approaches for hyperparameter optimization studies.
 
 +++
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} Custom Algorithm Development
+:::{grid-item-card} {octicon}`code;1.5em;sd-mr-1` Custom Algorithm Development
 :link: custom-algorithms
 :link-type: doc
 
@@ -79,7 +79,7 @@ Guidelines for developing custom algorithms and extending NeMo RL with novel res
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} Performance Analysis
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Performance Analysis
 :link: performance-analysis
 :link-type: doc
 

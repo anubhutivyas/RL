@@ -440,4 +440,4 @@ class CodeGenerationEnvironment(EnvironmentInterface):
 - Explore [Math Environment](../../api-docs/nemo_rl/nemo_rl.environments.math_environment) for a complete implementation example
 - Check [Debugging](debugging) for troubleshooting guidance
 - See [Advanced Training](../../advanced/training/index) for optimization techniques
-- Review [Configuration Reference](../../configuration-cli/configuration-reference) for environment setup 
+- Review [Configuration Reference](../../references/configuration-reference) for environment setup 

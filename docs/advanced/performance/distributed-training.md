@@ -1,526 +1,579 @@
 ---
-description: "Comprehensive guide to distributed training techniques for scaling NeMo RL across multiple GPUs and nodes using Ray and FSDP"
-categories: ["performance-optimization"]
-tags: ["distributed", "ray", "fsdp", "gpu-accelerated", "scaling", "model-parallelism", "data-parallelism"]
-personas: ["mle-focused", "admin-focused", "devops-focused"]
-difficulty: "advanced"
-content_type: "tutorial"
-modality: "universal"
+description: "Scale from single GPU to multi-node clusters with efficient distributed training strategies"
+tags: ["distributed", "training", "scaling", "multi-gpu", "clusters"]
+categories: ["performance"]
 ---
 
 # Distributed Training
 
-This guide covers distributed training techniques for scaling NeMo RL across multiple GPUs and nodes.
+This guide covers how to scale NeMo RL from single GPU to multi-node clusters with efficient distributed training strategies.
 
 ## Overview
 
-Distributed training allows you to scale RL training across multiple GPUs and nodes, significantly reducing training time and enabling training of larger models. This guide covers the various distributed training strategies available in NeMo RL.
+NeMo RL provides robust distributed training capabilities that allow you to scale your training across multiple GPUs and nodes. This is essential for training large models efficiently and reducing training time.
 
-## Distributed Training Strategies
+## Key Components
 
-### Data Parallelism
+### Ray-Based Distributed Computing
 
-Distribute data across multiple GPUs while keeping the model replicated:
-
-```yaml
-# Data parallel configuration
-cluster:
-  name: "ray"
-  num_workers: 4
-  resources_per_worker:
-    GPU: 0.25  # Each worker gets 1/4 of a GPU
-```
-
-### Model Parallelism
-
-Split the model across multiple GPUs:
-
-```yaml
-# Model parallel configuration
-cluster:
-  name: "fsdp"
-  fsdp_config:
-    mixed_precision: true
-    activation_checkpointing: true
-    sharding_strategy: "FULL_SHARD"
-    cpu_offload: false
-```
-
-### Pipeline Parallelism
-
-Split model layers across different GPUs:
-
-```yaml
-# Pipeline parallel configuration
-cluster:
-  name: "pipeline"
-  pipeline_config:
-    stages: 4  # Split model into 4 stages
-    micro_batch_size: 4
-    gradient_accumulation_steps: 8
-```
-
-## Ray-Based Distributed Training
-
-### Ray Cluster Setup
+NeMo RL uses Ray for distributed computing, providing seamless scaling:
 
 ```python
 import ray
-from nemo_rl.distributed import RayCluster
+from nemo_rl.distributed import RayTrainer
 
 # Initialize Ray
-ray.init(address="auto")
+ray.init()
 
-# Create cluster
-cluster = RayCluster(
-    num_workers=4,
-    resources_per_worker={"CPU": 1, "GPU": 0.25}
+# Create distributed trainer
+trainer = RayTrainer(
+    model=model,
+    config=config,
+    num_workers=4  # Number of worker processes
 )
 ```
 
-### Ray Training Configuration
+### Single Node Multi-GPU Training
 
-```yaml
-# Ray training configuration
-cluster:
-  name: "ray"
-  num_workers: 4
-  resources_per_worker:
-    CPU: 1
-    GPU: 0.25
-  placement_group:
-    strategy: "PACK"
-  timeout: 300
-```
-
-### Ray Worker Implementation
+Start with single node multi-GPU training:
 
 ```python
-import ray
-from nemo_rl.distributed import RayWorker
+from nemo_rl.distributed import DistributedTrainer
 
-@ray.remote(num_gpus=0.25)
-class TrainingWorker(RayWorker):
-    def __init__(self, config):
-        super().__init__(config)
-        self.model = self.create_model()
-        self.optimizer = self.create_optimizer()
+class MultiGPUTrainer(DistributedTrainer):
+    def __init__(self, model, config, num_gpus=4):
+        super().__init__(model, config)
+        self.num_gpus = num_gpus
+        
+        # Initialize distributed training
+        self.setup_distributed()
+    
+    def setup_distributed(self):
+        """
+        Setup distributed training environment
+        """
+        # Initialize process group
+        torch.distributed.init_process_group(
+            backend='nccl',  # Use NCCL for GPU communication
+            init_method='env://'
+        )
+        
+        # Wrap model with DistributedDataParallel
+        self.model = torch.nn.parallel.DistributedDataParallel(
+            self.model,
+            device_ids=[self.local_rank]
+        )
     
     def train_step(self, batch):
-        """Execute one training step."""
-        loss = self.model(batch)
-        loss.backward()
-        self.optimizer.step()
-        return loss.item()
-    
-    def get_model_state(self):
-        """Get current model state."""
-        return self.model.state_dict()
-    
-    def set_model_state(self, state_dict):
-        """Set model state."""
-        self.model.load_state_dict(state_dict)
-```
-
-## FSDP (Fully Sharded Data Parallel)
-
-### FSDP Configuration
-
-```yaml
-# FSDP configuration
-cluster:
-  name: "fsdp"
-  fsdp_config:
-    mixed_precision: true
-    activation_checkpointing: true
-    sharding_strategy: "FULL_SHARD"
-    cpu_offload: false
-    state_dict_type: "FULL_STATE_DICT"
-    auto_wrap_policy: "transformer_layer"
-```
-
-### FSDP Implementation
-
-```python
-from torch.distributed.fsdp import (
-    FullyShardedDataParallel as FSDP,
-    MixedPrecision,
-    BackwardPrefetch,
-    ShardingStrategy,
-)
-from torch.distributed.fsdp.wrap import (
-    transformer_auto_wrap_policy,
-    size_based_auto_wrap_policy,
-)
-
-def setup_fsdp_model(model, rank, world_size):
-    """Setup FSDP model."""
-    
-    # Define mixed precision policy
-    mixed_precision = MixedPrecision(
-        param_dtype=torch.bfloat16,
-        reduce_dtype=torch.bfloat16,
-        buffer_dtype=torch.bfloat16,
-    )
-    
-    # Define auto wrap policy
-    auto_wrap_policy = transformer_auto_wrap_policy(
-        model,
-        transformer_layer_cls={TransformerBlock},
-    )
-    
-    # Create FSDP model
-    fsdp_model = FSDP(
-        model,
-        mixed_precision=mixed_precision,
-        sharding_strategy=ShardingStrategy.FULL_SHARD,
-        auto_wrap_policy=auto_wrap_policy,
-        backward_prefetch=BackwardPrefetch.BACKWARD_PRE,
-        use_orig_params=True,
-    )
-    
-    return fsdp_model
-```
-
-### FSDP Training Loop
-
-```python
-def train_with_fsdp(model, dataloader, optimizer, rank, world_size):
-    """Train with FSDP."""
-    
-    model.train()
-    
-    for batch in dataloader:
-        optimizer.zero_grad()
+        """
+        Distributed training step
+        """
+        # Move batch to correct device
+        batch = {k: v.to(self.device) for k, v in batch.items()}
         
         # Forward pass
-        outputs = model(batch)
-        loss = criterion(outputs, targets)
+        outputs = self.model(batch)
+        
+        # Compute loss
+        loss = self.compute_loss(outputs, batch)
         
         # Backward pass
         loss.backward()
         
-        # Gradient synchronization happens automatically
-        optimizer.step()
+        # Synchronize gradients across processes
+        self.synchronize_gradients()
         
-        if rank == 0:
-            print(f"Loss: {loss.item():.4f}")
+        return loss
 ```
 
-## Communication Optimization
+## Configuration
 
-### Gradient Compression
-
-```python
-from torch.distributed.algorithms.model_averaging import averagers
-
-# Use gradient compression
-compression = averagers.CompressionAverager(
-    comm_backend="nccl",
-    compression="fp16"
-)
-
-# Apply compression during training
-for param in model.parameters():
-    if param.grad is not None:
-        compressed_grad = compression.compress(param.grad)
-        param.grad = compressed_grad
-```
-
-### Overlap Communication
-
-```python
-from torch.distributed import all_reduce
-import torch.distributed as dist
-
-def overlap_allreduce(gradients):
-    """Overlap gradient allreduce with computation."""
-    handles = []
-    
-    for grad in gradients:
-        if grad is not None:
-            handle = all_reduce(grad, async_op=True)
-            handles.append(handle)
-    
-    # Continue with computation while communication happens
-    # ...
-    
-    # Wait for communication to complete
-    for handle in handles:
-        handle.wait()
-```
-
-### Bucketing
-
-```python
-from torch.distributed import all_reduce_coalesced
-
-def bucketed_allreduce(parameters):
-    """Use bucketed allreduce for efficiency."""
-    grads = [p.grad for p in parameters if p.grad is not None]
-    
-    # Coalesce gradients
-    coalesced_grads = all_reduce_coalesced(grads, group=dist.group.WORLD)
-    
-    # Update gradients
-    idx = 0
-    for param in parameters:
-        if param.grad is not None:
-            param.grad = coalesced_grads[idx]
-            idx += 1
-```
-
-## Load Balancing
-
-### Dynamic Batching
-
-```python
-class DynamicBatcher:
-    def __init__(self, max_batch_size=32):
-        self.max_batch_size = max_batch_size
-        self.current_batch = []
-    
-    def add_sample(self, sample):
-        """Add sample to current batch."""
-        self.current_batch.append(sample)
-        
-        if len(self.current_batch) >= self.max_batch_size:
-            return self.get_batch()
-        return None
-    
-    def get_batch(self):
-        """Get current batch and reset."""
-        batch = self.current_batch
-        self.current_batch = []
-        return batch
-```
-
-### Workload Distribution
-
-```python
-def distribute_workload(dataset, world_size, rank):
-    """Distribute dataset across workers."""
-    # Split dataset
-    dataset_size = len(dataset)
-    samples_per_worker = dataset_size // world_size
-    
-    start_idx = rank * samples_per_worker
-    end_idx = start_idx + samples_per_worker
-    
-    if rank == world_size - 1:
-        end_idx = dataset_size
-    
-    return dataset[start_idx:end_idx]
-```
-
-## Fault Tolerance
-
-### Checkpointing
-
-```python
-import torch.distributed as dist
-from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
-
-def save_checkpoint(model, optimizer, epoch, rank):
-    """Save distributed checkpoint."""
-    if rank == 0:
-        # Save on rank 0
-        checkpoint = {
-            'epoch': epoch,
-            'model_state_dict': model.state_dict(),
-            'optimizer_state_dict': optimizer.state_dict(),
-        }
-        torch.save(checkpoint, f'checkpoint_epoch_{epoch}.pt')
-    
-    # Synchronize all processes
-    dist.barrier()
-    
-    # Load checkpoint on all processes
-    if rank != 0:
-        checkpoint = torch.load(f'checkpoint_epoch_{epoch}.pt')
-        model.load_state_dict(checkpoint['model_state_dict'])
-        optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-```
-
-### Error Handling
-
-```python
-import torch.distributed as dist
-
-def train_with_fault_tolerance(model, dataloader, optimizer):
-    """Train with fault tolerance."""
-    try:
-        for batch in dataloader:
-            try:
-                # Training step
-                loss = model(batch)
-                loss.backward()
-                optimizer.step()
-                
-            except RuntimeError as e:
-                if "out of memory" in str(e):
-                    # Handle OOM
-                    torch.cuda.empty_cache()
-                    continue
-                else:
-                    raise e
-                    
-    except Exception as e:
-        # Synchronize error across processes
-        dist.barrier()
-        raise e
-```
-
-## Performance Monitoring
-
-### Communication Metrics
-
-```python
-import time
-import torch.distributed as dist
-
-class CommunicationMonitor:
-    def __init__(self):
-        self.comm_times = []
-    
-    def measure_allreduce(self, tensor):
-        """Measure allreduce time."""
-        start_time = time.time()
-        dist.all_reduce(tensor)
-        end_time = time.time()
-        
-        self.comm_times.append(end_time - start_time)
-        return tensor
-    
-    def get_stats(self):
-        """Get communication statistics."""
-        if self.comm_times:
-            return {
-                'mean_time': sum(self.comm_times) / len(self.comm_times),
-                'max_time': max(self.comm_times),
-                'min_time': min(self.comm_times),
-                'total_time': sum(self.comm_times)
-            }
-        return {}
-```
-
-### Scaling Efficiency
-
-```python
-def calculate_scaling_efficiency(times, world_size):
-    """Calculate scaling efficiency."""
-    baseline_time = times[1]  # Single GPU time
-    scaled_time = times[world_size]
-    
-    ideal_time = baseline_time / world_size
-    efficiency = ideal_time / scaled_time
-    
-    return efficiency
-```
-
-## Configuration Examples
-
-### Multi-GPU Training
+### Distributed Training Configuration
 
 ```yaml
-# Multi-GPU configuration
-cluster:
-  name: "fsdp"
+# configs/distributed_training.yaml
+distributed:
+  enabled: true
+  backend: nccl  # or gloo for CPU
   num_gpus: 4
+  num_nodes: 2
   
-training:
-  batch_size: 32
-  gradient_accumulation_steps: 4
-  
-model:
-  name: "llama2-7b"
-  max_length: 2048
+  # Communication settings
+  communication:
+    timeout: 1800  # 30 minutes
+    bucket_cap_mb: 25
+    
+  # Gradient synchronization
+  gradient_sync:
+    enabled: true
+    bucket_size: 25
+    
+  # Mixed precision
+  mixed_precision:
+    enabled: true
+    dtype: float16
+    
+  # Memory optimization
+  memory_optimization:
+    gradient_checkpointing: true
+    activation_checkpointing: true
 ```
 
-### Multi-Node Training
+### Multi-Node Configuration
 
 ```yaml
-# Multi-node configuration
-cluster:
-  name: "ray"
+# configs/multi_node.yaml
+distributed:
+  enabled: true
   num_nodes: 4
   gpus_per_node: 8
   
-training:
-  batch_size: 128
-  gradient_accumulation_steps: 2
-  
-model:
-  name: "llama2-70b"
-  max_length: 4096
+  # Node configuration
+  nodes:
+    - address: "192.168.1.10"
+      gpus: [0, 1, 2, 3, 4, 5, 6, 7]
+    - address: "192.168.1.11"
+      gpus: [0, 1, 2, 3, 4, 5, 6, 7]
+    - address: "192.168.1.12"
+      gpus: [0, 1, 2, 3, 4, 5, 6, 7]
+    - address: "192.168.1.13"
+      gpus: [0, 1, 2, 3, 4, 5, 6, 7]
 ```
 
-### Heterogeneous Training
+## Advanced Strategies
 
-```yaml
-# Heterogeneous configuration
-cluster:
-  name: "ray"
-  resources:
-    - {"CPU": 4, "GPU": 1, "memory": 32000}
-    - {"CPU": 8, "GPU": 2, "memory": 64000}
-    - {"CPU": 16, "GPU": 4, "memory": 128000}
+### Pipeline Parallelism
+
+For very large models, implement pipeline parallelism:
+
+```python
+class PipelineParallelTrainer(DistributedTrainer):
+    def __init__(self, model, config, num_stages=4):
+        super().__init__(model, config)
+        self.num_stages = num_stages
+        self.stage_id = self.rank // (self.world_size // num_stages)
+        
+        # Split model into stages
+        self.model_stages = self.split_model_into_stages()
+    
+    def split_model_into_stages(self):
+        """
+        Split model into pipeline stages
+        """
+        stages = []
+        layers_per_stage = len(self.model.layers) // self.num_stages
+        
+        for i in range(self.num_stages):
+            start_idx = i * layers_per_stage
+            end_idx = (i + 1) * layers_per_stage if i < self.num_stages - 1 else len(self.model.layers)
+            
+            stage = self.model.layers[start_idx:end_idx]
+            stages.append(stage)
+        
+        return stages
+    
+    def forward_pipeline(self, batch):
+        """
+        Forward pass through pipeline stages
+        """
+        # Split batch into micro-batches
+        micro_batches = self.split_batch(batch)
+        
+        # Process through pipeline stages
+        outputs = []
+        for micro_batch in micro_batches:
+            stage_output = self.process_through_stages(micro_batch)
+            outputs.append(stage_output)
+        
+        return self.combine_outputs(outputs)
+```
+
+### Data Parallelism with Gradient Accumulation
+
+Implement efficient data parallelism with gradient accumulation:
+
+```python
+class GradientAccumulationTrainer(DistributedTrainer):
+    def __init__(self, model, config, accumulation_steps=4):
+        super().__init__(model, config)
+        self.accumulation_steps = accumulation_steps
+        self.accumulation_counter = 0
+    
+    def train_step(self, batch):
+        """
+        Training step with gradient accumulation
+        """
+        # Forward pass
+        outputs = self.model(batch)
+        loss = self.compute_loss(outputs, batch)
+        
+        # Scale loss for gradient accumulation
+        scaled_loss = loss / self.accumulation_steps
+        
+        # Backward pass
+        scaled_loss.backward()
+        
+        self.accumulation_counter += 1
+        
+        # Update weights after accumulation steps
+        if self.accumulation_counter % self.accumulation_steps == 0:
+            self.optimizer.step()
+            self.optimizer.zero_grad()
+            
+            # Synchronize gradients across processes
+            self.synchronize_gradients()
+        
+        return loss
+```
+
+### Sharded Data Parallelism
+
+For memory-efficient training with large models:
+
+```python
+from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
+
+class ShardedDataParallelTrainer(DistributedTrainer):
+    def __init__(self, model, config):
+        super().__init__(model, config)
+        
+        # Wrap model with FSDP
+        self.model = FSDP(
+            self.model,
+            mixed_precision=True,
+            cpu_offload=True,
+            auto_wrap_policy=self.get_auto_wrap_policy()
+        )
+    
+    def get_auto_wrap_policy(self):
+        """
+        Define auto-wrap policy for FSDP
+        """
+        from torch.distributed.fsdp.wrap import transformer_auto_wrap_policy
+        
+        return transformer_auto_wrap_policy(
+            self.model,
+            transformer_layer_cls={torch.nn.TransformerEncoderLayer}
+        )
+    
+    def train_step(self, batch):
+        """
+        Training step with sharded data parallelism
+        """
+        # Forward pass
+        outputs = self.model(batch)
+        loss = self.compute_loss(outputs, batch)
+        
+        # Backward pass
+        loss.backward()
+        
+        # Optimizer step (handled by FSDP)
+        self.optimizer.step()
+        self.optimizer.zero_grad()
+        
+        return loss
+```
+
+## Performance Optimization
+
+### Communication Optimization
+
+Optimize inter-process communication:
+
+```python
+class OptimizedCommunicationTrainer(DistributedTrainer):
+    def __init__(self, model, config):
+        super().__init__(model, config)
+        
+        # Optimize communication
+        self.setup_communication_optimization()
+    
+    def setup_communication_optimization(self):
+        """
+        Setup communication optimization
+        """
+        # Use gradient bucketing
+        torch.distributed.init_process_group(
+            backend='nccl',
+            init_method='env://',
+            timeout=datetime.timedelta(seconds=1800)
+        )
+        
+        # Enable gradient compression
+        self.gradient_compression = True
+        
+        # Setup all-reduce fusion
+        self.all_reduce_fusion = True
+    
+    def synchronize_gradients(self):
+        """
+        Optimized gradient synchronization
+        """
+        if self.gradient_compression:
+            # Compress gradients before communication
+            compressed_gradients = self.compress_gradients()
+            torch.distributed.all_reduce(compressed_gradients)
+            self.decompress_gradients(compressed_gradients)
+        else:
+            # Standard all-reduce
+            for param in self.model.parameters():
+                if param.grad is not None:
+                    torch.distributed.all_reduce(param.grad.data, op=torch.distributed.ReduceOp.SUM)
+```
+
+### Memory Optimization
+
+Implement memory-efficient distributed training:
+
+```python
+class MemoryOptimizedTrainer(DistributedTrainer):
+    def __init__(self, model, config):
+        super().__init__(model, config)
+        
+        # Enable memory optimizations
+        self.setup_memory_optimization()
+    
+    def setup_memory_optimization(self):
+        """
+        Setup memory optimization techniques
+        """
+        # Enable gradient checkpointing
+        if hasattr(self.model, 'gradient_checkpointing_enable'):
+            self.model.gradient_checkpointing_enable()
+        
+        # Enable activation checkpointing
+        self.activation_checkpointing = True
+        
+        # Use mixed precision training
+        self.scaler = torch.cuda.amp.GradScaler()
+    
+    def train_step(self, batch):
+        """
+        Memory-optimized training step
+        """
+        # Use automatic mixed precision
+        with torch.cuda.amp.autocast():
+            outputs = self.model(batch)
+            loss = self.compute_loss(outputs, batch)
+        
+        # Scale loss and backward pass
+        self.scaler.scale(loss).backward()
+        
+        # Unscale gradients and optimizer step
+        self.scaler.unscale_(self.optimizer)
+        self.optimizer.step()
+        self.optimizer.zero_grad()
+        
+        # Update scaler
+        self.scaler.step(self.optimizer)
+        self.scaler.update()
+        
+        return loss
+```
+
+## Monitoring and Debugging
+
+### Performance Monitoring
+
+Monitor distributed training performance:
+
+```python
+class MonitoredDistributedTrainer(DistributedTrainer):
+    def __init__(self, model, config):
+        super().__init__(model, config)
+        self.metrics = {}
+    
+    def log_distributed_metrics(self):
+        """
+        Log distributed training metrics
+        """
+        # Communication metrics
+        comm_time = self.measure_communication_time()
+        self.metrics['communication_time'] = comm_time
+        
+        # Memory usage
+        memory_usage = torch.cuda.memory_allocated() / 1024**3  # GB
+        self.metrics['memory_usage_gb'] = memory_usage
+        
+        # GPU utilization
+        gpu_utilization = self.measure_gpu_utilization()
+        self.metrics['gpu_utilization'] = gpu_utilization
+        
+        # Throughput
+        throughput = self.measure_throughput()
+        self.metrics['samples_per_second'] = throughput
+        
+        # Log metrics
+        if self.rank == 0:  # Only log from main process
+            self.logger.log(self.metrics)
+    
+    def measure_communication_time(self):
+        """
+        Measure communication overhead
+        """
+        start_time = time.time()
+        
+        # Synchronize gradients
+        self.synchronize_gradients()
+        
+        end_time = time.time()
+        return end_time - start_time
+```
+
+### Debugging Distributed Training
+
+Common issues and solutions:
+
+```python
+class DebugDistributedTrainer(DistributedTrainer):
+    def __init__(self, model, config):
+        super().__init__(model, config)
+        self.debug_mode = config.get('debug_mode', False)
+    
+    def debug_distributed_training(self):
+        """
+        Debug distributed training issues
+        """
+        if not self.debug_mode:
+            return
+        
+        # Check process group
+        if not torch.distributed.is_initialized():
+            print(f"Rank {self.rank}: Process group not initialized")
+            return
+        
+        # Check model parameters consistency
+        self.check_parameter_consistency()
+        
+        # Check gradient synchronization
+        self.check_gradient_synchronization()
+        
+        # Check memory usage
+        self.check_memory_usage()
+    
+    def check_parameter_consistency(self):
+        """
+        Check if parameters are consistent across processes
+        """
+        for name, param in self.model.named_parameters():
+            # Gather parameters from all processes
+            gathered_params = [torch.zeros_like(param) for _ in range(self.world_size)]
+            torch.distributed.all_gather(gathered_params, param.data)
+            
+            # Check consistency
+            for i, gathered_param in enumerate(gathered_params):
+                if not torch.allclose(param.data, gathered_param):
+                    print(f"Rank {self.rank}: Parameter {name} inconsistent with rank {i}")
 ```
 
 ## Best Practices
 
-### 1. Start Small
+### 1. Efficient Data Loading
 
-- Begin with single GPU training
-- Gradually scale to multiple GPUs
-- Test with small models first
+Optimize data loading for distributed training:
 
-### 2. Monitor Performance
+```python
+def setup_distributed_dataloader(self, dataset, batch_size):
+    """
+    Setup distributed data loader
+    """
+    sampler = torch.utils.data.distributed.DistributedSampler(
+        dataset,
+        num_replicas=self.world_size,
+        rank=self.rank,
+        shuffle=True
+    )
+    
+    dataloader = torch.utils.data.DataLoader(
+        dataset,
+        batch_size=batch_size,
+        sampler=sampler,
+        num_workers=4,
+        pin_memory=True,
+        persistent_workers=True
+    )
+    
+    return dataloader, sampler
+```
 
-- Track communication overhead
-- Monitor memory usage
-- Measure scaling efficiency
+### 2. Gradient Synchronization
 
-### 3. Optimize Communication
+Ensure proper gradient synchronization:
 
-- Use gradient compression
-- Overlap communication with computation
-- Use appropriate communication primitives
+```python
+def synchronize_gradients(self):
+    """
+    Synchronize gradients across all processes
+    """
+    for param in self.model.parameters():
+        if param.grad is not None:
+            # All-reduce gradients
+            torch.distributed.all_reduce(
+                param.grad.data,
+                op=torch.distributed.ReduceOp.SUM
+            )
+            
+            # Average gradients
+            param.grad.data /= self.world_size
+```
 
-### 4. Handle Faults
+### 3. Checkpointing
 
-- Implement checkpointing
-- Handle node failures gracefully
-- Monitor for OOM errors
+Implement distributed checkpointing:
 
-### 5. Balance Load
-
-- Distribute work evenly
-- Use dynamic batching
-- Monitor worker utilization
+```python
+def save_distributed_checkpoint(self, path):
+    """
+    Save distributed training checkpoint
+    """
+    if self.rank == 0:
+        # Save model state
+        torch.save(self.model.state_dict(), f"{path}/model.pt")
+        
+        # Save optimizer state
+        torch.save(self.optimizer.state_dict(), f"{path}/optimizer.pt")
+        
+        # Save training state
+        training_state = {
+            'epoch': self.current_epoch,
+            'step': self.current_step,
+            'best_loss': self.best_loss
+        }
+        torch.save(training_state, f"{path}/training_state.pt")
+    
+    # Synchronize all processes
+    torch.distributed.barrier()
+```
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Communication Deadlocks**
-   - Check for mismatched allreduce calls
-   - Ensure proper synchronization
-   - Use timeout mechanisms
+1. **Deadlocks**: Ensure all processes participate in collective operations
+2. **Memory Issues**: Use gradient accumulation and mixed precision
+3. **Communication Errors**: Check network connectivity and timeout settings
 
-2. **Memory Issues**
-   - Reduce batch size per GPU
-   - Enable gradient checkpointing
-   - Use CPU offloading
+### Debugging Tips
 
-3. **Load Imbalance**
-   - Monitor worker utilization
-   - Use dynamic batching
-   - Balance dataset distribution
+```python
+# Add debugging to distributed training
+def debug_distributed_setup(self):
+    """
+    Debug distributed training setup
+    """
+    print(f"Rank {self.rank}: World size = {self.world_size}")
+    print(f"Rank {self.rank}: Local rank = {self.local_rank}")
+    print(f"Rank {self.rank}: Device = {self.device}")
+    
+    # Check process group
+    if torch.distributed.is_initialized():
+        print(f"Rank {self.rank}: Process group initialized")
+    else:
+        print(f"Rank {self.rank}: Process group not initialized")
+```
 
-4. **Network Issues**
-   - Optimize network configuration
-   - Use appropriate communication backend
-   - Monitor network bandwidth
+## Next Steps
 
-For more advanced distributed training techniques, see [Performance Optimization](index.md) and [Memory Optimization](memory-optimization.md). 
+- Learn about [Memory Optimization](memory-optimization) for large model training
+- Review [Production Deployment](../production-deployment/index) for deployment strategies
+- Explore [Algorithm Customization](../algorithm-customization/index) for advanced training 

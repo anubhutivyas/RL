@@ -229,8 +229,8 @@ uv run python examples/run_sft.py \
 
 ### Getting Help
 
-- Check the [troubleshooting guide](../configuration-cli/troubleshooting)
-- Review [configuration options](../configuration-cli/index)
+- Check the [troubleshooting guide](../references/troubleshooting)
+- Review [configuration options](../references/index)
 - Join the [NeMo Discord](https://discord.gg/nvidia-nemo)
 
 ## Next Steps
@@ -243,8 +243,8 @@ After completing the quickstart:
 - [SFT Guide](../guides/training-algorithms/sft) - Supervised fine-tuning
 
 2. **Learn Configuration**:
-   - [Configuration Reference](../configuration-cli/index) - Complete configuration options
-- [CLI Reference](../configuration-cli/index) - Command-line interface
+   - [Configuration Reference](../references/index) - Complete configuration options
+- [CLI Reference](../references/index) - Command-line interface
 
 3. **Scale Up**:
    - [Cluster Setup](cluster.md) - Multi-node training
@@ -252,4 +252,4 @@ After completing the quickstart:
 
 4. **Evaluate Models**:
    - [Evaluation Guide](../guides/training-algorithms/eval) - Model assessment
-- [Troubleshooting](../configuration-cli/troubleshooting) - Common issues 
+- [Troubleshooting](../references/troubleshooting) - Common issues 

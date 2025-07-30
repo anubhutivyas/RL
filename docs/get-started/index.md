@@ -47,6 +47,16 @@ Run your first RL training job in minutes with our step-by-step guide.
 {bdg-primary}`Beginner`
 :::
 
+:::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Choose Your Model
+:link: model-selection
+:link-type: doc
+
+Choose the right model size and type for your use case and hardware.
+
++++
+{bdg-info}`Planning`
+:::
+
 :::{grid-item-card} {octicon}`device-desktop;1.5em;sd-mr-1` Local Workstation
 :link: local-workstation
 :link-type: doc
@@ -124,9 +134,9 @@ After completing your first training run:
 
 ## Get Help
 
-- [Troubleshooting](../configuration-cli/troubleshooting) - Common issues and solutions
+- [Troubleshooting](../references/troubleshooting) - Common issues and solutions
 - [API Documentation](../api-docs/index) - Complete API documentation
-- [Configuration Guide](../configuration-cli/configuration-reference) - Understand training parameters
+- [Configuration Guide](../references/configuration-reference) - Understand training parameters
 - [Community Support](https://github.com/NVIDIA/NeMo-RL/issues) - GitHub issues and discussions
 
 ---

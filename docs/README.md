@@ -92,7 +92,7 @@ The template uses `sphinx-design` for responsive grid layouts:
 ::::{grid} 1 2 2 2
 :gutter: 1 1 1 2
 
-:::{grid-item-card} Title
+:::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` Title
 :link: target-reference
 :link-type: ref
 Description text
@@ -107,7 +107,7 @@ Description text
 Content can be conditionally included based on build configuration:
 
 ```markdown
-:::{grid-item-card} Advanced Feature
+:::{grid-item-card} {octicon}`star;1.5em;sd-mr-1` Advanced Feature
 :only: not ga
 This content only appears in non-GA builds
 :::
@@ -273,7 +273,7 @@ only: not ga
 Hide specific grid cards from certain builds:
 
 ```markdown
-:::{grid-item-card} Advanced RL Features
+:::{grid-item-card} {octicon}`rocket;1.5em;sd-mr-1` Advanced RL Features
 :link: advanced-overview  
 :link-type: ref
 :only: not ga

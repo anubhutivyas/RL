@@ -612,4 +612,4 @@ When reporting issues, include:
    - Clear steps to reproduce the issue
    - Minimal example if possible
 
-For more help, see the [Documentation Guide](documentation.md) and [Configuration Reference](../../configuration-cli/configuration-reference.md). 
+For more help, see the [Documentation Guide](documentation-development.md) and [Configuration Reference](../../references/configuration-reference.md). 

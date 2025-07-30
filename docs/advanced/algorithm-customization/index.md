@@ -44,7 +44,7 @@ Adapt GRPO for new domains and use cases. Implement custom GRPO variants and ext
 :link: custom-loss-functions
 :link-type: doc
 
-Design and implement novel training objectives. Create custom loss functions for specific domains and multi-objective training.
+Design and implement domain-specific and novel training objectives. Create custom loss functions for specialized domains and multi-objective training.
 
 +++
 {bdg-warning}`Advanced`
