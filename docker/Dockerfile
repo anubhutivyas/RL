@@ -1,4 +1,14 @@
+# Usage:
+# Default build (clones from git): docker build -f docker/Dockerfile .
+# Local source override: docker build -f docker/Dockerfile --build-context nemo-rl=./path/to/local .
+
+# Default source stage that clones nemo-rl repo
+# This can be overridden with --build-context nemo-rl=./path/to/local
 ARG BASE_IMAGE=nvcr.io/nvidia/cuda-dl-base:25.05-cuda12.9-devel-ubuntu24.04
+ARG NRL_GIT_REF=main
+FROM scratch AS nemo-rl
+ADD --keep-git-dir=true https://github.com/NVIDIA-NeMo/RL.git#${NRL_GIT_REF} /
+
 FROM ${BASE_IMAGE} AS base
 
 # It is more convenient for users to run as root
@@ -65,8 +75,8 @@ VIRTUAL_ENV=$UV_PROJECT_ENVIRONMENT uv pip install --link-mode symlink flash-att
 EOF
 
 # First copy only the dependency files
-COPY pyproject.toml uv.lock ./
-COPY --link 3rdparty/ ./3rdparty/
+COPY --from=nemo-rl pyproject.toml uv.lock ./
+COPY --from=nemo-rl --link 3rdparty/ ./3rdparty/
 
 RUN <<"EOF" bash -exu
 # uv sync has a more reliable resolver than simple uv pip install which can fail
@@ -100,7 +110,8 @@ LABEL com.nvidia.build.ref="${NVIDIA_BUILD_REF}"
 
 ENV NEMO_RL_VENV_DIR=/opt/ray_venvs
 
-# Copy in source and prefetch all virtual environments
-COPY . /opt/nemo-rl
+# Copy in source from build context (defaults to cloned repo, can be overridden)
+COPY --from=nemo-rl . /opt/nemo-rl
+RUN git fetch --unshallow  # Unshallow the repo to get the full history (in the case it was from the scratch layer)
 RUN UV_LINK_MODE=symlink uv run nemo_rl/utils/prefetch_venvs.py
 
