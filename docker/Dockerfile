@@ -1,9 +1,8 @@
 # Usage:
-# Default build (clones from git): docker build -f docker/Dockerfile .
-# Local source override: docker build -f docker/Dockerfile --build-context nemo-rl=./path/to/local .
+# Self-contained build (default: builds from main): docker buildx build -f docker/Dockerfile --tag <registry>/nemo-rl:latest --push .
+# Self-contained build (specific git ref): docker buildx build -f docker/Dockerfile --build-arg NRL_GIT_REF=r0.3.0 --tag <registry>/nemo-rl:r0.3.0 --push .
+# Local NeMo RL source override: docker buildx build --build-context nemo-rl=. -f docker/Dockerfile --tag <registry>/nemo-rl:latest --push .
 
-# Default source stage that clones nemo-rl repo
-# This can be overridden with --build-context nemo-rl=./path/to/local
 ARG BASE_IMAGE=nvcr.io/nvidia/cuda-dl-base:25.05-cuda12.9-devel-ubuntu24.04
 ARG NRL_GIT_REF=main
 FROM scratch AS nemo-rl
