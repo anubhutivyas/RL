@@ -12,7 +12,6 @@ This section covers the mathematical foundations and computational components th
 
 - **Training Backends**: Explore the different training backends supported by NeMo RL and their capabilities
 - **Logger**: Understand the logging system and observability features in NeMo RL
-- **UV Package Manager**: Learn about UV integration and package management strategies
 
 ## Computational Systems
 
@@ -39,15 +38,7 @@ Understand the logging system and observability features in NeMo RL.
 {bdg-secondary}`Monitoring`
 :::
 
-:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` UV Package Manager
-:link: uv
-:link-type: doc
 
-Learn about UV integration and package management strategies.
-
-+++
-{bdg-info}`Development`
-:::
 
 ::::
 
@@ -59,7 +50,6 @@ Learn about UV integration and package management strategies.
 :maxdepth: 2
 training-backends
 logger
-uv
 :::: 
 
  

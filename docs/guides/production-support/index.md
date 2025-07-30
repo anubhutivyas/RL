@@ -26,14 +26,24 @@ Our production and support guides help you:
 ::::{grid} 1 2 2 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} Testing and Debugging
+:::{grid-item-card} Testing
 :link: testing
 :link-type: doc
 
-Testing strategies and debugging techniques for RL training pipelines.
+Comprehensive testing strategies including unit tests, functional tests, Docker testing, and metrics tracking.
 
 +++
 {bdg-success}`Quality`
+:::
+
+:::{grid-item-card} Documentation Development
+:link: documentation-development
+:link-type: doc
+
+Guidelines and best practices for developing and maintaining NeMo RL documentation.
+
++++
+{bdg-info}`Docs`
 :::
 
 :::{grid-item-card} Documentation

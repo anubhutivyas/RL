@@ -146,7 +146,7 @@ Understand the logging system and observability features in NeMo RL.
 :::
 
 :::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` UV Package Manager
-:link: computational-systems/uv
+:link: development-infrastructure/uv
 :link-type: doc
 
 Learn about UV integration and package management strategies.
@@ -163,7 +163,7 @@ Learn about UV integration and package management strategies.
 :gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Loss Functions
-:link: development-infrastructure/loss-functions
+:link: design-principles/loss-functions
 :link-type: doc
 
 Understand the mathematical foundations and implementation of RL loss functions.

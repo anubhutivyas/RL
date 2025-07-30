@@ -95,7 +95,7 @@ Handle model-specific behaviors and special cases in NeMo RL.
 :link: environment-data/debugging
 :link-type: doc
 
-Debugging techniques and tools for RL training pipelines.
+Ray distributed debugging with VS Code/Cursor integration and SLURM debugging techniques.
 
 +++
 {bdg-success}`Quality`

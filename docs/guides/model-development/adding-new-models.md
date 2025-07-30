@@ -1,13 +1,3 @@
----
-description: "Complete guide to integrating and validating new models within NeMo RL including compatibility tests and diagnostic scripts"
-categories: ["model-development"]
-tags: ["model-integration", "model-validation", "compatibility-tests", "diagnostics", "huggingface", "megatron"]
-personas: ["mle-focused", "researcher-focused"]
-difficulty: "advanced"
-content_type: "tutorial"
-modality: "universal"
----
-
 # Add New Models
 
 This guide outlines how to integrate and validate a new model within NeMo RL. Each new model must pass a standard set of compatibility tests before being considered ready to be used in RL pipelines. The guide also details diagnostic scripts to help identify and resolve common issues during model integration.
@@ -109,7 +99,7 @@ When validating Hugging Face-based models, perform the following checks:
   Ensure the Megatron forward pass aligns with Hugging Face and the generation log probabilities from inference backends like **vLLM**.
 
 - **Parallel settings**  
-  Match the same parallelism configurations used for the Hugging Face-based tests.  
+  Match the same parallelism configurations used for the HuggingFace-based tests.  
   Confirm outputs remain consistent across repeated runs.
 
 ---

@@ -10,23 +10,13 @@ This section covers the development tools and infrastructure that support NeMo R
 
 ## What You'll Find Here
 
-- **Loss Functions**: Understand the mathematical foundations and implementation of RL loss functions
 - **Checkpointing**: Understand the checkpointing mechanisms and strategies for model state persistence
+- **UV Package Management**: Learn about UV integration and package management strategies
 
 ## Development Infrastructure
 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
-
-:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Loss Functions
-:link: loss-functions
-:link-type: doc
-
-Understand the mathematical foundations and implementation of RL loss functions.
-
-+++
-{bdg-warning}`Advanced`
-:::
 
 :::{grid-item-card} {octicon}`download;1.5em;sd-mr-1` Checkpointing
 :link: checkpointing
@@ -38,6 +28,16 @@ Understand the checkpointing mechanisms and strategies for model state persisten
 {bdg-success}`Reliability`
 :::
 
+:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` UV Package Management
+:link: uv
+:link-type: doc
+
+Understand UV package management and dependency handling.
+
++++
+{bdg-secondary}`Tools`
+:::
+
 ::::
 
 ---
@@ -46,8 +46,8 @@ Understand the checkpointing mechanisms and strategies for model state persisten
 :hidden:
 :caption: Development Infrastructure
 :maxdepth: 2
-loss-functions
 checkpointing
+uv
 :::: 
 
  
