@@ -203,7 +203,7 @@ def setup_megatron_model(
 
     # Model, optimizer, and learning rate.
     model = get_model(
-        cfg.model.provide,
+        cfg.model,
         cfg.ddp,
         use_torch_fsdp2=cfg.dist.use_torch_fsdp2,
         overlap_param_gather_with_optimizer_step=cfg.optimizer.overlap_param_gather_with_optimizer_step,
@@ -628,7 +628,7 @@ class MegatronPolicyWorker:
             ref_state.cfg = ref_megatron_cfg
 
             reference_model = get_model(
-                self.megatron_cfg.model.provide,
+                self.megatron_cfg.model,
                 self.megatron_cfg.ddp,
                 use_torch_fsdp2=self.megatron_cfg.dist.use_torch_fsdp2,
                 overlap_param_gather_with_optimizer_step=self.megatron_cfg.optimizer.overlap_param_gather_with_optimizer_step,
