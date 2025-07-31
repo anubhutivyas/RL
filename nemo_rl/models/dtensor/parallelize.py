@@ -373,7 +373,7 @@ def _parallelize_nm5_h(
     activation_checkpointing: bool = False,
     cpu_offload: bool = False,
     custom_parallel_plan: Optional[Union[dict, str]] = None,
-) -> torch.nn.Module:
+) -> torch.distributed.fsdp.FSDPModule:
     """Parallelize a NemotronHForCausalLM model across data and tensor parallel dimensions."""
     assert not sequence_parallel, (
         "Sequence parallelism is not supported for NemotronHForCausalLM"
@@ -382,11 +382,11 @@ def _parallelize_nm5_h(
         "Custom parallel plan is not supported for NemotronHForCausalLM"
     )
 
-    model_tp_plan = {
+    model_tp_plan: dict[str, ParallelStyle] = {
         "lm_head": ColwiseParallel(output_layouts=Shard(-1), use_local_output=False),
     }
 
-    mlp_tp_plan = {
+    mlp_tp_plan: dict[str, ParallelStyle] = {
         "mixer.up_proj": ColwiseParallel(),
         "mixer.down_proj": RowwiseParallel(),
     }

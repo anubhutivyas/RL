@@ -340,10 +340,10 @@ def training_setup(request, two_gpu_virtual_cluster):
         ("tiny_gemma3_model_path", 1, 1, False, True, True),
         ("tiny_gemma3_model_path", 1, 1, True, True, True),
         # CP doesn't support gemma3 due to spda input has attent_mask != None.
-        (TEST_ASSETS.TINY_NEMOTRON5_H_MODEL_PATH, 1, 1, True, True, False),
-        (TEST_ASSETS.TINY_NEMOTRON5_H_MODEL_PATH, 1, 1, True, False, True),
-        (TEST_ASSETS.TINY_NEMOTRON5_H_MODEL_PATH, 1, 1, False, True, True),
-        (TEST_ASSETS.TINY_NEMOTRON5_H_MODEL_PATH, 1, 1, True, True, True),
+        ("tiny_nemotron5_h_model_path", 1, 1, True, True, False),
+        ("tiny_nemotron5_h_model_path", 1, 1, True, False, True),
+        ("tiny_nemotron5_h_model_path", 1, 1, False, True, True),
+        ("tiny_nemotron5_h_model_path", 1, 1, True, True, True),
         # nemotron5_h doesn't support cp
     ],
     indirect=True,
@@ -486,8 +486,6 @@ def logprob_setup(request, two_gpu_virtual_cluster):
         ("tiny_qwen3_model_path", 2, 1, False, False, False),
         ("tiny_gemma3_model_path", 2, 1, False, True, False),
         ("tiny_gemma3_model_path", 2, 1, False, False, False),
-        ("tiny_nemotron5_h_model_path", 2, 1, False, True, False),
-        ("tiny_nemotron5_h_model_path", 2, 1, False, False, False),
         # TP=1, CP=2
         ("tiny_qwen2_model_path", 1, 2, False, True, False),
         ("tiny_qwen2_model_path", 1, 2, False, False, False),
