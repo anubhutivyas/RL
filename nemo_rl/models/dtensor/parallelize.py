@@ -288,18 +288,6 @@ def translate_parallel_style(style: str):
         return RowwiseParallel(input_layouts=Replicate())
     elif style == "sequence_parallel":
         return SequenceParallel()
-    # elif style == "local_colwise":
-    #     return HFColwiseParallel(use_dtensor=False)
-    # elif style == "local_rowwise":
-    #     return HFRowwiseParallel(use_dtensor=False)
-    # elif style == "local_packed_rowwise":
-    #     return PackedRowwiseParallel(use_dtensor=False)
-    # elif style == "local_packed_colwise":
-    #     return PackedColwiseParallel(use_dtensor=False)
-    # elif style == "local":
-    #     return IsolatedParallel()
-    # elif style == "gather":
-    #     return GatherParallel()
     else:
         raise ValueError(f"Unknown parallel style: {style}")
 

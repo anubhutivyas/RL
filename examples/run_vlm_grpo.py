@@ -50,7 +50,6 @@ from nemo_rl.utils.logger import get_next_experiment_dir
 from nemo_rl.data.multimodal_utils import PackedMultimodalDataItem, \
     get_multimodal_keys_from_processor,  \
     reroute_processor_model_name_patch, \
-    augment_processor_with_chat_template, \
     get_dim_to_pack_along
 
 OmegaConf.register_new_resolver("mul", lambda a, b: a * b)
@@ -336,7 +335,6 @@ def main() -> None:
 
     # setup tokenizer
     processor = AutoProcessor.from_pretrained(reroute_processor_model_name_patch(config["policy"]["model_name"]), trust_remote_code=True)
-    processor = augment_processor_with_chat_template(processor, config['policy']['model_name'])
 
     tokenizer = processor.tokenizer
     assert config["policy"]["generation"] is not None, (
