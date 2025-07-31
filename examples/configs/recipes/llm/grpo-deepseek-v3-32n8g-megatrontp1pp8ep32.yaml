@@ -31,7 +31,7 @@ policy:
   train_global_batch_size: 512
   train_micro_batch_size: 1
   generation_batch_size: 64
-  logprob_batch_size: 8
+  logprob_batch_size: 1
   max_total_sequence_length: 512
   precision: bfloat16
   fsdp_offload_enabled: false
@@ -98,7 +98,7 @@ policy:
       average_in_collective: true
       data_parallel_sharding_strategy: optim_grads_params
       use_custom_fsdp: false
-  
+
   dynamic_batching:
     enabled: false
     train_mb_tokens: ${mul:${policy.max_total_sequence_length}, ${policy.train_micro_batch_size}}
