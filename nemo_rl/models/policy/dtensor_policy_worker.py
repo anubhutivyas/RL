@@ -14,6 +14,7 @@
 
 import contextlib
 import gc
+import inspect
 import os
 from collections import defaultdict
 from contextlib import AbstractContextManager, contextmanager, nullcontext
@@ -561,12 +562,19 @@ class DTensorPolicyWorker:
 
                     with DTensorPolicyWorker.train_context(context_parallel_ctx):
                         with torch.autocast(device_type="cuda", dtype=self.dtype):
-                            outputs = self.model(
-                                input_ids=input_ids,
-                                attention_mask=attention_mask_input_all_ones,
-                                position_ids=position_ids,
-                                use_cache=False,
-                            )
+                            if "position_ids" in inspect.signature(self.model).parameters:
+                                outputs = self.model(
+                                    input_ids=input_ids,
+                                    attention_mask=attention_mask_input_all_ones,
+                                    position_ids=position_ids,
+                                    use_cache=False,
+                                )
+                            else:
+                                outputs = self.model(
+                                    input_ids=input_ids,
+                                    attention_mask=attention_mask_input_all_ones,
+                                    use_cache=False,
+                                )
 
                         # Get logprobs
                         if not hasattr(outputs, "logits"):
