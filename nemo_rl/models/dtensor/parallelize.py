@@ -403,8 +403,8 @@ def _parallelize_nm5_h(
             if layers[i].block_type == "mlp":
                 layers[i] = checkpoint_wrapper(layers[i])
 
-        if layers[i].block_type == "mamba":
-            layers[i] = checkpoint_wrapper(layers[i])
+            if layers[i].block_type == "mamba":
+                layers[i] = checkpoint_wrapper(layers[i])
 
     mp_policy = MixedPrecisionPolicy(
         param_dtype=param_dtype,
