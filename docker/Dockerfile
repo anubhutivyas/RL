@@ -115,6 +115,6 @@ COPY --from=nemo-rl . /opt/nemo-rl
 # Unshallow the repo to get the full history (in the case it was from the scratch layer).
 # Potentially not necessary if the repo is passed in as a complete repository (w/ full git history),
 # so do a quick check before trying to unshallow.
-RUN git rev-parse --is-shallow-repository | grep -q true && git fetch --unshallow
+RUN git rev-parse --is-shallow-repository | grep -q true && git fetch --unshallow || true
 RUN UV_LINK_MODE=symlink uv run nemo_rl/utils/prefetch_venvs.py
 
