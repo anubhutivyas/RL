@@ -14,6 +14,7 @@
 from typing import Any, Optional, TypedDict, TypeVar
 
 import torch
+import torch.nn.functional as F
 
 from nemo_rl.algorithms.interfaces import LossFunction, LossType
 from nemo_rl.algorithms.utils import (
@@ -391,21 +392,14 @@ class DiffusionNLLLoss(LossFunction):
     ) -> tuple[torch.Tensor, dict[str, Any]]:
         # logits shape: [batch_size, seq_len, vocab_size]
         # Get the next token logits for each position
-        token_mask = data["token_mask"][:, 1:]
+        token_mask = data["token_mask"]
         sample_mask = data["sample_mask"]
-        masked_indices = data["masked_indices"][:, 1:]
-        p_mask = data["p_mask"][:, 1:]
-        answer_lengths = data["answer_lengths"][:, 1:]
-        #print("*** NExT_TOKEN_LOGITS_SHAPE: ", next_token_logits.shape, flush=True)
-        #print("*** INPUT_SHAPE: ", data["input_ids"].shape, flush=True)
-        #print("*** TOKEN_MASK_SHAPE: ", token_mask.shape, flush=True)
-        #print("*** SAMPLE_MASK_SHAPE: ", sample_mask.shape, flush=True)
-        #print("*** MASKED_INDICES_SHAPE: ", masked_indices.shape, flush=True)
-        #print("*** P_MASK_SHAPE: ", p_mask.shape, flush=True)
-        #print("*** ANSWER_LENGTHS_SHAPE: ", answer_lengths.shape, flush=True)
-        #print("*** GLOBAL_VALID_SEQS: ", global_valid_seqs, flush=True)
-        #print("*** GLOBAL_VALID_TOKS: ", global_valid_toks, flush=True)
+        masked_indices = data["masked_indices"]
+        p_mask = data["p_mask"]
+        answer_lengths = data["answer_lengths"]
+
         mask = (token_mask * masked_indices.to(torch.int32)) * sample_mask.unsqueeze(-1)
+        mask = mask.to(torch.bool)
 
         next_token_logits = next_token_logits.to(torch.float32)
 
@@ -427,11 +421,11 @@ class DiffusionNLLLoss(LossFunction):
                 next_token_logits, data["input_ids"]
             )
         else:
-            next_tokens = data["input_ids"][:, 1:].cuda()  # Skip first token
+            next_tokens = data["input_ids"].cuda()
             next_token_logprobs = torch.nn.functional.log_softmax(
                 next_token_logits, dim=-1
             )
-            logprobs = next_token_logprobs[:, :-1]  # Remove last position's logits
+            logprobs = next_token_logprobs
             token_logprobs = logprobs.gather(
                 dim=-1, index=next_tokens.unsqueeze(-1)
             ).squeeze(-1)
@@ -446,13 +440,15 @@ class DiffusionNLLLoss(LossFunction):
         else:
             ## single scalar loss
             ## scale by the total number of tokens in the batch
-            token_logprobs = token_logprobs / p_mask
-            token_logprobs = token_logprobs / answer_lengths
-            loss = -masked_mean(
-                token_logprobs,
-                mask,
-                global_normalization_factor=global_valid_seqs,
-            )
+            #token_logprobs = token_logprobs / p_mask
+            #token_logprobs = token_logprobs / answer_lengths
+            #loss = -masked_mean(
+            #    token_logprobs,
+            #    mask,
+            #    global_normalization_factor=global_valid_seqs,
+            #)
+            token_loss = F.cross_entropy(next_token_logits[mask], next_tokens[mask], reduction='none') / p_mask[mask]
+            loss = torch.sum(token_loss / answer_lengths[mask]) / global_valid_seqs
 
         return loss, {
             "loss": loss.item() if loss.ndim == 0 else loss,
