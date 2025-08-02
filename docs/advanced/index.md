@@ -1,5 +1,5 @@
 ---
-description: "Essential advanced topics for AI developers and scientists: algorithm customization, performance scaling, research validation, and production deployment"
+description: "Essential advanced topics for AI developers and scientists: algorithm development, performance scaling, research validation, and production deployment"
 categories: ["research-advanced"]
 tags: ["advanced", "algorithms", "performance", "research", "deployment", "reinforcement-learning"]
 personas: ["researcher-focused", "mle-focused"]
@@ -8,16 +8,16 @@ content_type: "concept"
 modality: "universal"
 ---
 
-# About NeMo RL Advanced Topics
+# About Advanced Topics
 
-Welcome to NeMo RL Advanced Topics! This section provides the technical depth you need to extend, optimize, validate, and deploy NeMo RL for real-world applications.
+Essential advanced topics for AI developers and scientists: algorithm development, performance scaling, research validation, and production deployment.
 
 ## What You'll Find Here
 
 Our advanced topics are organized into four core areas that cover the essential needs of AI developers and scientists:
 
-### **Algorithm Customization**
-Extend and customize NeMo RL algorithms for your specific use cases. Implement custom DPO and GRPO variants, design novel loss functions, and adapt algorithms for new domains.
+### **Algorithm Development**
+Extend and customize NeMo RL algorithms for your specific use cases. Implement custom DPO and GRPO variants, design novel loss functions, and understand mathematical foundations.
 
 ### **Performance and Scaling**
 Scale NeMo RL from single GPU to production clusters. Optimize memory usage, implement distributed training, and achieve maximum performance for large-scale models.
@@ -26,178 +26,208 @@ Scale NeMo RL from single GPU to production clusters. Optimize memory usage, imp
 Design rigorous experiments, evaluate model performance, and ensure reproducible research. Build robust evaluation frameworks and maintain scientific rigor.
 
 ### **Production Deployment**
-Deploy NeMo RL models to production with reliable serving architectures, comprehensive monitoring, and production-ready infrastructure.
+Deploy NeMo RL models in production environments. Build serving systems, implement monitoring, and ensure reliable model deployment.
 
-## Navigation Guide
+## Key Capabilities
 
-Some topics have similar names but different focuses:
-
-- **Hyperparameter Optimization**: 
-  - [Training](../training/hyperparameter-optimization.md) - Practical optimization techniques
-  - [Research](../research/hyperparameter-optimization.md) - Research methodology and experimental design
-- **Custom Loss Functions**:
-  - [Training](../training/custom-loss-functions.md) - Training-specific loss functions
-  - [Algorithm Customization](../algorithm-customization/custom-loss-functions.md) - Domain-specific and novel loss functions
-- **Experimental Design**:
-  - [Research](../research/experimental-design.md) - Research methodology and statistical analysis
-  - [Research Validation](../research-validation/experimental-design.md) - Validation frameworks and reproducibility
-- **Monitoring**:
-  - [Performance](../performance/monitoring.md) - Training performance monitoring
-  - [Production](../production-deployment/monitoring-alerting.md) - Production deployment monitoring
-
-## When to Use Advanced Topics
-
-These topics are for developers and scientists who need to:
-
-- **Extend NeMo RL**: Implement custom algorithms and loss functions
-- **Scale to Production**: Optimize performance and deploy at scale
-- **Validate Research**: Design rigorous experiments and ensure reproducibility
+- **Custom Algorithms**: Extend and customize RL algorithms
+- **Scale Training**: Train models on large clusters efficiently
+- **Research Rigor**: Conduct reproducible research experiments
 - **Deploy Models**: Build production-ready serving systems
 
-## Algorithm Customization
+## Algorithm Development
 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`code;1.5em;sd-mr-1` Custom DPO Implementation
-:link: algorithm-customization/custom-dpo
+:::{grid-item-card} {octicon}`function;1.5em;sd-mr-1` Mathematical Foundations
+:link: algorithm-development/mathematical-foundations
+:link-type: doc
+
+Core mathematical foundations and theoretical concepts for all NeMo RL algorithms.
+
+++++
+{bdg-primary}`Theory`
+:::
+
+:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Loss Functions
+:link: algorithm-development/loss-functions
+:link-type: doc
+
+Comprehensive guide to loss function design, implementation, and optimization.
+
+++++
+{bdg-warning}`Advanced`
+:::
+
+::{grid-item-card} {octicon}`code;1.5em;sd-mr-1` Custom DPO Implementation
+:link: algorithm-development/custom-dpo
 :link-type: doc
 
 Extend DPO for specific use cases and domains.
 
-+++
+++++
 {bdg-warning}`Advanced` {bdg-primary}`Algorithm`
 :::
 
-:::{grid-item-card} {octicon}`code;1.5em;sd-mr-1` Custom GRPO Implementation
-:link: algorithm-customization/custom-grpo
+::{grid-item-card} {octicon}`code;1.5em;sd-mr-1` Custom GRPO Implementation
+:link: algorithm-development/custom-dpo
 :link-type: doc
 
 Adapt GRPO for new domains and use cases.
 
-+++
+++++
 {bdg-warning}`Advanced` {bdg-primary}`Algorithm`
 :::
 
-:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Custom Loss Functions
-:link: algorithm-customization/custom-loss-functions
+:::::
+
+## Advanced Training Techniques
+
+::::{grid} 1 1 1 2
+:gutter: 2 2 2 2
+
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Multi-Objective Training
+:link: algorithm-development/multi-objective-training
 :link-type: doc
 
-Design and implement novel training objectives.
+Combine multiple objectives in a single training pipeline with dynamic weight balancing.
 
-+++
-{bdg-warning}`Advanced` {bdg-primary}`Algorithm`
+++++
+{bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} {octicon}`light-bulb;1.5em;sd-mr-1` Algorithm Adaptation
-:link: algorithm-customization/algorithm-adaptation
+:::{grid-item-card} {octicon}`mortar-board;1.5em;sd-mr-1` Curriculum Learning
+:link: algorithm-development/curriculum-learning
 :link-type: doc
 
-Adapt existing algorithms for new domains and specialized use cases.
+Design curricula that progressively increase task complexity based on model performance.
 
-+++
-{bdg-warning}`Advanced` {bdg-primary}`Algorithm`
+++++
+{bdg-info}`Strategy`
 :::
 
-::::
+:::{grid-item-card} {octicon}`search;1.5em;sd-mr-1` Hyperparameter Optimization
+:link: algorithm-development/hyperparameter-optimization
+:link-type: doc
+
+Systematic approaches to finding optimal training configurations using advanced optimization techniques.
+
+++++
+{bdg-info}`Optimization`
+:::
+
+:::::
 
 ## Performance and Scaling
 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`zap;1.5em;sd-mr-1` Performance Optimization
+::{grid-item-card} {octicon}`zap;1.5em;sd-mr-1` Performance Optimization
 :link: performance/index
 :link-type: doc
 
 Advanced performance optimization techniques and strategies.
 
-+++
+++++
 {bdg-warning}`Advanced` {bdg-secondary}`Performance`
 :::
 
-:::{grid-item-card} {octicon}`zap;1.5em;sd-mr-1` Distributed Training
+::{grid-item-card} {octicon}`zap;1.5em;sd-mr-1` Distributed Training
 :link: performance/distributed-training
 :link-type: doc
 
 Scale from single GPU to multi-node clusters.
 
-+++
+++++
 {bdg-warning}`Advanced` {bdg-secondary}`Performance`
 :::
 
-:::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Memory Optimization
+::{grid-item-card} {octicon}`database;1.5em;sd-mr-1` Memory Optimization
 :link: performance/memory-optimization
 :link-type: doc
 
 Optimize memory usage for large models.
 
-+++
+++++
 {bdg-warning}`Advanced` {bdg-secondary}`Performance`
 :::
 
-::::
+:::::
 
 ## Research and Validation
 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`beaker;1.5em;sd-mr-1` Experimental Design
-:link: research-validation/experimental-design
+::{grid-item-card} {octicon}`beaker;1.5em;sd-mr-1` Experimental Design
+:link: research/experimental-design-validation
 :link-type: doc
 
 Design controlled experiments and research studies.
 
-+++
+++++
 {bdg-info}`Research`
 :::
 
-:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Model Evaluation
-:link: research-validation/model-evaluation
+::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Model Evaluation
+:link: research/model-evaluation-validation
 :link-type: doc
 
 Build comprehensive evaluation frameworks.
 
-+++
+++++
 {bdg-info}`Validation`
 :::
 
-:::{grid-item-card} {octicon}`checklist;1.5em;sd-mr-1` Reproducible Research
-:link: research-validation/reproducible-research
+::{grid-item-card} {octicon}`checklist;1.5em;sd-mr-1` Reproducible Research
+:link: research/reproducible-research-validation
 :link-type: doc
 
 Ensure reproducible results and scientific rigor.
 
-+++
+++++
 {bdg-info}`Research`
 :::
 
-::::
+:::::
 
 ## Production Deployment
 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Model Serving
+::{grid-item-card} {octicon}`server;1.5em;sd-mr-1` Model Serving
 :link: production-deployment/model-serving
 :link-type: doc
 
 Deploy models with REST/gRPC APIs and serving architectures.
 
-+++
+++++
 {bdg-warning}`Production`
 :::
 
-:::{grid-item-card} {octicon}`eye;1.5em;sd-mr-1` Monitoring and Alerting
-:link: production-deployment/monitoring-alerting
+::{grid-item-card} {octicon}`shield;1.5em;sd-mr-1` Security and Monitoring
+:link: production-deployment/security-monitoring
 :link-type: doc
 
-Implement comprehensive monitoring and alerting systems.
+Implement security measures and monitoring for production deployments.
 
-+++
+++++
 {bdg-warning}`Production`
 :::
 
-::::
+::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Deployment Best Practices
+:link: production-deployment/best-practices
+:link-type: doc
+
+Best practices for reliable model deployment in production environments.
+
+++++
+{bdg-warning}`Production`
+:::
+
+::::: 
+
+---

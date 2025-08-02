@@ -13,7 +13,7 @@ modality: "universal"
 
 NeMo RL is an open-source, comprehensive framework for reinforcement learning and supervised fine-tuning of large language models. Built for scalability and efficiency, NeMo RL enables researchers and practitioners to train, evaluate, and deploy RL-enhanced language models at scale.
 
-## What is NeMo RL?
+## What is NeMo RL
 
 NeMo RL is a production-ready framework that combines the power of reinforcement learning with large language models. It provides a unified platform for training, fine-tuning, and deploying language models using state-of-the-art RL algorithms.
 

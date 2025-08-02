@@ -277,4 +277,4 @@ After selecting your model:
 - [Hardware Requirements](installation.md#hardware-requirements) - Detailed system requirements
 - [Performance Optimization](../advanced/performance/index.md) - Advanced optimization techniques
 - [Distributed Training](../advanced/performance/distributed-training.md) - Scaling to multiple GPUs
-- [Troubleshooting](../references/troubleshooting) - Common issues and solutions 
+- [Troubleshooting](../guides/troubleshooting) - Common issues and solutions 

@@ -12,11 +12,7 @@ modality: "universal"
 
 Welcome to the NeMo RL References guide! This section covers all configuration options, CLI commands, and usage patterns for NeMo RL.
 
-## Overview
-
-NeMo RL provides flexible configuration options and a comprehensive CLI for training, evaluation, and deployment. The configuration system supports both YAML-based configuration files and command-line arguments.
-
-## Quick Navigation
+## Reference Areas
 
 ::::{grid} 1 2 2 2
 :gutter: 2 2 2 2
@@ -25,30 +21,20 @@ NeMo RL provides flexible configuration options and a comprehensive CLI for trai
 :link: configuration-reference
 :link-type: doc
 
-Complete reference for all configuration options and parameters.
+Complete parameter documentation and configuration options for all NeMo RL components.
 
 +++
-{bdg-primary}`Reference`
+{bdg-info}`Reference`
 :::
 
 :::{grid-item-card} {octicon}`terminal;1.5em;sd-mr-1` CLI Reference
 :link: cli-reference
 :link-type: doc
 
-Command-line interface commands and usage patterns.
+Command-line interface documentation with usage examples and parameter guides.
 
 +++
-{bdg-info}`CLI`
-:::
-
-:::{grid-item-card} {octicon}`bug;1.5em;sd-mr-1` Troubleshooting
-:link: troubleshooting
-:link-type: doc
-
-Common issues, error messages, and solutions.
-
-+++
-{bdg-warning}`Support`
+{bdg-secondary}`CLI`
 :::
 
 ::::
@@ -149,7 +135,7 @@ python -m nemo_rl.config --help
 
 - Read the [Configuration Reference](configuration-reference) for detailed parameter documentation
 - Explore the [CLI Reference](cli-reference) for command usage patterns
-- Check the [Troubleshooting](troubleshooting) guide for common issues
+- Check the [Troubleshooting](../guides/troubleshooting) guide for common issues
 - Review the [Guides](../guides/index) for practical examples
 
- 
+---

@@ -57,7 +57,7 @@ Monitor training performance in real-time with comprehensive metrics and alertin
 {bdg-info}`Intermediate`
 :::
 
-:::{grid-item-card} {octicon}`target;1.5em;sd-mr-1` Benchmarking
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Benchmarking
 :link: benchmarking
 :link-type: doc
 
@@ -183,12 +183,11 @@ For additional learning resources, visit the main [Advanced](../index) page.
 :hidden:
 :caption: Performance
 :maxdepth: 2
+index
+memory-optimization
 distributed-training
 profiling
 monitoring
-memory-optimization
 benchmarking
 mixed-precision
-:::: 
-
- 
+::::

@@ -38,7 +38,7 @@ Implement comprehensive monitoring and alerting systems. Build production monito
 {bdg-warning}`Production`
 :::
 
-::::
+:::: 
 
 ---
 
@@ -46,6 +46,7 @@ Implement comprehensive monitoring and alerting systems. Build production monito
 :hidden:
 :caption: Production Deployment
 :maxdepth: 2
+index
 model-serving
 monitoring-alerting
 ::::

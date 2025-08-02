@@ -151,31 +151,16 @@ docker run --gpus all \
 
 ## Troubleshooting
 
-### Common Issues
+- **Container Issues**: Check Docker logs and container status
+- **GPU Access**: Verify NVIDIA Container Toolkit installation
+- **Memory Issues**: Monitor container memory usage
+- **Network Issues**: Check port forwarding and firewall settings
 
-1. **GPU Not Available**:
-   ```bash
-   # Check if NVIDIA Container Toolkit is installed
-   nvidia-docker run --rm nvidia/cuda:11.8-base-ubuntu20.04 nvidia-smi
-   ```
+## Getting Help
 
-2. **Permission Denied**:
-   ```bash
-   # Run with proper user permissions
-   docker run --gpus all --user $(id -u):$(id -g) -it nemo-rl:release
-   ```
-
-3. **Out of Memory**:
-   ```bash
-   # Increase memory limits
-   docker run --gpus all --memory=32g -it nemo-rl:release
-   ```
-
-### Getting Help
-
-- Check the [troubleshooting guide](../references/troubleshooting)
-- Review [cluster setup](cluster.md) for multi-node configurations
-- Join the [NeMo Discord](https://discord.gg/nvidia-nemo) for community support
+- [Troubleshooting Guide](../guides/troubleshooting) - Comprehensive troubleshooting
+- [Installation Guide](installation.md) - Setup and configuration
+- [Community Support](https://github.com/NVIDIA/NeMo-RL/issues) - GitHub issues
 
 ## Next Steps
 

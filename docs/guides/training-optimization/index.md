@@ -91,9 +91,11 @@ These techniques are essential when:
 - Multi-objective optimization
 - Automated tuning approaches
 
----
+## Next Steps
 
-For advanced training techniques and framework extensions, see the [Advanced Topics](../advanced/index) section.
+- [Advanced Training Techniques](../../advanced/training/index.md) - Advanced training methods
+- [Performance Optimization](../../advanced/performance/index.md) - Performance tuning
+- [Research Methodologies](../../advanced/research/index.md) - Research best practices 
 
 ---
 
@@ -104,4 +106,4 @@ For advanced training techniques and framework extensions, see the [Advanced Top
 learning-rate-scheduling
 training-stability
 hyperparameter-optimization
-:::: 
+:::::

@@ -46,15 +46,7 @@ Package models and training code for deployment in production environments.
 {bdg-secondary}`Production`
 :::
 
-:::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` Documentation Development
-:link: documentation-development
-:link-type: doc
 
-Guidelines and best practices for developing and maintaining NeMo RL documentation.
-
-+++
-{bdg-info}`Docs`
-:::
 
 :::{grid-item-card} {octicon}`bug;1.5em;sd-mr-1` Troubleshooting
 :link: troubleshooting
@@ -141,7 +133,6 @@ For additional learning resources, visit the main [Guides](../index) page.
 :maxdepth: 2
 troubleshooting
 testing
-documentation-development
 packaging
 :::: 
 

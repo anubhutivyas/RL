@@ -8,7 +8,7 @@ content_type: "guide"
 modality: "universal"
 ---
 
-# Training Stability
+# Stabilize Training
 
 This guide covers techniques to maintain training stability and prevent divergence when training NeMo RL models.
 
@@ -480,8 +480,8 @@ def debug_training_stability(model, dataloader, num_steps=100):
             break
 ```
 
-## Next Steps
+## Getting Help
 
-- Read [Learning Rate Scheduling](learning-rate-scheduling) for scheduling strategies
-- Explore [Hyperparameter Optimization](hyperparameter-optimization) for systematic tuning
-- Check [Advanced Topics](../advanced/index) for advanced techniques 
+- [Advanced Training Techniques](../../advanced/training/index.md) - Advanced training methods
+- [Performance Monitoring](../../advanced/performance/monitoring.md) - Monitor training performance
+- [Troubleshooting](../troubleshooting.md) - Common issues and solutions 

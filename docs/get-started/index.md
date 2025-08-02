@@ -134,17 +134,8 @@ After completing your first training run:
 
 ## Get Help
 
-- [Troubleshooting](../references/troubleshooting) - Common issues and solutions
+- [Troubleshooting](../guides/troubleshooting) - Common issues and solutions
 - [API Documentation](../api-docs/index) - Complete API documentation
 - [Configuration Guide](../references/configuration-reference) - Understand training parameters
 - [Community Support](https://github.com/NVIDIA/NeMo-RL/issues) - GitHub issues and discussions
-
----
-
-
-
-
-
-
-
 

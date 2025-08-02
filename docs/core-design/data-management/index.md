@@ -50,6 +50,7 @@ Learn about padding strategies and their impact on training efficiency.
 :maxdepth: 2
 chat-datasets
 padding
+checkpointing
 :::: 
 
  

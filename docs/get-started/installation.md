@@ -263,29 +263,27 @@ uv run python run_sft.py --config configs/sft.yaml cluster.gpus_per_node=1
 
 ## Troubleshooting
 
-### Common Issues
+### Common Installation Issues
 
-1. **ModuleNotFoundError: No module named 'megatron'**:
-   ```bash
-   git submodule update --init --recursive
-   NRL_FORCE_REBUILD_VENVS=true uv run examples/run_grpo.py ...
-   ```
+1. **CUDA Version Mismatch**:
+   - Ensure CUDA version matches PyTorch requirements
+   - Check `nvidia-smi` for driver version
+   - Verify PyTorch CUDA installation
 
-2. **CUDA out of memory**:
-   - Reduce batch size
+2. **Memory Issues**:
+   - Increase system memory or use swap
+   - Reduce batch sizes in training
    - Use gradient checkpointing
-   - Enable mixed precision training
 
-3. **Permission denied errors**:
-   ```bash
-   chmod +x examples/*.py
-   ```
+3. **Permission Errors**:
+   - Use `sudo` for system-wide installation
+   - Check file permissions in installation directory
 
 ### Getting Help
 
-- **GitHub Issues**: [NeMo RL Issues](https://github.com/NVIDIA/NeMo-RL/issues)
-- **Documentation**: Check the [troubleshooting guide](../references/troubleshooting)
+- **Documentation**: Check the [troubleshooting guide](../guides/troubleshooting)
 - **Community**: Join the [NeMo Discord](https://discord.gg/nvidia-nemo)
+- **Issues**: Report problems on [GitHub](https://github.com/NVIDIA/NeMo-RL/issues)
 
 ## Next Steps
 

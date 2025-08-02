@@ -8,7 +8,7 @@ content_type: "tutorial"
 modality: "universal"
 ---
 
-# An In-Depth Walkthrough of GRPO in NeMo RL
+# Train with Group Relative Policy Optimization (GRPO)
 
 This guide details the Group Relative Policy Optimization (GRPO) implementation within NeMo RL. We'll walk through essential aspects including data handling, policy model training, fast generation, and the specifics of the GRPO loss function and its enhancements. 
 

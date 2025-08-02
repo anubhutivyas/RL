@@ -223,7 +223,7 @@ The following sections provide detailed API documentation for each component:
 - [Models and Policies](nemo_rl/nemo_rl.models): Policy interfaces, generation backends, and model implementations
 - [Algorithms](nemo_rl/nemo_rl.algorithms): RL algorithms, loss functions, and training utilities
 - [Data and Environments](nemo_rl/nemo_rl.data): Dataset interfaces, environment abstractions, and data processing
-- [Converters](converters): Model conversion and export utilities for deployment
+- [Converters](nemo_rl/nemo_rl.converters): Model conversion and export utilities for deployment
 - [Utilities](nemo_rl/nemo_rl.utils): Logging, configuration, and utility functions
 - [Auto-Generated Reference](auto-generated): Complete API reference with all functions, classes, and parameters
 - [Complete API Reference](nemo_rl/nemo_rl): Full auto-generated documentation for all modules
@@ -240,4 +240,34 @@ When contributing to NeMo RL, please follow these guidelines:
 4. **Follow Patterns**: Use established patterns for consistency
 
 For more information on contributing, see the [Development Guide](../guides/production-support/testing).
+
+---
+
+::::{toctree}
+:hidden:
+:caption: API Documentation
+:maxdepth: 2
+index
+distributed
+models
+converters
+auto-generated.md
+nemo_rl/nemo_rl
+nemo_rl/nemo_rl.algorithms
+nemo_rl/nemo_rl.data
+nemo_rl/nemo_rl.distributed
+nemo_rl/nemo_rl.environments
+nemo_rl/nemo_rl.evals
+nemo_rl/nemo_rl.experience
+nemo_rl/nemo_rl.metrics
+nemo_rl/nemo_rl.models
+nemo_rl/nemo_rl.utils
+nemo_rl/nemo_rl.converters
+nemo_rl/nemo_rl.data.hf_datasets
+nemo_rl/nemo_rl.models.generation
+nemo_rl/nemo_rl.models.dtensor
+nemo_rl/nemo_rl.models.huggingface
+nemo_rl/nemo_rl.models.megatron
+nemo_rl/nemo_rl.models.policy
+::::
 

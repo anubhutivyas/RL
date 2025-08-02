@@ -8,7 +8,7 @@ content_type: "guide"
 modality: "universal"
 ---
 
-# Learning Rate Scheduling
+# Optimize Learning Rate Scheduling
 
 This guide covers different learning rate scheduling strategies for optimal training convergence in NeMo RL.
 
@@ -291,8 +291,8 @@ def debug_lr_schedule(scheduler, total_steps):
     return lrs
 ```
 
-## Next Steps
+## Getting Help
 
-- Read [Training Stability](training-stability) for stability techniques
-- Explore [Hyperparameter Optimization](hyperparameter-optimization) for systematic tuning
-- Check [Advanced Topics](../advanced/index) for advanced techniques 
+- [Advanced Training Techniques](../../advanced/training/index.md) - Advanced training methods
+- [Performance Monitoring](../../advanced/performance/monitoring.md) - Monitor training performance
+- [Troubleshooting](../troubleshooting.md) - Common issues and solutions 

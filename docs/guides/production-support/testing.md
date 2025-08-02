@@ -29,7 +29,7 @@ in Docker with this script:
 CONTAINER=... bash tests/run_unit_in_docker.sh
 ```
 
-The required `CONTAINER` can be built by following the instructions in the [Docker documentation](docker.md).
+The required `CONTAINER` can be built by following the instructions in the [Docker Setup](../../get-started/docker.md) guide.
 
 ### Track Metrics in Unit Tests
 

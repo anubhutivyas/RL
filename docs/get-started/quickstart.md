@@ -209,29 +209,26 @@ uv run python examples/run_sft.py \
 
 ### Common Issues
 
-1. **Out of memory**:
-   ```bash
-   # Reduce batch size
-   policy.train_micro_batch_size=1
-   policy.train_global_batch_size=4
-   ```
+1. **CUDA Out of Memory**:
+   - Reduce batch size: `algorithm.batch_size=1`
+   - Enable gradient accumulation: `algorithm.gradient_accumulation_steps=4`
+   - Use smaller model: `policy.model_name=Qwen/Qwen2.5-0.5B`
 
-2. **Slow training**:
-   ```bash
-   # Enable mixed precision
-   policy.precision="bfloat16"
-   ```
+2. **Model Download Issues**:
+   - Check internet connection
+   - Verify Hugging Face token: `huggingface-cli login`
+   - Use local model path if available
 
-3. **Authentication errors**:
-   ```bash
-   huggingface-cli login
-   ```
+3. **Ray Cluster Issues**:
+   - Check Ray status: `ray status`
+   - Restart Ray: `ray stop && ray start --head`
 
 ### Getting Help
 
-- Check the [troubleshooting guide](../references/troubleshooting)
-- Review [configuration options](../references/index)
-- Join the [NeMo Discord](https://discord.gg/nvidia-nemo)
+- [Installation Guide](installation.md) - Setup and configuration
+- [Model Selection](model-selection.md) - Choose appropriate models
+- [Troubleshooting](../guides/troubleshooting) - Common issues and solutions
+- [Community Support](https://github.com/NVIDIA/NeMo-RL/issues) - GitHub issues
 
 ## Next Steps
 
@@ -252,4 +249,4 @@ After completing the quickstart:
 
 4. **Evaluate Models**:
    - [Evaluation Guide](../guides/training-algorithms/eval) - Model assessment
-- [Troubleshooting](../references/troubleshooting) - Common issues 
+- [Troubleshooting](../guides/troubleshooting) - Common issues 

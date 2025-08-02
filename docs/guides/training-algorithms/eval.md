@@ -8,7 +8,7 @@ content_type: "tutorial"
 modality: "universal"
 ---
 
-# Evaluation
+# Evaluate Model Performance
 
 This document explains how to use an evaluation script for assessing model capabilities.
 

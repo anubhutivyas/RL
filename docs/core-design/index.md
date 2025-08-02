@@ -126,15 +126,7 @@ Understand the logging system and observability features in NeMo RL.
 {bdg-secondary}`Monitoring`
 :::
 
-:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` UV Package Manager
-:link: development-infrastructure/uv
-:link-type: doc
 
-Learn about UV integration and package management strategies.
-
-+++
-{bdg-info}`Development`
-:::
 
 ::::
 

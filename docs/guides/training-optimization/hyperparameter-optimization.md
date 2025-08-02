@@ -8,7 +8,7 @@ content_type: "guide"
 modality: "universal"
 ---
 
-# Hyperparameter Optimization
+# Optimize Hyperparameters
 
 This guide covers systematic approaches to finding optimal hyperparameters for your NeMo RL models.
 
@@ -519,8 +519,8 @@ def debug_optimization(optimizer, objective_function):
     print(f"Short optimization results: {results}")
 ```
 
-## Next Steps
+## Getting Help
 
-- Read [Learning Rate Scheduling](learning-rate-scheduling) for scheduling strategies
-- Explore [Training Stability](training-stability) for stability techniques
-- Check [Advanced Topics](../advanced/index) for advanced techniques 
+- [Advanced Training Techniques](../../advanced/training/index.md) - Advanced training methods
+- [Performance Monitoring](../../advanced/performance/monitoring.md) - Monitor training performance
+- [Troubleshooting](../troubleshooting.md) - Common issues and solutions 

@@ -8,7 +8,7 @@ categories: ["getting-started"]
 
 Welcome to the NeMo RL documentation. NeMo RL is an open-source, comprehensive framework for reinforcement learning and supervised fine-tuning of large language models.
 
-## What is NeMo RL?
+## What is NeMo RL
 
 NeMo RL is a production-ready framework that combines the power of reinforcement learning with large language models. It provides a unified platform for training, fine-tuning, and deploying language models using state-of-the-art RL algorithms like DPO, GRPO, and SFT.
 
@@ -64,8 +64,8 @@ Master SFT, DPO, and GRPO training algorithms with comprehensive guides.
 {bdg-info}`Training`
 :::
 
-:::{grid-item-card} {octicon}`mortar-board;1.5em;sd-mr-1` Tutorials and Examples
-:link: tutorials-examples/index
+:::{grid-item-card} {octicon}`mortar-board;1.5em;sd-mr-1` Learning Resources
+:link: learning-resources/index
 :link-type: doc
 
 Step-by-step tutorials and working examples for hands-on learning.
@@ -233,6 +233,7 @@ get-started/installation
 get-started/model-selection
 get-started/docker
 get-started/cluster
+get-started/local-workstation
 :::: 
 
 ::::{toctree}
@@ -244,16 +245,17 @@ guides/training-algorithms/index
 guides/model-development/index
 guides/environment-data/index
 guides/production-support/index
+guides/training-optimization/index
 :::: 
 
 ::::{toctree}
 :hidden:
-:caption: Tutorials and Examples
+:caption: Learning Resources
 :maxdepth: 3
-tutorials-examples/index
-tutorials-examples/tutorials/index
-tutorials-examples/examples/index
-tutorials-examples/use-cases/index
+learning-resources/index
+learning-resources/tutorials/index
+learning-resources/examples/index
+learning-resources/use-cases/index
 :::: 
 
 ::::{toctree}
@@ -265,6 +267,7 @@ core-design/design-principles/index
 core-design/data-management/index
 core-design/computational-systems/index
 core-design/development-infrastructure/index
+core-design/computational-systems/uv
 :::: 
 
 ::::{toctree}
@@ -272,9 +275,9 @@ core-design/development-infrastructure/index
 :caption: Advanced Topics
 :maxdepth: 3
 advanced/index
-advanced/algorithm-customization/index
+advanced/algorithm-development/index
 advanced/performance/index
-advanced/research-validation/index
+advanced/research/index
 advanced/production-deployment/index
 :::: 
 
@@ -287,6 +290,23 @@ api-docs/distributed
 api-docs/models
 api-docs/converters
 api-docs/auto-generated.md
+api-docs/nemo_rl/nemo_rl
+api-docs/nemo_rl/nemo_rl.algorithms
+api-docs/nemo_rl/nemo_rl.data
+api-docs/nemo_rl/nemo_rl.distributed
+api-docs/nemo_rl/nemo_rl.environments
+api-docs/nemo_rl/nemo_rl.evals
+api-docs/nemo_rl/nemo_rl.experience
+api-docs/nemo_rl/nemo_rl.metrics
+api-docs/nemo_rl/nemo_rl.models
+api-docs/nemo_rl/nemo_rl.utils
+api-docs/nemo_rl/nemo_rl.converters
+api-docs/nemo_rl/nemo_rl.data.hf_datasets
+api-docs/nemo_rl/nemo_rl.models.generation
+api-docs/nemo_rl/nemo_rl.models.dtensor
+api-docs/nemo_rl/nemo_rl.models.huggingface
+api-docs/nemo_rl/nemo_rl.models.megatron
+api-docs/nemo_rl/nemo_rl.models.policy
 :::: 
 
 ::::{toctree}
