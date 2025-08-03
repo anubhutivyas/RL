@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 from abc import ABC, abstractmethod
-from typing import Any, NotRequired, TypedDict, Union
+from typing import Any, NotRequired, Optional, TypedDict, Union
 
 import ray
 import torch
@@ -124,10 +124,10 @@ class GuidedDecodingConfig(TypedDict):
     """
 
     mode: str
-    json: Optional[Union[str, dict]] = None
-    regex: Optional[str] = None
-    choice: Optional[list[str]] = None
-    grammar: Optional[str] = None
+    json: Optional[Union[str, dict]]
+    regex: Optional[str]
+    choice: Optional[list[str]]
+    grammar: Optional[str]
 
 
 class GenerationConfig(TypedDict):

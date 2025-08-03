@@ -514,6 +514,7 @@ async def async_generate_response_for_sample_turn(
     tokenizer: TokenizerType,
     max_seq_len: int,
     greedy: bool = False,
+    guided_decoding_config: Optional[GuidedDecodingConfig] = None,
 ) -> tuple[list[dict], torch.Tensor, torch.Tensor, dict[str, float]]:
     """Generate a response for a single sample's turn using async generation.
 
@@ -583,6 +584,7 @@ async def run_sample_multi_turn_rollout(
     max_seq_len: int,
     max_rollout_turns: int = 999999,
     greedy: bool = False,
+    guided_decoding_config: Optional[GuidedDecodingConfig] = None,
 ) -> tuple[dict, dict[str, Any]]:
     """Run a multi-turn rollout for a single sample.
 
@@ -641,6 +643,7 @@ async def run_sample_multi_turn_rollout(
                 tokenizer,
                 max_seq_len,
                 greedy=greedy,
+                guided_decoding_config=guided_decoding_config,
             )
             current_message_log = updated_message_log
 
