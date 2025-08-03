@@ -1,0 +1,7 @@
+torch
+numpy
+transformers==4.38.2
+jupyterlab
+ipykernel
+sentencepiece
+accelerate
