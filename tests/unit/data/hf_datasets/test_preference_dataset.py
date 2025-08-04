@@ -85,7 +85,7 @@ def test_preference_dataset_initialization(mock_preference_data):
     dataset = PreferenceDataset(dataset_path=preference_path, split="train")
 
     # Verify dataset initialization
-    assert dataset.task_spec.task_name == "PreferenceData"
+    assert dataset.task_spec.task_name == "PreferenceDataset"
 
     # Verify formatted_ds structure
     assert "train" in dataset.formatted_ds

@@ -32,7 +32,7 @@ def helpsteer3_dataset():
 
 
 def test_to_preference_data_format():
-    """Test the format_helpsteer3 function with different preference values."""
+    """Test the `to_preference_data_format()` function with different preference values."""
     # Test case 1: response1 is preferred (overall_preference < 0)
     data1 = {
         "context": "What is 2+2?",

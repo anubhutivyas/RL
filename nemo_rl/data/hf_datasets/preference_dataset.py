@@ -40,5 +40,5 @@ class PreferenceDataset:
         self.formatted_ds = DatasetDict({split: load_dataset("json", data_files=dataset_path, split="train")})
 
         self.task_spec = TaskDataSpec(
-            task_name="PreferenceData",
+            task_name="PreferenceDataset",
         )

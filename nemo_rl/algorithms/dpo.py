@@ -251,7 +251,7 @@ def add_ref_logprobs_to_data(dataloader, policy, master_config, tokenizer, is_va
                 make_sequence_length_divisible_by=master_config["policy"]["make_sequence_length_divisible_by"],
             )
 
-            batch: BatchedDataDict[Any] = BatchedDataDict(
+            batch = BatchedDataDict(
                 {
                     "input_ids": cat_and_padded["token_ids"],
                     "input_lengths": input_lengths,

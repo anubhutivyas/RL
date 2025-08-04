@@ -237,7 +237,7 @@ def validate(
     logger: Logger,
 ):
     for k, v in val_dataloader.items():
-        k_val_metrics, k_validation_timings = validate_one_dataset(policy, v, tokenizer, loss_fn, step, master_config, val_batches, val_batch_size, val_mbs)
+        k_val_metrics, k_validation_timings = validate_one_dataset(policy, v, tokenizer, loss_fn, step, master_config, val_batches, val_batch_size, val_mbs, k)
         if k == "validation":
             prefix = "validation"
         else:
@@ -258,6 +258,7 @@ def validate_one_dataset(
     val_batches: int,
     val_batch_size: int,
     val_mbs: int,
+    dataset_name: str,
 ):
     """Run validation on one validation dataset."""
     if val_dataloader is None:
@@ -366,7 +367,7 @@ def validate_one_dataset(
 
     if num_valid_batches > 0:
         # Print summary of validation results
-        print("\n📊 Validation Results:")
+        print(f"\n📊 Validation Results for {dataset_name}:")
         print(f"    • Validation loss: {val_metrics['val_loss']:.4f}")
         print(f"    • Validation accuracy: {val_metrics['accuracy']:.4f}")
         print(
@@ -380,7 +381,7 @@ def validate_one_dataset(
         )
 
         # Print timing information
-        print("\n  ⏱️  Validation Timing:")
+        print(f"\n  ⏱️  Validation Timing for {dataset_name}:")
         validation_time = timing_metrics.get("total_validation_time", 0)
         print(f"    • Total validation time: {validation_time:.2f}s")
 

@@ -77,29 +77,20 @@ Currently, RM training supports only two completions (where the lowest rank is p
 
 NeMo RL supports the `HelpSteer3` dataset. This dataset is downloaded from Hugging Face and preprocessed on-the-fly, so there's no need to provide a path to any datasets on disk.
 
-We also provide a [PreferenceDataset](../../nemo_rl/data/hf_datasets/preference_dataset.py) class that is compatible with JSONL-formatted preference datasets. You can modify your config as follows:
+We also provide a [PreferenceDataset](../../nemo_rl/data/hf_datasets/preference_dataset.py) class that is compatible with JSONL-formatted preference datasets. You can modify your config as follows to use such a custom preference dataset:
 ```
 data:
-  dataset_name: PreferenceData
+  dataset_name: PreferenceDataset
   train_data_path: <LocalPathToTrainingDataset>
-  val_datasets:
-    - dataset_name: PreferenceData
-      val_data_name: <NameOfValidationDataset1>
-      val_data_path: <LocalPathToValidationDataset1>
-    - dataset_name: PreferenceData
-      val_data_name: <NameOfValidationDataset2>
-      val_data_path: <LocalPathToValidationDataset2>
+  val_data_path: <LocalPathToValidationDataset>
 ```
-Note:
-- If you are using a custom preference dataset for training, you must specify a custom preference dataset for validation.
-- If you are using a logger, the prefix used for the custom validation preference dataset will be `validation-<NameOfValidationDataset>`.
-
-When using `HelpSteer3` as the training dataset, the default validation set is also used and logged under the prefix `validation`. You can replace it with a custom preference dataset as follows:
+with support for multiple validation sets achieved with:
 ```
 data:
-  dataset_name: HelpSteer3
-  val_datasets:
-    - dataset_name: PreferenceData
-      val_data_name: validation
-      val_data_path: <LocalPathToValidationDataset>
+  dataset_name: PreferenceDataset
+  train_data_path: <LocalPathToTrainingDataset>
+  val_data_paths:
+      <NameOfValidationDataset1>: <LocalPathToValidationDataset1>
+      <NameOfValidationDataset2>: <LocalPathToValidationDataset2>
 ```
+If you are using a logger, the prefix used for each validation set will be `validation-<NameOfValidationDataset>`.

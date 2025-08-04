@@ -117,7 +117,7 @@ def setup_data(tokenizer: AutoTokenizer, data_config: DataConfig):
     print("\n▶ Setting up data...")
     data_cls = data_config["dataset_name"]
 
-    if data_cls == "PreferenceData":
+    if data_cls == "PreferenceDataset":
         data_path = data_config["train_data_path"]
         data = hf_datasets.PreferenceDataset(data_path, split="train")
         train_dataset = data.formatted_ds["train"]
@@ -155,17 +155,26 @@ def setup_data(tokenizer: AutoTokenizer, data_config: DataConfig):
         )
     } if val_dataset else {}
 
-    if data_config.get("val_datasets") is not None:
-        # Only supported for custom preference datasets
-        assert isinstance(data_config["val_datasets"], list), f"Invalid type for val_datasets: {type(data_config['val_datasets'])}"
-        for val_dataset_config in data_config["val_datasets"]:
-            assert val_dataset_config["dataset_name"] == "PreferenceData"
-            val_dataset_name = val_dataset_config["val_data_name"]
-            val_data_path = val_dataset_config["val_data_path"]
+    if data_cls == "PreferenceDataset":
+        if data_config.get("val_data_path"):
+            assert data_config.get("val_data_paths") is None, "val_data_path and val_data_paths cannot be used together"
+            val_data_paths = [{"validation": data_config.get("val_data_path")}]
+
+        elif data_config.get("val_data_paths"):
+            assert isinstance(data_config["val_data_paths"], list), f"Invalid type for val_data_paths: {type(data_config['val_data_paths'])}"
+            val_data_paths = data_config.get("val_data_paths")
+
+        else:
+            raise ValueError("Either val_data_path or val_data_paths must be provided")
+
+        for d in val_data_paths:
+            assert len(d) == 1, "val_data_paths must be a list of <val_dataset_name: val_dataset_path> pairs."
+            val_dataset_name = list(d.keys())[0]
+            val_dataset_path = list(d.values())[0]
             assert val_dataset_name not in val_dataset or val_dataset_name == "validation" # Users can override the default "validation" set
             if val_dataset_name == "validation" and "validation" in val_dataset:
                 print(f"  ✓ Overriding the default validation dataset")
-            val_data = hf_datasets.PreferenceDataset(val_data_path, split="validation")
+            val_data = hf_datasets.PreferenceDataset(val_dataset_path, split="validation")
             print(
                 f"  ✓ Validation dataset '{val_dataset_name}' loaded with {len(val_data.formatted_ds["validation"])} samples."
             )
@@ -176,8 +185,6 @@ def setup_data(tokenizer: AutoTokenizer, data_config: DataConfig):
                 rm_preprocessor,
                 max_seq_length=data_config["max_input_seq_length"],
             )
-    else:
-        assert len(val_dataset) == 1, f"Expected 1 validation dataset, got {len(val_dataset)}"
 
     return train_dataset, val_dataset, rm_task_spec
 
