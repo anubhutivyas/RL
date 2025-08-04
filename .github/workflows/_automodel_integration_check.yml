@@ -271,19 +271,24 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const needsAttention = '${{ needs.check.outputs.needs_attention }}' === '1';
+            const needsAttention = ${{ toJSON(needs.check.outputs.needs_attention) }} === '1';
             const title = needsAttention ? 
               '## ⚠️  File Synchronization Check' : 
               '## ℹ️  File Synchronization Check';
             
+            const headSha = ${{ toJSON(inputs.head_sha) }};
+            const prNumber = ${{ toJSON(inputs.pr_number) }};
+            const headRef = ${{ toJSON(inputs.head_ref) }};
+            const checkOutputs = ${{ toJSON(needs.check.outputs.comment_body) }};
+            
             const commentBody = title + '\n\n' +
-              '**Check based on commit:** ${{ inputs.head_sha }} (PR #${{ inputs.pr_number }} from `${{ inputs.head_ref }}`)\n\n' +
-              '${{ needs.check.outputs.comment_body }}\n\n' +
+              '**Check based on commit:** ' + headSha + ' (PR #' + prNumber + ' from `' + headRef + '`)\n\n' +
+              checkOutputs + '\n\n' +
               '---\n' +
               '<sub>This check ensures that related file implementations remain synchronized across the codebase. If you believe this warning is incorrect or the files should intentionally differ, please add a comment explaining the reasoning.</sub>';
             
             await github.rest.issues.createComment({
-              issue_number: ${{ inputs.pr_number }},
+              issue_number: parseInt(prNumber),
               owner: context.repo.owner,
               repo: context.repo.repo,
               body: commentBody
