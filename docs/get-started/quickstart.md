@@ -245,7 +245,7 @@ After completing the quickstart:
 
 3. **Scale Up**:
    - [Cluster Setup](cluster.md) - Multi-node training
-- [Production Support](../guides/production-support/index) - Production deployment
+- [Troubleshooting](../guides/troubleshooting) - Production deployment and support
 
 4. **Evaluate Models**:
    - [Evaluation Guide](../guides/training-algorithms/eval) - Model assessment

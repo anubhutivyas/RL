@@ -4,7 +4,7 @@ NeMo RL supports multiple training backends to accommodate different model sizes
 
 ## Available Backends
 
-- **DTensor (FSDP2)** - PyTorch's next-generation distributed training with improved memory efficiency
+- **DTensor (FSDP2)** - PyTorch's next-generation distributed training. See [FSDP2 Parallel Plan](../design-principles/fsdp2-parallel-plan) for detailed implementation.
 - **Megatron** - NVIDIA's high-performance training framework for scaling to large models (>100B parameters)
 
 ## Backend Selection
@@ -25,6 +25,7 @@ To enable DTensor (FSDP2) training:
 
 1. Set `policy.dtensor_config.enabled=True`.
 2. Refer to the [examples directory](https://github.com/NVIDIA-NeMo/RL/tree/main/examples) for configuration examples.
+3. See [FSDP2 Parallel Plan](../design-principles/fsdp2-parallel-plan) for detailed implementation.
 
 ## Backend Priority
 

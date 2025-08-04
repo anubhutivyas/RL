@@ -1,6 +1,16 @@
+---
+description: "Text generation system and VLLM backend for NeMo RL framework"
+categories: ["design-principles"]
+tags: ["generation", "vllm", "text-generation", "inference"]
+personas: ["mle-focused", "researcher-focused"]
+difficulty: "advanced"
+content_type: "concept"
+modality: "universal"
+---
+
 # Text Generation System
 
-This document explains the token generation interface and various backends for the NeMo RL framework. The generation system is designed with a unified interface that allows different backends (like VLLM, Hugging Face, SGLang, and TRT-LLM) to provide token generation capabilities while adhering to the same API.
+This document explains the token generation interface and VLLM backend for the NeMo RL framework. The generation system is designed with a unified interface that allows different backends to provide token generation capabilities while adhering to the same API.
 
 ## Generation Interface
 
@@ -12,19 +22,23 @@ The core of the generation system is defined in `interfaces.py`, which establish
    ```python
    class GenerationConfig(TypedDict):
        """Configuration for generation."""
-       backend: str              # The backend to use (e.g., "vllm", "hf")
+       backend: str              # The backend to use (e.g., "vllm")
        max_new_tokens: int       # Maximum number of tokens to generate
        temperature: float        # Sampling temperature
        top_p: float              # Top-p sampling parameter
        top_k: int                # Top-k sampling parameter
        model_name: str           # Name or path of the model
+       stop_token_ids: list[int] # Token IDs that stop generation
+       stop_strings: NotRequired[list[str]] # String patterns that stop generation
+       pad_token_id: NotRequired[int] # Padding token ID
    ```
 
 2. **GenerationDatumSpec**: A TypedDict that defines the input data format:
    ```python
    class GenerationDatumSpec(TypedDict):
-       input_ids: torch.Tensor         # Input token IDs
-       attention_mask: torch.Tensor    # Attention mask
+       input_ids: torch.Tensor         # Input token IDs (right-padded)
+       input_lengths: torch.Tensor     # Actual length of each sequence
+       stop_strings: Optional[list[str]] # Optional stop strings per sample
        __extra__: Any                  # Additional data specific to the backend
    ```
 
@@ -41,20 +55,28 @@ The core of the generation system is defined in `interfaces.py`, which establish
 4. **GenerationInterface**: An abstract base class that all generation backends must implement:
    ```python
    class GenerationInterface(ABC):
-       """Abstract base class defining the interface for RL policies."""
+       """Abstract base class defining the interface for generation backends."""
+
+       @abstractmethod
+       def init_collective(self, ip: str, port: int, world_size: int) -> list[ray.ObjectRef]:
+           """Initialize distributed generation workers."""
+           pass
 
        @abstractmethod
        def generate(
            self, data: BatchedDataDict["GenerationDatumSpec"], greedy: bool
        ) -> BatchedDataDict["GenerationOutputSpec"]:
+           """Generate text responses for the given input data."""
            pass
 
        @abstractmethod
-       def prepare_for_generation(self, *args, **kwargs):
+       def prepare_for_generation(self, *args: Any, **kwargs: Any) -> bool:
+           """Prepare the generation backend."""
            pass
 
        @abstractmethod
-       def finish_generation(self, *args, **kwargs):
+       def finish_generation(self, *args: Any, **kwargs: Any) -> bool:
+           """Clean up after generation."""
            pass
    ```
 
@@ -84,7 +106,7 @@ The {py:class}`VllmGenerationWorker <nemo_rl.models.generation.vllm.VllmGenerati
 
 ### Custom VLLM Extensions
 
-The {py:class}`UpdatableVllmInternalWorker <nemo_rl.models.generation.vllm_backend.UpdatableVllmInternalWorker>` class in `vllm_backend.py` extends the VLLM worker with additional capabilities:
+The {py:class}`VllmInternalWorkerExtension <nemo_rl.models.generation.vllm_backend.VllmInternalWorkerExtension>` class in `vllm_backend.py` extends the VLLM worker with additional capabilities:
 
 1. Reporting device IDs to allow mapping of workers to specific GPUs.
 2. Updating weights from IPC handles for efficient weight sharing.
@@ -92,54 +114,119 @@ The {py:class}`UpdatableVllmInternalWorker <nemo_rl.models.generation.vllm_backe
 
 ## Usage Example
 
-To use a generation backend:
+To use the VLLM generation backend:
 
 ```python
-from nemo_rl.algorithms.utils import get_tokenizer
-from nemo_rl.distributed.virtual_cluster import RayVirtualCluster
-from nemo_rl.distributed.batched_data_dict import BatchedDataDict
-from nemo_rl.models.generation.interfaces import configure_generation_config
 from nemo_rl.models.generation.vllm import VllmGeneration, VllmConfig
+from nemo_rl.distributed.batched_data_dict import BatchedDataDict
+import torch
 
-# Set up the configuration
-config = VllmConfig(
-    model_name="Qwen/Qwen2.5-1.5B",
-    max_new_tokens=100,
-    temperature=0.7,
-    top_p=1,
-    top_k=None,
+# Configure VLLM generation
+vllm_config = VllmConfig(
     backend="vllm",
+    max_new_tokens=128,
+    temperature=0.7,
+    top_p=0.9,
+    top_k=50,
+    model_name="meta-llama/Llama-2-7b-hf",
+    stop_token_ids=[2],  # EOS token
     vllm_cfg={
         "tensor_parallel_size": 1,
-        "gpu_memory_utilization": 0.8,
+        "gpu_memory_utilization": 0.9,
         "max_model_len": 2048,
     }
 )
 
-# Configure config with tokenizer
-tokenizer = get_tokenizer(config["model_name"])
-config = configure_generation_config(config, tokenizer)
+# Initialize generation backend
+generation = VllmGeneration(vllm_config)
 
-# Initialize the cluster and generation backend
-cluster = RayVirtualCluster(...)
-generator = VllmGeneration(cluster, config)
+# Prepare input data (right-padded)
+input_data = BatchedDataDict({
+    "input_ids": torch.tensor([
+        [1, 2, 3, 0, 0],  # Right-padded sequence
+        [1, 2, 3, 4, 5]   # Full sequence
+    ]),
+    "input_lengths": torch.tensor([3, 5])  # Actual lengths
+})
 
-# Prepare input data
-input_data = BatchedDataDict(...)
+# Generate responses
+output_data = generation.generate(input_data, greedy=False)
 
-# Generate text
-generator.prepare_for_generation()
-output = generator.generate(input_data, greedy=False)
-generator.finish_generation()
+# Access results
+generated_text = output_data["output_ids"]
+logprobs = output_data["logprobs"]
 ```
 
-## Extend with New Backends
+## Configuration
 
-To add a new generation backend:
+### VLLM Configuration
 
-1. Create a new class that implements {py:class}`GenerationInterface <nemo_rl.models.generation.interfaces.GenerationInterface>`.
-2. Implement the required methods: {py:meth}`generate <nemo_rl.models.generation.interfaces.GenerationInterface.generate>`, {py:meth}`prepare_for_generation <nemo_rl.models.generation.interfaces.GenerationInterface.prepare_for_generation>`, and {py:meth}`finish_generation <nemo_rl.models.generation.interfaces.GenerationInterface.finish_generation>`.
-3. Ensure your implementation works with the standard {py:class}`GenerationConfig <nemo_rl.models.generation.interfaces.GenerationConfig>` and {py:class}`GenerationDatumSpec <nemo_rl.models.generation.interfaces.GenerationDatumSpec>` structures.
-4. Register your backend with the system (if needed) to make it accessible.
+```yaml
+# configs/generation_vllm.yaml
+generation:
+  backend: "vllm"
+  max_new_tokens: 128
+  temperature: 0.7
+  top_p: 0.9
+  top_k: 50
+  model_name: "meta-llama/Llama-2-7b-hf"
+  stop_token_ids: [2]
+  
+  vllm_cfg:
+    tensor_parallel_size: 1
+    gpu_memory_utilization: 0.9
+    max_model_len: 2048
+    load_format: "auto"
+    skip_tokenizer_init: true
+```
 
-This modular design allows for easy extension with new backends while maintaining a consistent interface for the rest of the system.
+### Distributed Generation
+
+For multi-GPU generation:
+
+```yaml
+generation:
+  backend: "vllm"
+  vllm_cfg:
+    tensor_parallel_size: 2  # Use 2 GPUs
+    gpu_memory_utilization: 0.8
+    max_model_len: 4096
+```
+
+## Best Practices
+
+### Right Padding
+- Always use right padding for input sequences
+- Include `input_lengths` tensor with actual sequence lengths
+- Use `verify_right_padding()` to validate padding
+
+### Memory Management
+- Set appropriate `gpu_memory_utilization` based on your GPU
+- Use `max_model_len` to control memory usage
+- Monitor GPU memory during generation
+
+### Performance Optimization
+- Use `tensor_parallel_size` for large models
+- Enable `skip_tokenizer_init` when possible
+- Set appropriate `max_new_tokens` to avoid unnecessary computation
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Out of Memory**: Reduce `gpu_memory_utilization` or `max_model_len`
+2. **Slow Generation**: Increase `tensor_parallel_size` or reduce model size
+3. **Padding Errors**: Ensure input sequences are right-padded and include `input_lengths`
+
+### Debugging
+
+```python
+from nemo_rl.models.generation.interfaces import verify_right_padding
+
+# Verify padding is correct
+is_padded, error_msg = verify_right_padding(input_data, pad_value=0)
+if not is_padded:
+    print(f"Padding error: {error_msg}")
+```
+
+For more information on VLLM configuration and optimization, see the [VLLM documentation](https://docs.vllm.ai/). 

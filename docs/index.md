@@ -196,7 +196,7 @@ Common issues, error messages, and solutions.
 :::
 
 :::{grid-item-card} {octicon}`question;1.5em;sd-mr-1` Production Support
-:link: guides/production-support/index
+:link: guides/troubleshooting
 :link-type: doc
 
 Deployment guides, monitoring, and production best practices.
@@ -244,8 +244,9 @@ guides/index
 guides/training-algorithms/index
 guides/model-development/index
 guides/environment-data/index
-guides/production-support/index
+guides/troubleshooting
 guides/training-optimization/index
+guides/troubleshooting
 :::: 
 
 ::::{toctree}
@@ -267,7 +268,6 @@ core-design/design-principles/index
 core-design/data-management/index
 core-design/computational-systems/index
 core-design/development-infrastructure/index
-core-design/computational-systems/uv
 :::: 
 
 ::::{toctree}
@@ -278,8 +278,7 @@ advanced/index
 advanced/algorithm-development/index
 advanced/performance/index
 advanced/research/index
-advanced/production-deployment/index
-:::: 
+::::: 
 
 ::::{toctree}
 :hidden:
@@ -290,23 +289,6 @@ api-docs/distributed
 api-docs/models
 api-docs/converters
 api-docs/auto-generated.md
-api-docs/nemo_rl/nemo_rl
-api-docs/nemo_rl/nemo_rl.algorithms
-api-docs/nemo_rl/nemo_rl.data
-api-docs/nemo_rl/nemo_rl.distributed
-api-docs/nemo_rl/nemo_rl.environments
-api-docs/nemo_rl/nemo_rl.evals
-api-docs/nemo_rl/nemo_rl.experience
-api-docs/nemo_rl/nemo_rl.metrics
-api-docs/nemo_rl/nemo_rl.models
-api-docs/nemo_rl/nemo_rl.utils
-api-docs/nemo_rl/nemo_rl.converters
-api-docs/nemo_rl/nemo_rl.data.hf_datasets
-api-docs/nemo_rl/nemo_rl.models.generation
-api-docs/nemo_rl/nemo_rl.models.dtensor
-api-docs/nemo_rl/nemo_rl.models.huggingface
-api-docs/nemo_rl/nemo_rl.models.megatron
-api-docs/nemo_rl/nemo_rl.models.policy
 :::: 
 
 ::::{toctree}

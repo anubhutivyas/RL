@@ -1,811 +1,620 @@
 # Hyperparameter Optimization
 
-This comprehensive guide covers hyperparameter optimization techniques for NeMo RL, including both practical training optimization and research methodology approaches. Learn systematic approaches to finding optimal hyperparameters using Bayesian optimization, multi-objective search, and automated tuning strategies.
+This guide covers hyperparameter optimization for NeMo RL using the actual configuration patterns and hyperparameters found in the codebase.
 
 ## Overview
 
-Hyperparameter optimization is crucial for achieving the best performance from NeMo RL models. This guide covers systematic approaches to finding optimal hyperparameters, including learning rates, batch sizes, model architectures, and training strategies, with both practical implementation and research methodology perspectives.
+NeMo RL uses YAML-based configuration files for hyperparameter management. This guide shows how to optimize the real hyperparameters used in DPO and GRPO training.
 
-## Key Concepts
+## Key NeMo RL Hyperparameters
 
-### Hyperparameters
+### Policy Configuration
 
-NeMo RL has several key hyperparameters that significantly impact training performance:
-
-```python
-# Learning rate and optimization
-learning_rate = 1e-4
-weight_decay = 0.01
-warmup_steps = 1000
-
-# Training configuration
-batch_size = 16
-gradient_accumulation_steps = 4
-max_grad_norm = 1.0
-
-# Model-specific parameters
-dropout_rate = 0.1
-attention_dropout = 0.1
-hidden_dropout = 0.1
-```
-
-### Optimization Objectives
-
-Define clear optimization objectives:
-
-```python
-class OptimizationObjective:
-    def __init__(self, primary_metric, constraints=None):
-        self.primary_metric = primary_metric  # e.g., 'validation_loss'
-        self.constraints = constraints or {}
-    
-    def evaluate(self, trial_results):
-        """Evaluate trial results against objectives."""
-        primary_value = trial_results[self.primary_metric]
-        
-        # Check constraints
-        for constraint_metric, (min_val, max_val) in self.constraints.items():
-            constraint_value = trial_results[constraint_metric]
-            if not (min_val <= constraint_value <= max_val):
-                return float('inf')  # Invalid trial
-        
-        return primary_value
-```
-
-## Hyperparameter Space Definition
-
-### 1. Continuous Parameters
-
-Define continuous hyperparameters with appropriate ranges:
-
-```python
-import optuna
-from optuna.samplers import TPESampler
-
-class HyperparameterOptimizer:
-    def __init__(self):
-        self.study = optuna.create_study(
-            direction="minimize",
-            sampler=TPESampler(seed=42)
-        )
-        
-    def define_continuous_params(self, trial):
-        """Define continuous hyperparameters."""
-        params = {
-            # Learning rate (log scale)
-            'learning_rate': trial.suggest_float(
-                'learning_rate', 1e-6, 1e-3, log=True
-            ),
-            
-            # Batch size
-            'batch_size': trial.suggest_int('batch_size', 1, 16),
-            
-            # Weight decay
-            'weight_decay': trial.suggest_float(
-                'weight_decay', 1e-5, 1e-2, log=True
-            ),
-            
-            # Dropout rate
-            'dropout': trial.suggest_float('dropout', 0.0, 0.5),
-            
-            # Warmup steps
-            'warmup_steps': trial.suggest_int('warmup_steps', 100, 5000),
-            
-            # Gradient clipping
-            'max_grad_norm': trial.suggest_float('max_grad_norm', 0.1, 5.0),
-        }
-        
-        return params
-```
-
-### 2. Categorical Parameters
-
-Define categorical hyperparameters:
-
-```python
-def define_categorical_params(self, trial):
-    """Define categorical hyperparameters."""
-    params = {
-        # Optimizer choice
-        'optimizer': trial.suggest_categorical(
-            'optimizer', ['adam', 'adamw', 'sgd']
-        ),
-        
-        # Learning rate scheduler
-        'scheduler': trial.suggest_categorical(
-            'scheduler', ['cosine', 'linear', 'step', 'plateau']
-        ),
-        
-        # Model architecture
-        'model_type': trial.suggest_categorical(
-            'model_type', ['llama', 'gpt', 'bert']
-        ),
-        
-        # Loss function
-        'loss_function': trial.suggest_categorical(
-            'loss_function', ['cross_entropy', 'focal', 'label_smoothing']
-        ),
-        
-        # Mixed precision
-        'mixed_precision': trial.suggest_categorical(
-            'mixed_precision', ['fp16', 'bf16', 'fp32']
-        ),
-    }
-    
-    return params
-```
-
-### 3. Conditional Parameters
-
-Define conditional hyperparameters based on other choices:
-
-```python
-def define_conditional_params(self, trial, base_params):
-    """Define conditional hyperparameters."""
-    params = base_params.copy()
-    
-    # Conditional on optimizer choice
-    if base_params['optimizer'] == 'sgd':
-        params['momentum'] = trial.suggest_float('momentum', 0.8, 0.99)
-        params['nesterov'] = trial.suggest_categorical('nesterov', [True, False])
-    
-    # Conditional on scheduler choice
-    if base_params['scheduler'] == 'step':
-        params['step_size'] = trial.suggest_int('step_size', 1000, 10000)
-        params['gamma'] = trial.suggest_float('gamma', 0.1, 0.9)
-    
-    # Conditional on loss function
-    if base_params['loss_function'] == 'focal':
-        params['focal_alpha'] = trial.suggest_float('focal_alpha', 0.1, 1.0)
-        params['focal_gamma'] = trial.suggest_float('focal_gamma', 1.0, 5.0)
-    
-    return params
-```
-
-## Search Algorithms
-
-### 1. Grid Search
-
-Exhaustive search over parameter combinations:
-
-```python
-def grid_search_hyperparameters():
-    """Perform grid search over hyperparameters."""
-    param_grid = {
-        'learning_rate': [1e-5, 5e-5, 1e-4, 5e-4],
-        'batch_size': [8, 16, 32],
-        'weight_decay': [0.0, 0.01, 0.1],
-        'warmup_steps': [500, 1000, 2000]
-    }
-    
-    best_config = None
-    best_score = float('inf')
-    
-    for lr in param_grid['learning_rate']:
-        for bs in param_grid['batch_size']:
-            for wd in param_grid['weight_decay']:
-                for ws in param_grid['warmup_steps']:
-                    config = {
-                        'learning_rate': lr,
-                        'batch_size': bs,
-                        'weight_decay': wd,
-                        'warmup_steps': ws
-                    }
-                    
-                    score = evaluate_config(config)
-                    
-                    if score < best_score:
-                        best_score = score
-                        best_config = config
-    
-    return best_config, best_score
-```
-
-### 2. Random Search
-
-Random sampling of parameter space:
-
-```python
-def random_search_hyperparameters(n_trials=100):
-    """Perform random search over hyperparameters."""
-    best_config = None
-    best_score = float('inf')
-    
-    for trial in range(n_trials):
-        config = {
-            'learning_rate': np.random.uniform(1e-6, 1e-3),
-            'batch_size': np.random.choice([8, 16, 32]),
-            'weight_decay': np.random.uniform(0.0, 0.1),
-            'warmup_steps': np.random.randint(100, 5000)
-        }
-        
-        score = evaluate_config(config)
-        
-        if score < best_score:
-            best_score = score
-            best_config = config
-    
-    return best_config, best_score
-```
-
-## Optimization Strategies
-
-### 1. Bayesian Optimization
-
-Use Bayesian optimization for efficient hyperparameter search:
-
-```python
-class BayesianOptimizer:
-    def __init__(self, n_trials=100):
-        self.study = optuna.create_study(
-            direction="minimize",
-            sampler=TPESampler(seed=42),
-            pruner=optuna.pruners.MedianPruner()
-        )
-        self.n_trials = n_trials
-        
-    def objective(self, trial):
-        """Objective function for optimization."""
-        # Define hyperparameters
-        params = self.define_hyperparameters(trial)
-        
-        # Train model with these parameters
-        model = self.train_model(params)
-        
-        # Evaluate model
-        score = self.evaluate_model(model)
-        
-        return score
-        
-    def optimize(self):
-        """Run hyperparameter optimization."""
-        self.study.optimize(self.objective, n_trials=self.n_trials)
-        
-        # Get best parameters
-        best_params = self.study.best_params
-        best_score = self.study.best_value
-        
-        print(f"Best score: {best_score}")
-        print(f"Best parameters: {best_params}")
-        
-        return best_params, best_score
-```
-
-### 2. Multi-Objective Optimization
-
-Optimize multiple objectives simultaneously:
-
-```python
-class MultiObjectiveOptimizer:
-    def __init__(self):
-        self.study = optuna.create_study(
-            directions=["minimize", "minimize", "maximize"],
-            sampler=optuna.samplers.NSGAIISampler(seed=42)
-        )
-        
-    def objective(self, trial):
-        """Multi-objective optimization."""
-        params = self.define_hyperparameters(trial)
-        
-        # Train and evaluate model
-        model = self.train_model(params)
-        
-        # Multiple objectives
-        training_loss = self.get_training_loss(model)
-        validation_loss = self.get_validation_loss(model)
-        accuracy = self.get_accuracy(model)
-        
-        return training_loss, validation_loss, accuracy
-        
-    def optimize(self):
-        """Run multi-objective optimization."""
-        self.study.optimize(self.objective, n_trials=100)
-        
-        # Get Pareto front
-        pareto_front = self.study.best_trials
-        
-        print(f"Pareto front size: {len(pareto_front)}")
-        for trial in pareto_front:
-            print(f"Trial {trial.number}: {trial.values}")
-            
-        return pareto_front
-```
-
-### 3. Population-based Training
-
-Use population-based training for dynamic hyperparameter optimization:
-
-```python
-class PopulationBasedTrainer:
-    def __init__(self, population_size=10):
-        self.population_size = population_size
-        self.population = []
-        self.generations = []
-        
-    def initialize_population(self):
-        """Initialize population with random hyperparameters."""
-        for i in range(self.population_size):
-            params = self.generate_random_params()
-            self.population.append({
-                'params': params,
-                'fitness': None,
-                'generation': 0
-            })
-            
-    def evolve_population(self):
-        """Evolve population using genetic algorithm."""
-        # Evaluate current population
-        for individual in self.population:
-            if individual['fitness'] is None:
-                individual['fitness'] = self.evaluate_params(individual['params'])
-        
-        # Sort by fitness
-        self.population.sort(key=lambda x: x['fitness'])
-        
-        # Selection and crossover
-        new_population = []
-        for i in range(self.population_size):
-            parent1 = self.tournament_selection()
-            parent2 = self.tournament_selection()
-            child_params = self.crossover(parent1['params'], parent2['params'])
-            child_params = self.mutate(child_params)
-            
-            new_population.append({
-                'params': child_params,
-                'fitness': None,
-                'generation': parent1['generation'] + 1
-            })
-            
-        self.population = new_population
-        self.generations.append(self.population.copy())
-        
-    def tournament_selection(self):
-        """Tournament selection for genetic algorithm."""
-        tournament_size = 3
-        tournament = random.sample(self.population, tournament_size)
-        return min(tournament, key=lambda x: x['fitness'])
-        
-    def crossover(self, params1, params2):
-        """Crossover operation for genetic algorithm."""
-        child_params = {}
-        for key in params1:
-            if random.random() < 0.5:
-                child_params[key] = params1[key]
-            else:
-                child_params[key] = params2[key]
-        return child_params
-        
-    def mutate(self, params):
-        """Mutation operation for genetic algorithm."""
-        mutation_rate = 0.1
-        for key in params:
-            if random.random() < mutation_rate:
-                if isinstance(params[key], float):
-                    params[key] *= random.uniform(0.8, 1.2)
-                elif isinstance(params[key], int):
-                    params[key] += random.randint(-1, 1)
-        return params
-```
-
-## Advanced Optimization Techniques
-
-### 1. Early Pruning
-
-Implement early pruning to stop unpromising trials:
-
-```python
-class EarlyPruningOptimizer:
-    def __init__(self):
-        self.study = optuna.create_study(
-            direction="minimize",
-            pruner=optuna.pruners.MedianPruner(
-                n_startup_trials=5,
-                n_warmup_steps=10,
-                interval_steps=1
-            )
-        )
-        
-    def objective(self, trial):
-        """Objective function with early pruning."""
-        params = self.define_hyperparameters(trial)
-        
-        # Train model with intermediate evaluations
-        for epoch in range(100):
-            loss = self.train_epoch(params, epoch)
-            
-            # Report intermediate value for pruning
-            trial.report(loss, epoch)
-            
-            # Check if trial should be pruned
-            if trial.should_prune():
-                raise optuna.TrialPruned()
-                
-        return loss
-```
-
-### 2. Transfer Learning for Hyperparameter Optimization
-
-Use knowledge from previous optimizations:
-
-```python
-class TransferLearningOptimizer:
-    def __init__(self, previous_studies=None):
-        self.previous_studies = previous_studies or []
-        
-        # Create study with transfer learning
-        sampler = optuna.samplers.TPESampler(
-            seed=42,
-            consider_prior=True,
-            prior_weight=1.0,
-            n_startup_trials=10
-        )
-        
-        self.study = optuna.create_study(
-            direction="minimize",
-            sampler=sampler
-        )
-        
-    def transfer_knowledge(self):
-        """Transfer knowledge from previous studies."""
-        for study in self.previous_studies:
-            # Add best trials from previous studies
-            for trial in study.trials:
-                if trial.state == optuna.trial.TrialState.COMPLETE:
-                    self.study.add_trial(trial)
-```
-
-### 3. Hyperparameter Importance Analysis
-
-Analyze the importance of different hyperparameters:
-
-```python
-class HyperparameterAnalyzer:
-    def __init__(self, study):
-        self.study = study
-        
-    def analyze_importance(self):
-        """Analyze hyperparameter importance."""
-        importance = optuna.importance.get_param_importances(self.study)
-        
-        # Sort by importance
-        sorted_importance = sorted(
-            importance.items(),
-            key=lambda x: x[1],
-            reverse=True
-        )
-        
-        print("Hyperparameter Importance:")
-        for param, imp in sorted_importance:
-            print(f"  {param}: {imp:.4f}")
-            
-        return importance
-        
-    def plot_importance(self):
-        """Plot hyperparameter importance."""
-        optuna.visualization.plot_param_importances(self.study)
-        
-    def plot_optimization_history(self):
-        """Plot optimization history."""
-        optuna.visualization.plot_optimization_history(self.study)
-        
-    def plot_parallel_coordinate(self):
-        """Plot parallel coordinate plot."""
-        optuna.visualization.plot_parallel_coordinate(self.study)
-```
-
-## Research Methodology
-
-### 1. Experimental Design for Hyperparameter Optimization
-
-Design robust experiments for hyperparameter optimization:
-
-```python
-class HyperparameterExperimentDesigner:
-    def __init__(self):
-        self.experiment_configs = []
-        
-    def design_comparison_experiment(self, algorithms, datasets):
-        """Design experiment to compare hyperparameter optimization methods."""
-        experiment_config = {
-            'algorithms': algorithms,  # ['bayesian', 'random', 'grid']
-            'datasets': datasets,      # ['preference', 'instruction', 'code']
-            'metrics': ['validation_loss', 'training_time', 'convergence_rate'],
-            'n_trials': 100,
-            'repetitions': 5,  # For statistical significance
-            'random_seeds': [42, 123, 456, 789, 101112]
-        }
-        
-        return experiment_config
-    
-    def design_ablation_study(self, base_config, components_to_ablate):
-        """Design ablation study for hyperparameter optimization components."""
-        ablation_configs = []
-        
-        for component in components_to_ablate:
-            # Create config without this component
-            ablated_config = base_config.copy()
-            ablated_config[component] = None  # or default value
-            
-            ablation_configs.append({
-                'component_removed': component,
-                'config': ablated_config
-            })
-        
-        return ablation_configs
-```
-
-### 2. Statistical Analysis
-
-Implement statistical analysis for hyperparameter optimization results:
-
-```python
-class HyperparameterStatisticalAnalyzer:
-    def __init__(self):
-        self.results = []
-        
-    def analyze_optimization_performance(self, results):
-        """Analyze performance of different optimization methods."""
-        import scipy.stats as stats
-        
-        # Compare methods using statistical tests
-        methods = list(results.keys())
-        
-        for i in range(len(methods)):
-            for j in range(i+1, len(methods)):
-                method1, method2 = methods[i], methods[j]
-                
-                # Perform t-test
-                t_stat, p_value = stats.ttest_ind(
-                    results[method1]['scores'],
-                    results[method2]['scores']
-                )
-                
-                print(f"{method1} vs {method2}: p-value = {p_value:.4f}")
-                
-                # Calculate effect size
-                effect_size = self.calculate_effect_size(
-                    results[method1]['scores'],
-                    results[method2]['scores']
-                )
-                
-                print(f"Effect size: {effect_size:.4f}")
-    
-    def calculate_effect_size(self, group1, group2):
-        """Calculate Cohen's d effect size."""
-        import numpy as np
-        
-        n1, n2 = len(group1), len(group2)
-        pooled_std = np.sqrt(((n1-1)*np.var(group1) + (n2-1)*np.var(group2)) / (n1+n2-2))
-        
-        return (np.mean(group1) - np.mean(group2)) / pooled_std
-```
-
-## Integration with NeMo RL
-
-### 1. Configuration-based Optimization
+The main hyperparameters are defined in the policy section:
 
 ```yaml
-# hyperparameter_optimization.yaml
+# configs/optimization_example.yaml
+policy:
+  model_name: "microsoft/DialoGPT-medium"
+  max_total_sequence_length: 2048
+  precision: "bfloat16"  # or "float16", "float32"
+  
+  # Optimizer hyperparameters
+  optimizer:
+    name: "torch.optim.AdamW"
+    kwargs:
+      lr: 1e-5  # Learning rate - key hyperparameter
+      weight_decay: 0.01  # Weight decay
+      betas: [0.9, 0.999]  # Adam betas
+      eps: 1e-8  # Adam epsilon
+      foreach: false  # For distributed training
+      fused: false  # For distributed training
+  
+  # Learning rate scheduler
+  scheduler:
+    - name: "torch.optim.lr_scheduler.LinearLR"
+      kwargs:
+        start_factor: 0.1
+        end_factor: 1.0
+        total_iters: 50
+    - name: "torch.optim.lr_scheduler.ConstantLR"
+      kwargs:
+        factor: 1.0
+        total_iters: 10000000000
+    - milestones: [50]
+  
+  # Training hyperparameters
+  max_grad_norm: 1.0  # Gradient clipping
+  train_micro_batch_size: 1  # Micro batch size
+  train_global_batch_size: 16  # Global batch size
+```
+
+### DPO-Specific Hyperparameters
+
+For DPO training, these are the key hyperparameters:
+
+```yaml
+dpo:
+  # Core DPO parameters
+  reference_policy_kl_penalty: 0.1  # Beta parameter - critical
+  preference_loss_weight: 1.0  # Weight for preference loss
+  sft_loss_weight: 0.1  # Weight for SFT loss
+  preference_average_log_probs: true  # Average across tokens
+  sft_average_log_probs: true  # Average SFT loss
+  
+  # Training schedule
+  max_num_epochs: 3
+  max_num_steps: 1000
+  val_period: 100
+  val_batches: 5
+  val_global_batch_size: 32
+  val_micro_batch_size: 8
+  val_at_start: true
+  seed: 42
+```
+
+### GRPO-Specific Hyperparameters
+
+For GRPO training, these are the key hyperparameters:
+
+```yaml
+grpo:
+  # Training parameters
+  num_prompts_per_step: 4
+  num_generations_per_prompt: 4
+  max_num_steps: 1000
+  max_rollout_turns: 1
+  normalize_rewards: true
+  use_leave_one_out_baseline: true
+  
+  # Validation
+  val_period: 100
+  val_batch_size: 8
+  val_at_start: true
+  max_val_samples: 100
+```
+
+## Hyperparameter Optimization Strategies
+
+### 1. Learning Rate Optimization
+
+The learning rate is the most critical hyperparameter:
+
+```python
+import yaml
+from nemo_rl.algorithms.dpo import setup, dpo_train
+from nemo_rl.utils.config import load_config
+
+def optimize_learning_rate():
+    """Optimize learning rate for DPO training."""
+    
+    # Learning rate candidates
+    lr_candidates = [1e-6, 5e-6, 1e-5, 5e-5, 1e-4, 5e-4]
+    
+    best_lr = None
+    best_val_loss = float('inf')
+    
+    for lr in lr_candidates:
+        # Load base config
+        config = load_config("configs/dpo_base.yaml")
+        
+        # Update learning rate
+        config['policy']['optimizer']['kwargs']['lr'] = lr
+        
+        # Train and evaluate
+        val_loss = train_and_evaluate_dpo(config)
+        
+        print(f"LR: {lr}, Val Loss: {val_loss}")
+        
+        if val_loss < best_val_loss:
+            best_val_loss = val_loss
+            best_lr = lr
+    
+    print(f"Best learning rate: {best_lr}")
+    return best_lr
+
+def train_and_evaluate_dpo(config):
+    """Train DPO model and return validation loss."""
+    # Setup training
+    policy, cluster, train_dataloader, val_dataloader, loss_fn, master_config, logger, task_spec, save_state = setup(
+        master_config=config,
+        tokenizer=tokenizer,
+        train_dataset=train_dataset,
+        val_dataset=val_dataset
+    )
+    
+    # Run training for a few steps
+    dpo_train(
+        policy=policy,
+        train_dataloader=train_dataloader,
+        val_dataloader=val_dataloader,
+        tokenizer=tokenizer,
+        loss_fn=loss_fn,
+        master_config=master_config,
+        logger=logger,
+        checkpointer=checkpointer,
+        dpo_save_state=save_state
+    )
+    
+    # Return validation loss
+    return get_validation_loss(logger)
+```
+
+### 2. DPO Beta Optimization
+
+The KL penalty (beta) is crucial for DPO performance:
+
+```python
+def optimize_dpo_beta():
+    """Optimize DPO beta parameter."""
+    
+    # Beta candidates
+    beta_candidates = [0.05, 0.1, 0.2, 0.3, 0.5]
+    
+    best_beta = None
+    best_reward_gap = -float('inf')
+    
+    for beta in beta_candidates:
+        # Load base config
+        config = load_config("configs/dpo_base.yaml")
+        
+        # Update beta
+        config['dpo']['reference_policy_kl_penalty'] = beta
+        
+        # Train and evaluate
+        reward_gap = train_and_evaluate_dpo_rewards(config)
+        
+        print(f"Beta: {beta}, Reward Gap: {reward_gap}")
+        
+        if reward_gap > best_reward_gap:
+            best_reward_gap = reward_gap
+            best_beta = beta
+    
+    print(f"Best beta: {best_beta}")
+    return best_beta
+```
+
+### 3. Batch Size Optimization
+
+Optimize batch sizes for your hardware:
+
+```python
+def optimize_batch_sizes():
+    """Optimize batch sizes for available memory."""
+    
+    # Batch size combinations
+    batch_configs = [
+        {'micro': 1, 'global': 8},
+        {'micro': 1, 'global': 16},
+        {'micro': 2, 'global': 16},
+        {'micro': 2, 'global': 32},
+        {'micro': 4, 'global': 32},
+    ]
+    
+    best_config = None
+    best_throughput = 0
+    
+    for config in batch_configs:
+        try:
+            # Load base config
+            yaml_config = load_config("configs/dpo_base.yaml")
+            
+            # Update batch sizes
+            yaml_config['policy']['train_micro_batch_size'] = config['micro']
+            yaml_config['policy']['train_global_batch_size'] = config['global']
+            
+            # Test training
+            throughput = test_training_throughput(yaml_config)
+            
+            print(f"Micro: {config['micro']}, Global: {config['global']}, Throughput: {throughput}")
+            
+            if throughput > best_throughput:
+                best_throughput = throughput
+                best_config = config
+                
+        except RuntimeError as e:
+            if "out of memory" in str(e):
+                print(f"OOM for config: {config}")
+                continue
+    
+    print(f"Best batch config: {best_config}")
+    return best_config
+```
+
+### 4. Loss Weight Optimization
+
+Optimize the balance between preference and SFT losses:
+
+```python
+def optimize_loss_weights():
+    """Optimize DPO loss weights."""
+    
+    # Weight combinations
+    weight_configs = [
+        {'preference': 1.0, 'sft': 0.0},   # Pure preference
+        {'preference': 1.0, 'sft': 0.1},   # Light SFT
+        {'preference': 1.0, 'sft': 0.2},   # Balanced
+        {'preference': 0.8, 'sft': 0.2},   # More SFT
+        {'preference': 0.5, 'sft': 0.5},   # Equal weights
+    ]
+    
+    best_weights = None
+    best_accuracy = 0
+    
+    for weights in weight_configs:
+        # Load base config
+        config = load_config("configs/dpo_base.yaml")
+        
+        # Update weights
+        config['dpo']['preference_loss_weight'] = weights['preference']
+        config['dpo']['sft_loss_weight'] = weights['sft']
+        
+        # Train and evaluate
+        accuracy = train_and_evaluate_accuracy(config)
+        
+        print(f"Preference: {weights['preference']}, SFT: {weights['sft']}, Accuracy: {accuracy}")
+        
+        if accuracy > best_accuracy:
+            best_accuracy = accuracy
+            best_weights = weights
+    
+    print(f"Best weights: {best_weights}")
+    return best_weights
+```
+
+## Configuration-Based Optimization
+
+### 1. Grid Search Configuration
+
+Create a grid search over key hyperparameters:
+
+```yaml
+# configs/grid_search.yaml
 optimization:
-  method: "bayesian"
-  n_trials: 100
-  timeout: 3600  # 1 hour
+  method: "grid_search"
+  hyperparameters:
+    learning_rate: [1e-6, 5e-6, 1e-5, 5e-5]
+    dpo_beta: [0.05, 0.1, 0.2, 0.3]
+    batch_size: [8, 16, 32]
+    preference_weight: [0.8, 1.0, 1.2]
+    sft_weight: [0.0, 0.1, 0.2]
+  
+  evaluation:
+    max_steps: 500
+    val_period: 50
+    metric: "validation_loss"
+```
+
+### 2. Random Search Configuration
+
+Use random search for broader exploration:
+
+```yaml
+# configs/random_search.yaml
+optimization:
+  method: "random_search"
+  n_trials: 50
   
   hyperparameters:
     learning_rate:
       type: "float"
       min: 1e-6
-      max: 1e-3
+      max: 1e-4
       log: true
+      
+    dpo_beta:
+      type: "float"
+      min: 0.05
+      max: 0.5
       
     batch_size:
       type: "int"
-      min: 1
-      max: 16
+      min: 8
+      max: 32
       
-    optimizer:
-      type: "categorical"
-      choices: ["adam", "adamw", "sgd"]
+    preference_weight:
+      type: "float"
+      min: 0.5
+      max: 1.5
       
-    scheduler:
-      type: "categorical"
-      choices: ["cosine", "linear", "step"]
-      
-  objectives:
-    - name: "validation_loss"
-      direction: "minimize"
-      weight: 1.0
-    - name: "training_time"
-      direction: "minimize"
-      weight: 0.5
+    sft_weight:
+      type: "float"
+      min: 0.0
+      max: 0.5
+  
+  evaluation:
+    max_steps: 500
+    val_period: 50
+    metric: "validation_loss"
 ```
 
-### 2. Automated Optimization Pipeline
+## Automated Optimization Script
 
 ```python
-class AutomatedOptimizer:
+import yaml
+import json
+import time
+from pathlib import Path
+from nemo_rl.utils.config import load_config
+from nemo_rl.algorithms.dpo import setup, dpo_train
+
+class NeMoRLOptimizer:
     def __init__(self, config_path):
-        self.config = self.load_config(config_path)
-        self.optimizer = self.create_optimizer()
+        self.base_config = load_config(config_path)
+        self.results = []
         
-    def load_config(self, config_path):
-        """Load optimization configuration."""
-        with open(config_path, 'r') as f:
-            return yaml.safe_load(f)
-            
-    def create_optimizer(self):
-        """Create optimizer based on configuration."""
-        method = self.config['optimization']['method']
+    def optimize_hyperparameters(self, optimization_config):
+        """Run hyperparameter optimization."""
+        method = optimization_config['method']
         
-        if method == 'bayesian':
-            return BayesianOptimizer(
-                n_trials=self.config['optimization']['n_trials']
-            )
-        elif method == 'multi_objective':
-            return MultiObjectiveOptimizer()
-        elif method == 'population_based':
-            return PopulationBasedTrainer(
-                population_size=self.config['optimization'].get('population_size', 10)
-            )
+        if method == 'grid_search':
+            return self.grid_search(optimization_config)
+        elif method == 'random_search':
+            return self.random_search(optimization_config)
         else:
-            raise ValueError(f"Unknown optimization method: {method}")
+            raise ValueError(f"Unknown method: {method}")
+    
+    def grid_search(self, config):
+        """Perform grid search over hyperparameters."""
+        hyperparams = config['hyperparameters']
+        param_names = list(hyperparams.keys())
+        param_values = list(hyperparams.values())
+        
+        best_config = None
+        best_score = float('inf')
+        
+        # Generate all combinations
+        from itertools import product
+        combinations = list(product(*param_values))
+        
+        for i, combination in enumerate(combinations):
+            # Create config with these parameters
+            trial_config = self.base_config.copy()
+            for name, value in zip(param_names, combination):
+                self.set_nested_config(trial_config, name, value)
             
-    def run_optimization(self):
-        """Run automated hyperparameter optimization."""
-        print("Starting hyperparameter optimization...")
+            # Evaluate this configuration
+            score = self.evaluate_config(trial_config, config['evaluation'])
+            
+            print(f"Trial {i+1}/{len(combinations)}: {dict(zip(param_names, combination))} -> {score}")
+            
+            if score < best_score:
+                best_score = score
+                best_config = trial_config.copy()
         
-        # Run optimization
-        best_params, best_score = self.optimizer.optimize()
+        return best_config, best_score
+    
+    def random_search(self, config):
+        """Perform random search over hyperparameters."""
+        import random
+        import numpy as np
         
-        # Save results
-        self.save_results(best_params, best_score)
+        n_trials = config['n_trials']
+        hyperparams = config['hyperparameters']
         
-        # Generate report
-        self.generate_report()
+        best_config = None
+        best_score = float('inf')
         
-        return best_params, best_score
+        for trial in range(n_trials):
+            # Generate random parameters
+            trial_params = {}
+            for name, param_config in hyperparams.items():
+                if param_config['type'] == 'float':
+                    if param_config.get('log', False):
+                        # Log-uniform sampling
+                        min_val, max_val = param_config['min'], param_config['max']
+                        trial_params[name] = np.exp(
+                            np.random.uniform(np.log(min_val), np.log(max_val))
+                        )
+                    else:
+                        trial_params[name] = np.random.uniform(
+                            param_config['min'], param_config['max']
+                        )
+                elif param_config['type'] == 'int':
+                    trial_params[name] = np.random.randint(
+                        param_config['min'], param_config['max'] + 1
+                    )
+            
+            # Create config with these parameters
+            trial_config = self.base_config.copy()
+            for name, value in trial_params.items():
+                self.set_nested_config(trial_config, name, value)
+            
+            # Evaluate this configuration
+            score = self.evaluate_config(trial_config, config['evaluation'])
+            
+            print(f"Trial {trial+1}/{n_trials}: {trial_params} -> {score}")
+            
+            if score < best_score:
+                best_score = score
+                best_config = trial_config.copy()
         
-    def save_results(self, best_params, best_score):
+        return best_config, best_score
+    
+    def set_nested_config(self, config, param_path, value):
+        """Set nested configuration parameter."""
+        # Handle nested paths like 'policy.optimizer.kwargs.lr'
+        keys = param_path.split('.')
+        current = config
+        
+        for key in keys[:-1]:
+            if key not in current:
+                current[key] = {}
+            current = current[key]
+        
+        current[keys[-1]] = value
+    
+    def evaluate_config(self, config, eval_config):
+        """Evaluate a configuration."""
+        try:
+            # Setup training
+            policy, cluster, train_dataloader, val_dataloader, loss_fn, master_config, logger, task_spec, save_state = setup(
+                master_config=config,
+                tokenizer=tokenizer,
+                train_dataset=train_dataset,
+                val_dataset=val_dataset
+            )
+            
+            # Run training for specified steps
+            max_steps = eval_config['max_steps']
+            val_period = eval_config['val_period']
+            
+            # Modified training loop for evaluation
+            step = 0
+            while step < max_steps:
+                # Train for val_period steps
+                for _ in range(val_period):
+                    if step >= max_steps:
+                        break
+                    
+                    # Single training step
+                    self.train_step(policy, train_dataloader, loss_fn)
+                    step += 1
+                
+                # Evaluate
+                val_loss = self.evaluate_model(policy, val_dataloader, loss_fn)
+                
+                # Early stopping if loss is too high
+                if val_loss > 10.0:
+                    return val_loss
+            
+            return val_loss
+            
+        except Exception as e:
+            print(f"Error evaluating config: {e}")
+            return float('inf')
+    
+    def save_results(self, best_config, best_score, output_path):
         """Save optimization results."""
         results = {
-            'best_params': best_params,
+            'best_config': best_config,
             'best_score': best_score,
-            'optimization_config': self.config,
-            'timestamp': datetime.now().isoformat()
+            'all_results': self.results,
+            'timestamp': time.time()
         }
         
-        with open('optimization_results.json', 'w') as f:
+        with open(output_path, 'w') as f:
             json.dump(results, f, indent=2)
-            
-    def generate_report(self):
-        """Generate optimization report."""
-        # Create visualization plots
-        self.optimizer.plot_importance()
-        self.optimizer.plot_optimization_history()
-        self.optimizer.plot_parallel_coordinate()
-```
-
-### 3. Distributed Optimization
-
-```python
-class DistributedOptimizer:
-    def __init__(self, n_workers=4):
-        self.n_workers = n_workers
-        self.study = optuna.create_study(
-            direction="minimize",
-            sampler=optuna.samplers.TPESampler(seed=42)
-        )
         
-    def run_distributed_optimization(self):
-        """Run distributed hyperparameter optimization."""
-        import multiprocessing as mp
-        
-        # Create worker processes
-        with mp.Pool(self.n_workers) as pool:
-            # Distribute trials across workers
-            results = pool.map(self.worker_function, range(self.n_workers))
-            
-        # Combine results
-        best_params = min(results, key=lambda x: x[1])[0]
-        return best_params
-        
-    def worker_function(self, worker_id):
-        """Worker function for distributed optimization."""
-        # Each worker runs a subset of trials
-        n_trials_per_worker = 25
-        
-        for i in range(n_trials_per_worker):
-            trial = self.study.ask()
-            params = self.define_hyperparameters(trial)
-            score = self.evaluate_params(params)
-            self.study.tell(trial, score)
-            
-        return self.study.best_params, self.study.best_value
+        # Save best config as YAML
+        config_path = output_path.replace('.json', '_best.yaml')
+        with open(config_path, 'w') as f:
+            yaml.dump(best_config, f, default_flow_style=False)
 ```
 
 ## Best Practices
 
-### 1. Search Space Design
+### 1. Start with Reasonable Ranges
 
-1. **Define appropriate ranges** for each hyperparameter
-2. **Use log scales** for learning rates and other multiplicative parameters
-3. **Consider parameter interactions** when defining the search space
-4. **Start with broad ranges** and narrow down based on results
+```python
+# Good starting ranges for NeMo RL
+learning_rate_range = (1e-6, 1e-4)  # Log scale
+dpo_beta_range = (0.05, 0.3)        # DPO KL penalty
+batch_size_range = (8, 32)           # Memory dependent
+weight_decay_range = (0.0, 0.1)     # Regularization
+```
 
-### 2. Optimization Strategy
+### 2. Use Log Scale for Multiplicative Parameters
 
-1. **Choose the right optimization method** for your problem
-2. **Use early pruning** to save computational resources
-3. **Implement multi-objective optimization** when multiple metrics matter
-4. **Consider transfer learning** from previous optimizations
+```python
+# Learning rate should use log scale
+lr_candidates = np.logspace(-6, -4, 10)  # 10 values from 1e-6 to 1e-4
 
-### 3. Evaluation Strategy
+# Beta can use linear scale
+beta_candidates = np.linspace(0.05, 0.3, 6)  # 6 values from 0.05 to 0.3
+```
 
-1. **Use cross-validation** for robust evaluation
-2. **Implement proper train/validation/test splits**
-3. **Consider computational cost** in evaluation strategy
-4. **Use appropriate metrics** for your specific task
+### 3. Consider Hardware Constraints
 
-### 4. Monitoring and Analysis
+```python
+def check_memory_constraints(config):
+    """Check if configuration fits in available memory."""
+    batch_size = config['policy']['train_global_batch_size']
+    seq_length = config['policy']['max_total_sequence_length']
+    
+    # Rough memory estimation
+    estimated_memory_gb = (batch_size * seq_length * 2) / 1e9
+    
+    return estimated_memory_gb < available_memory_gb
+```
 
-1. **Monitor optimization progress** continuously
-2. **Analyze hyperparameter importance** to understand your model
-3. **Visualize optimization results** for insights
-4. **Document optimization process** for reproducibility
+### 4. Monitor Key Metrics
 
-### 5. Research Rigor
-
-1. **Use statistical tests** to compare optimization methods
-2. **Report effect sizes** for meaningful comparisons
-3. **Ensure reproducibility** with proper seeding
-4. **Document experimental design** thoroughly
+```python
+def log_optimization_metrics(logger, config, metrics):
+    """Log metrics during optimization."""
+    logger.log({
+        'learning_rate': config['policy']['optimizer']['kwargs']['lr'],
+        'dpo_beta': config['dpo']['reference_policy_kl_penalty'],
+        'batch_size': config['policy']['train_global_batch_size'],
+        'validation_loss': metrics['val_loss'],
+        'reward_gap': metrics.get('reward_gap', 0),
+        'training_time': metrics.get('training_time', 0)
+    })
+```
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Optimization Not Converging**
+1. **Out of Memory Errors**
    ```python
-   # Increase number of trials
-   n_trials = 200  # Increase from 100
-   
-   # Adjust search space
-   learning_rate_range = (1e-7, 1e-2)  # Broader range
+   # Reduce batch size
+   config['policy']['train_global_batch_size'] = 8
+   config['policy']['train_micro_batch_size'] = 1
    ```
 
-2. **Computational Budget Exceeded**
+2. **Training Instability**
    ```python
-   # Use early pruning
-   pruner = optuna.pruners.MedianPruner(
-       n_startup_trials=3,
-       n_warmup_steps=5
-   )
+   # Reduce learning rate
+   config['policy']['optimizer']['kwargs']['lr'] = 1e-6
    
-   # Reduce evaluation frequency
-   eval_steps = 100  # Evaluate less frequently
+   # Increase gradient clipping
+   config['policy']['max_grad_norm'] = 0.5
    ```
 
-3. **Poor Hyperparameter Importance**
+3. **Poor DPO Performance**
    ```python
-   # Increase number of trials for better analysis
-   n_trials = 500  # More trials for reliable importance
+   # Adjust beta parameter
+   config['dpo']['reference_policy_kl_penalty'] = 0.2
    
-   # Use more diverse search space
-   broader_ranges = True
+   # Balance loss weights
+   config['dpo']['preference_loss_weight'] = 1.0
+   config['dpo']['sft_loss_weight'] = 0.1
    ```
 
-4. **Overfitting to Validation Set**
+4. **Slow Convergence**
    ```python
-   # Use nested cross-validation
-   cv_folds = 5
+   # Increase learning rate
+   config['policy']['optimizer']['kwargs']['lr'] = 5e-5
    
-   # Use separate test set
-   holdout_test_set = True
+   # Adjust scheduler
+   config['policy']['scheduler'][0]['kwargs']['total_iters'] = 100
    ```
 
 ## Next Steps
 
-- [Multi-Objective Training](multi-objective-training) - Learn multi-objective optimization
-- [Loss Functions](loss-functions) - Design custom objectives
-- [Curriculum Learning](curriculum-learning) - Progressive training strategies
-- [Advanced Performance](../performance/index) - Performance optimization 
+- Learn about [Loss Functions](loss-functions) for advanced loss customization
+- Review [Mathematical Foundations](mathematical-foundations) for theoretical understanding
+- Explore [Performance & Scaling](../performance/index) for training optimization
+- Study [Troubleshooting](../../guides/troubleshooting) for common issues 

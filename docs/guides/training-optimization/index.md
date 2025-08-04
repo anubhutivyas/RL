@@ -93,7 +93,7 @@ These techniques are essential when:
 
 ## Next Steps
 
-- [Advanced Training Techniques](../../advanced/training/index.md) - Advanced training methods
+- [Advanced Training Techniques](../../advanced/algorithm-development/index.md) - Advanced training methods
 - [Performance Optimization](../../advanced/performance/index.md) - Performance tuning
 - [Research Methodologies](../../advanced/research/index.md) - Research best practices 
 

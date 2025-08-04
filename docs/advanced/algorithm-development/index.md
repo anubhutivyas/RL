@@ -1,5 +1,5 @@
 ---
-description: "Advanced algorithm development and theoretical foundations for NeMo RL. Learn sophisticated approaches for custom algorithms, mathematical foundations, loss functions, multi-objective optimization, and curriculum learning."
+description: "Advanced algorithm development and theoretical foundations for NeMo RL. Learn sophisticated approaches for custom algorithms, mathematical foundations, loss functions, and hyperparameter optimization."
 categories: ["research-advanced"]
 tags: ["advanced", "algorithms", "performance", "research", "deployment", "reinforcement-learning"]
 personas: ["researcher-focused", "mle-focused"]
@@ -10,7 +10,7 @@ modality: "universal"
 
 # Advanced Algorithm Development
 
-Advanced algorithm development and theoretical foundations for NeMo RL. Learn sophisticated approaches for custom algorithms, mathematical foundations, loss functions, multi-objective optimization, and curriculum learning.
+Advanced algorithm development and theoretical foundations for NeMo RL. Learn sophisticated approaches for custom algorithms, mathematical foundations, loss functions, and hyperparameter optimization.
 
 ## What You'll Find Here
 
@@ -22,21 +22,18 @@ Core mathematical foundations and theoretical concepts that underpin all NeMo RL
 ### **Loss Functions**
 Comprehensive guide to loss functions in NeMo RL, from mathematical foundations and design principles to practical implementation and optimization strategies.
 
-### **Multi-Objective Training and Optimization**
-Learn to combine multiple loss functions and objectives in a single training pipeline. Balance competing objectives like accuracy, efficiency, and safety while maintaining training stability.
-
-### **Curriculum Learning**
-Implement progressive difficulty scheduling to improve training efficiency and model performance. Design adaptive curricula that respond to model progress and learning dynamics.
-
 ### **Custom Algorithm Development**
-Learn to develop custom algorithms for specialized use cases, including custom DPO and GRPO implementations.
+Learn to develop custom algorithms for specialized use cases, including custom DPO implementations using real NeMo RL patterns.
+
+### **Hyperparameter Optimization**
+Systematic approaches to finding optimal training configurations using the actual hyperparameters and configuration patterns from the NeMo RL codebase.
 
 ## Core Topics
 
-::::{grid} 1 2 2 2
+::::{grid} 4
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`function;1.5em;sd-mr-1` Mathematical Foundations
+:::{grid-item-card} {octicon}`code;1.5em;sd-mr-1` Mathematical Foundations
 :link: mathematical-foundations
 :link-type: doc
 
@@ -56,55 +53,21 @@ Comprehensive guide to loss function design, implementation, and optimization.
 {bdg-warning}`Advanced`
 :::
 
-::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Multi-Objective Training
-:link: multi-objective-training
-:link-type: doc
-
-Combine multiple objectives in a single training pipeline with dynamic weight balancing.
-
-++++
-{bdg-warning}`Advanced`
-:::
-
-::{grid-item-card} {octicon}`mortar-board;1.5em;sd-mr-1` Curriculum Learning
-:link: curriculum-learning
-:link-type: doc
-
-Design curricula that progressively increase task complexity based on model performance.
-
-++++
-{bdg-info}`Strategy`
-:::
-
-:::::
-
-## Custom Algorithm Development
-
-::::{grid} 1 2 2 2
-:gutter: 2 2 2 2
-
-:::{grid-item-card} {octicon}`code;1.5em;sd-mr-1` Custom Algorithm Implementation
+:::{grid-item-card} {octicon}`code;1.5em;sd-mr-1` Custom DPO Implementation
 :link: custom-dpo
 :link-type: doc
 
-Implement custom DPO and GRPO algorithms for specialized use cases.
+Implement custom DPO algorithms for specialized use cases using real NeMo RL patterns.
 
 ++++
 {bdg-warning}`Advanced`
 :::
-
-:::::
-
-## Hyperparameter Optimization
-
-::::{grid} 1 2 2 2
-:gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`search;1.5em;sd-mr-1` Hyperparameter Optimization
 :link: hyperparameter-optimization
 :link-type: doc
 
-Systematic approaches to finding optimal training configurations using advanced optimization techniques.
+Systematic approaches to finding optimal training configurations using actual NeMo RL hyperparameters.
 
 ++++
 {bdg-info}`Optimization`
@@ -112,4 +75,57 @@ Systematic approaches to finding optimal training configurations using advanced 
 
 :::::
 
+## Custom Algorithm Development
+
+::::{grid} 2
+:gutter: 2 2 2 2
+
+:::{grid-item-card} {octicon}`code;1.5em;sd-mr-1` Custom DPO Implementation
+:link: custom-dpo
+:link-type: doc
+
+Implement custom DPO algorithms for specialized use cases using real NeMo RL patterns.
+
+++++
+{bdg-warning}`Advanced`
+:::
+
+:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Hyperparameter Optimization
+:link: hyperparameter-optimization
+:link-type: doc
+
+Optimize training configurations using actual NeMo RL hyperparameters and configuration patterns.
+
+++++
+{bdg-info}`Optimization`
+:::
+
+:::::
+
+## Key Features
+
+### **Real Codebase Integration**
+All examples and configurations are based on actual NeMo RL codebase patterns, ensuring you can directly apply what you learn.
+
+### **Mathematical Rigor**
+Deep theoretical foundations with practical implementations, helping you understand both the "why" and "how" of algorithm design.
+
+### **Practical Optimization**
+Learn hyperparameter optimization techniques that work with real NeMo RL configurations and constraints.
+
+### **Custom Algorithm Development**
+Extend and customize algorithms for your specific use cases while maintaining compatibility with the NeMo RL framework.
+
 For additional learning resources, visit the main [Advanced](../index) page.
+
+---
+
+::::{toctree}
+:hidden:
+:caption: Algorithm Development
+:maxdepth: 2
+mathematical-foundations
+loss-functions
+custom-dpo
+hyperparameter-optimization
+:::::

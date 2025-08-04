@@ -4,653 +4,482 @@ tags: ["dpo", "customization", "algorithms", "reinforcement-learning"]
 categories: ["algorithm-customization"]
 ---
 
-# Custom Algorithm Implementation
+# Custom DPO Implementation
 
-This comprehensive guide covers how to extend and customize Direct Preference Optimization (DPO) and Group Relative Policy Optimization (GRPO) for specific use cases and domains in NeMo RL.
+This guide covers how to customize Direct Preference Optimization (DPO) for specific use cases and domains in NeMo RL using the actual codebase patterns.
 
 ## Overview
 
-NeMo RL provides flexible frameworks for customizing both DPO and GRPO algorithms to suit your specific requirements. This guide covers custom implementations for both algorithms, including domain-specific adaptations and advanced customizations.
+NeMo RL provides a flexible DPO implementation that you can extend for domain-specific requirements. This guide shows how to work with the actual `DPOLossFn` class and `dpo_train` function.
 
-## Custom DPO Implementation
+## Core DPO Components
 
-### Key Components
+### Loss Function Structure
 
-#### Loss Function Customization
-
-The core of DPO is the preference loss function. You can customize this for different use cases:
+The main DPO loss function is implemented in `DPOLossFn`:
 
 ```python
-import torch
-from nemo_rl.algorithms.dpo import DPOTrainer
+from nemo_rl.algorithms.loss_functions import DPOLossFn, DPOLossConfig
 
-class CustomDPOTrainer(DPOTrainer):
-    def compute_loss(self, policy_chosen_logps, policy_rejected_logps, 
-                    reference_chosen_logps, reference_rejected_logps):
+# Real DPO loss configuration using TypedDict
+dpo_config = DPOLossConfig(
+    reference_policy_kl_penalty=0.1,  # Beta parameter
+    preference_loss_weight=1.0,       # Weight for preference loss
+    sft_loss_weight=0.1,              # Weight for SFT loss
+    preference_average_log_probs=True, # Average log probs across tokens
+    sft_average_log_probs=True        # Average SFT loss across tokens
+)
+
+# Initialize DPO loss function
+dpo_loss_fn = DPOLossFn(dpo_config)
+```
+
+### Training Setup
+
+The DPO training pipeline uses these real components:
+
+```python
+from nemo_rl.algorithms.dpo import setup, dpo_train
+from nemo_rl.data.datasets import AllTaskProcessedDataset
+from transformers import AutoTokenizer
+
+# Setup DPO training
+policy, cluster, train_dataloader, val_dataloader, loss_fn, master_config, logger, task_spec, save_state = setup(
+    master_config=config,
+    tokenizer=tokenizer,
+    train_dataset=train_dataset,
+    val_dataset=val_dataset
+)
+
+# Run DPO training
+dpo_train(
+    policy=policy,
+    train_dataloader=train_dataloader,
+    val_dataloader=val_dataloader,
+    tokenizer=tokenizer,
+    loss_fn=loss_fn,
+    master_config=master_config,
+    logger=logger,
+    checkpointer=checkpointer,
+    dpo_save_state=save_state
+)
+```
+
+## Custom DPO Configurations
+
+### Domain-Specific Beta Values
+
+Adjust the KL penalty (beta) for different domains:
+
+```yaml
+# configs/dpo_math_reasoning.yaml
+dpo:
+  reference_policy_kl_penalty: 0.2  # Higher beta for math reasoning
+  preference_loss_weight: 1.0
+  sft_loss_weight: 0.2  # Stronger SFT component for math
+  preference_average_log_probs: true
+  sft_average_log_probs: true
+  max_num_epochs: 3
+  max_num_steps: 1000
+  val_period: 100
+  val_batches: 5
+  val_global_batch_size: 32
+  val_micro_batch_size: 8
+  val_at_start: true
+  seed: 42
+```
+
+```yaml
+# configs/dpo_code_generation.yaml
+dpo:
+  reference_policy_kl_penalty: 0.05  # Lower beta for code generation
+  preference_loss_weight: 1.0
+  sft_loss_weight: 0.05  # Weaker SFT component
+  preference_average_log_probs: false  # Sum across tokens for code
+  sft_average_log_probs: false
+  max_num_epochs: 2
+  max_num_steps: 800
+  val_period: 50
+  val_batches: 3
+  val_global_batch_size: 16
+  val_micro_batch_size: 4
+  val_at_start: true
+  seed: 42
+```
+
+### Custom Loss Weight Configurations
+
+```yaml
+# configs/dpo_balanced.yaml
+dpo:
+  reference_policy_kl_penalty: 0.1
+  preference_loss_weight: 1.0
+  sft_loss_weight: 0.1  # Balanced preference and SFT
+  preference_average_log_probs: true
+  sft_average_log_probs: true
+  max_num_epochs: 3
+  max_num_steps: 1000
+  val_period: 100
+  val_batches: 5
+  val_global_batch_size: 32
+  val_micro_batch_size: 8
+  val_at_start: true
+  seed: 42
+```
+
+```yaml
+# configs/dpo_preference_focused.yaml
+dpo:
+  reference_policy_kl_penalty: 0.1
+  preference_loss_weight: 1.0
+  sft_loss_weight: 0.0  # Focus only on preference learning
+  preference_average_log_probs: true
+  sft_average_log_probs: true
+  max_num_epochs: 3
+  max_num_steps: 1000
+  val_period: 100
+  val_batches: 5
+  val_global_batch_size: 32
+  val_micro_batch_size: 8
+  val_at_start: true
+  seed: 42
+```
+
+## Real NeMo RL Integration Examples
+
+### Custom DPO Loss Function
+
+```python
+from nemo_rl.algorithms.loss_functions import DPOLossFn
+
+class CustomDPOLossFn(DPOLossFn):
+    """Custom DPO loss function with domain-specific modifications"""
+    
+    def __init__(self, cfg: dict):
+        super().__init__(cfg)
+        # Add custom modifications
+        self.custom_weight = cfg.get("custom_weight", 1.0)
+    
+    def __call__(self, next_token_logits, data, global_valid_seqs, global_valid_toks, 
+                 vocab_parallel_rank=None, vocab_parallel_group=None):
         """
-        Custom DPO loss implementation
+        Custom DPO loss computation
         """
-        # Your custom loss logic here
-        chosen_rewards = policy_chosen_logps - reference_chosen_logps
-        rejected_rewards = policy_rejected_logps - reference_rejected_logps
+        # Call parent implementation
+        loss, metrics = super().__call__(
+            next_token_logits, data, global_valid_seqs, global_valid_toks,
+            vocab_parallel_rank, vocab_parallel_group
+        )
         
-        # Custom loss calculation
-        losses = -torch.nn.functional.logsigmoid(chosen_rewards - rejected_rewards)
-        return losses.mean()
-```
-
-#### Domain-Specific Adaptations
-
-##### Mathematical Reasoning
-
-For mathematical reasoning tasks, you might want to customize the reward calculation:
-
-```python
-def math_reasoning_loss(self, chosen_logps, rejected_logps, 
-                       reference_chosen_logps, reference_rejected_logps):
-    """
-    DPO loss optimized for mathematical reasoning
-    """
-    # Weight mathematical correctness more heavily
-    math_weight = 2.0
+        # Add custom loss component
+        custom_loss = self.compute_custom_loss(data)
+        total_loss = loss + self.custom_weight * custom_loss
+        
+        # Update metrics
+        metrics["custom_loss"] = custom_loss.item()
+        metrics["total_loss"] = total_loss.item()
+        
+        return total_loss, metrics
     
-    chosen_rewards = (chosen_logps - reference_chosen_logps) * math_weight
-    rejected_rewards = (rejected_logps - reference_rejected_logps) * math_weight
-    
-    losses = -torch.nn.functional.logsigmoid(chosen_rewards - rejected_rewards)
-    return losses.mean()
-```
-
-##### Code Generation
-
-For code generation tasks, consider syntax-aware rewards:
-
-```python
-def code_generation_loss(self, chosen_logps, rejected_logps,
-                        reference_chosen_logps, reference_rejected_logps,
-                        syntax_scores):
-    """
-    DPO loss with syntax-aware rewards for code generation
-    """
-    # Incorporate syntax correctness
-    chosen_rewards = (chosen_logps - reference_chosen_logps) + syntax_scores
-    rejected_rewards = (rejected_logps - reference_rejected_logps)
-    
-    losses = -torch.nn.functional.logsigmoid(chosen_rewards - rejected_rewards)
-    return losses.mean()
-```
-
-### Advanced DPO Customizations
-
-#### Multi-Objective DPO
-
-Combine multiple objectives in your DPO loss:
-
-```python
-def multi_objective_dpo_loss(self, chosen_logps, rejected_logps,
-                            reference_chosen_logps, reference_rejected_logps,
-                            additional_metrics):
-    """
-    DPO loss with multiple objectives
-    """
-    # Standard DPO loss
-    dpo_loss = self.standard_dpo_loss(chosen_logps, rejected_logps,
-                                     reference_chosen_logps, reference_rejected_logps)
-    
-    # Additional objectives
-    fluency_loss = self.compute_fluency_loss(chosen_logps)
-    coherence_loss = self.compute_coherence_loss(additional_metrics)
-    
-    # Combine losses
-    total_loss = dpo_loss + 0.1 * fluency_loss + 0.2 * coherence_loss
-    return total_loss
-```
-
-#### Adaptive Beta Scheduling
-
-Implement dynamic beta scheduling for better training:
-
-```python
-def adaptive_beta_schedule(self, step, total_steps):
-    """
-    Adaptive beta scheduling for DPO
-    """
-    # Start with high beta, decrease over time
-    initial_beta = 0.2
-    final_beta = 0.05
-    
-    progress = step / total_steps
-    beta = initial_beta + (final_beta - initial_beta) * progress
-    
-    return beta
-```
-
-## Custom GRPO Implementation
-
-### Key Components
-
-#### Group Formation Strategies
-
-GRPO relies on effective group formation. You can customize this for different use cases:
-
-```python
-import torch
-from nemo_rl.algorithms.grpo import GRPOTrainer
-
-class CustomGRPOTrainer(GRPOTrainer):
-    def form_groups(self, batch_size, group_size=4):
+    def compute_custom_loss(self, data):
         """
-        Custom group formation strategy
+        Compute custom loss component
         """
-        # Random group formation
-        indices = torch.randperm(batch_size)
-        groups = []
-        
-        for i in range(0, batch_size, group_size):
-            group = indices[i:i + group_size]
-            if len(group) == group_size:
-                groups.append(group)
-        
-        return groups
+        # Example: Add regularization based on response length
+        # This is a simplified example
+        return torch.tensor(0.0, device=next(self.parameters()).device)
 ```
 
-#### Domain-Specific Grouping
-
-##### Semantic Grouping
-
-For language tasks, group by semantic similarity:
+### Domain-Specific Training Setup
 
 ```python
-def semantic_grouping(self, embeddings, batch_size, group_size=4):
+from nemo_rl.algorithms.dpo import setup, dpo_train
+from nemo_rl.data.datasets import AllTaskProcessedDataset
+from transformers import AutoTokenizer
+
+def setup_domain_specific_dpo(domain: str, config_path: str):
     """
-    Group samples by semantic similarity
+    Setup domain-specific DPO training
     """
-    # Compute pairwise similarities
-    similarities = torch.mm(embeddings, embeddings.t())
+    # Load configuration
+    config = load_config(config_path)
     
-    # Form groups based on similarity
-    groups = []
-    used_indices = set()
+    # Modify configuration based on domain
+    if domain == "math_reasoning":
+        config["dpo"]["reference_policy_kl_penalty"] = 0.2
+        config["dpo"]["sft_loss_weight"] = 0.2
+    elif domain == "code_generation":
+        config["dpo"]["reference_policy_kl_penalty"] = 0.05
+        config["dpo"]["sft_loss_weight"] = 0.05
+        config["dpo"]["preference_average_log_probs"] = False
+    elif domain == "creative_writing":
+        config["dpo"]["reference_policy_kl_penalty"] = 0.15
+        config["dpo"]["sft_loss_weight"] = 0.0  # Focus on preference only
     
-    for i in range(batch_size):
-        if i in used_indices:
-            continue
-            
-        # Find most similar samples
-        sim_scores = similarities[i]
-        similar_indices = torch.argsort(sim_scores, descending=True)[:group_size]
-        
-        # Filter unused indices
-        group = [idx.item() for idx in similar_indices if idx.item() not in used_indices]
-        
-        if len(group) == group_size:
-            groups.append(torch.tensor(group))
-            used_indices.update(group)
-    
-    return groups
-```
-
-##### Performance-Based Grouping
-
-Group by performance characteristics:
-
-```python
-def performance_grouping(self, rewards, batch_size, group_size=4):
-    """
-    Group samples by performance levels
-    """
-    # Sort by reward values
-    sorted_indices = torch.argsort(rewards, descending=True)
-    
-    groups = []
-    for i in range(0, batch_size, group_size):
-        group = sorted_indices[i:i + group_size]
-        if len(group) == group_size:
-            groups.append(group)
-    
-    return groups
-```
-
-### Advanced GRPO Customizations
-
-#### Adaptive Group Formation
-
-Implement dynamic group formation based on training progress:
-
-```python
-def adaptive_grouping(self, step, total_steps, embeddings, rewards):
-    """
-    Adaptive group formation strategy
-    """
-    progress = step / total_steps
-    
-    if progress < 0.3:
-        # Early training: random grouping
-        return self.random_grouping(len(embeddings))
-    elif progress < 0.7:
-        # Mid training: performance-based grouping
-        return self.performance_grouping(rewards)
-    else:
-        # Late training: semantic grouping
-        return self.semantic_grouping(embeddings)
-```
-
-#### Multi-Objective Grouping
-
-Combine multiple criteria for group formation:
-
-```python
-def multi_criteria_grouping(self, embeddings, rewards, diversity_scores):
-    """
-    Group formation using multiple criteria
-    """
-    # Normalize different metrics
-    norm_embeddings = F.normalize(embeddings, dim=1)
-    norm_rewards = (rewards - rewards.mean()) / rewards.std()
-    norm_diversity = (diversity_scores - diversity_scores.mean()) / diversity_scores.std()
-    
-    # Combined similarity score
-    combined_scores = (
-        0.4 * torch.mm(norm_embeddings, norm_embeddings.t()) +
-        0.3 * torch.abs(norm_rewards.unsqueeze(1) - norm_rewards.unsqueeze(0)) +
-        0.3 * torch.abs(norm_diversity.unsqueeze(1) - norm_diversity.unsqueeze(0))
+    # Setup training components
+    policy, cluster, train_dataloader, val_dataloader, loss_fn, master_config, logger, task_spec, save_state = setup(
+        master_config=config,
+        tokenizer=tokenizer,
+        train_dataset=train_dataset,
+        val_dataset=val_dataset
     )
     
-    return self.form_groups_from_similarity(combined_scores)
+    return {
+        'policy': policy,
+        'cluster': cluster,
+        'train_dataloader': train_dataloader,
+        'val_dataloader': val_dataloader,
+        'loss_fn': loss_fn,
+        'master_config': master_config,
+        'logger': logger,
+        'task_spec': task_spec,
+        'save_state': save_state
+    }
+
+def run_domain_specific_training(domain: str, config_path: str):
+    """
+    Run domain-specific DPO training
+    """
+    # Setup training
+    components = setup_domain_specific_dpo(domain, config_path)
+    
+    # Run training
+    dpo_train(
+        policy=components['policy'],
+        train_dataloader=components['train_dataloader'],
+        val_dataloader=components['val_dataloader'],
+        tokenizer=tokenizer,
+        loss_fn=components['loss_fn'],
+        master_config=components['master_config'],
+        logger=components['logger'],
+        checkpointer=checkpointer,
+        dpo_save_state=components['save_state']
+    )
 ```
 
-#### Custom Loss Functions
+## Configuration Examples
 
-Extend GRPO with custom loss functions:
-
-```python
-def custom_grpo_loss(self, policy_logps, value_preds, advantages, 
-                     old_policy_logps, returns, groups):
-    """
-    Custom GRPO loss with group-aware components
-    """
-    # Standard PPO loss
-    ratio = torch.exp(policy_logps - old_policy_logps)
-    surr1 = ratio * advantages
-    surr2 = torch.clamp(ratio, 1 - self.clip_ratio, 1 + self.clip_ratio) * advantages
-    policy_loss = -torch.min(surr1, surr2).mean()
-    
-    # Value loss
-    value_loss = F.mse_loss(value_preds, returns)
-    
-    # Group-aware regularization
-    group_loss = self.compute_group_loss(groups, policy_logps)
-    
-    # Combine losses
-    total_loss = policy_loss + 0.5 * value_loss + 0.1 * group_loss
-    return total_loss
-```
-
-## Configuration
-
-### Custom DPO Configuration
+### Math Reasoning DPO Configuration
 
 ```yaml
-# configs/custom_dpo.yaml
-algorithm:
-  name: custom_dpo
-  beta: 0.1  # DPO temperature parameter
+# configs/dpo_math_reasoning.yaml
+dpo:
+  max_num_epochs: 3
+  max_num_steps: 1000
+  val_period: 100
+  val_batches: 5
+  val_global_batch_size: 32
+  val_micro_batch_size: 8
+  val_at_start: true
+  seed: 42
   
-  # Custom loss configuration
-  loss:
-    type: custom_math_reasoning
-    math_weight: 2.0
-    syntax_weight: 1.5
-    
-  # Training parameters
-  learning_rate: 1e-5
+  # Math-specific parameters
+  reference_policy_kl_penalty: 0.2  # Higher beta for precise reasoning
+  preference_loss_weight: 1.0
+  sft_loss_weight: 0.2  # Stronger SFT for accuracy
+  preference_average_log_probs: true
+  sft_average_log_probs: true
+
+policy:
+  model_name: "microsoft/DialoGPT-medium"
+  max_total_sequence_length: 2048
+  precision: "bfloat16"
+  
+  optimizer:
+    name: "torch.optim.AdamW"
+    kwargs:
+      lr: 1e-5
+      weight_decay: 0.01
+      betas: [0.9, 0.999]
+      eps: 1e-8
+  
+  scheduler:
+    - name: "torch.optim.lr_scheduler.LinearLR"
+      kwargs:
+        start_factor: 0.1
+        end_factor: 1.0
+        total_iters: 50
+    - name: "torch.optim.lr_scheduler.ConstantLR"
+      kwargs:
+        factor: 1.0
+        total_iters: 10000000000
+    - milestones: [50]
+  
+  train_global_batch_size: 16
+  train_micro_batch_size: 1
   max_grad_norm: 1.0
-  warmup_steps: 100
+
+logger:
+  log_dir: "logs"
+  wandb_enabled: true
+  tensorboard_enabled: true
+  wandb:
+    project: "dpo-math-reasoning"
+    name: "math-reasoning-experiment"
 ```
 
-### Custom GRPO Configuration
+### Code Generation DPO Configuration
 
 ```yaml
-# configs/custom_grpo.yaml
-algorithm:
-  name: custom_grpo
-  group_size: 4
-  group_strategy: semantic  # or performance, random
+# configs/dpo_code_generation.yaml
+dpo:
+  max_num_epochs: 2
+  max_num_steps: 800
+  val_period: 50
+  val_batches: 3
+  val_global_batch_size: 16
+  val_micro_batch_size: 4
+  val_at_start: true
+  seed: 42
   
-  # Group formation parameters
-  grouping:
-    similarity_threshold: 0.8
-    max_group_size: 6
-    min_group_size: 2
-    
-  # Training parameters
-  learning_rate: 3e-4
-  clip_ratio: 0.2
-  value_loss_coef: 0.5
-  entropy_coef: 0.01
-```
+  # Code-specific parameters
+  reference_policy_kl_penalty: 0.05  # Lower beta for creative code
+  preference_loss_weight: 1.0
+  sft_loss_weight: 0.05  # Weaker SFT for creativity
+  preference_average_log_probs: false  # Sum across tokens
+  sft_average_log_probs: false
 
-### Integration with Training Pipeline
+policy:
+  model_name: "microsoft/DialoGPT-medium"
+  max_total_sequence_length: 2048
+  precision: "bfloat16"
+  
+  optimizer:
+    name: "torch.optim.AdamW"
+    kwargs:
+      lr: 2e-5  # Slightly higher learning rate
+      weight_decay: 0.01
+      betas: [0.9, 0.999]
+      eps: 1e-8
+  
+  scheduler:
+    - name: "torch.optim.lr_scheduler.LinearLR"
+      kwargs:
+        start_factor: 0.1
+        end_factor: 1.0
+        total_iters: 40
+    - name: "torch.optim.lr_scheduler.ConstantLR"
+      kwargs:
+        factor: 1.0
+        total_iters: 10000000000
+    - milestones: [40]
+  
+  train_global_batch_size: 8
+  train_micro_batch_size: 1
+  max_grad_norm: 1.0
 
-```python
-from nemo_rl.algorithms.dpo import DPOTrainer
-from nemo_rl.algorithms.grpo import GRPOTrainer
-from nemo_rl.data import PreferenceDataset
-
-# Initialize custom trainers
-dpo_trainer = CustomDPOTrainer(
-    model=model,
-    tokenizer=tokenizer,
-    config=dpo_config
-)
-
-grpo_trainer = CustomGRPOTrainer(
-    model=model,
-    tokenizer=tokenizer,
-    config=grpo_config
-)
-
-# Load preference data
-dataset = PreferenceDataset(
-    chosen_data=chosen_responses,
-    rejected_data=rejected_responses
-)
-
-# Train with custom algorithms
-dpo_trainer.train(dataset)
-grpo_trainer.train(dataset)
-```
-
-## Complete Examples
-
-### Example: Custom DPO for Math Reasoning
-
-Here's a complete example of customizing DPO for mathematical reasoning:
-
-```python
-import torch
-import torch.nn.functional as F
-from nemo_rl.algorithms.dpo import DPOTrainer
-
-class MathDPOTrainer(DPOTrainer):
-    def __init__(self, *args, math_weight=2.0, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.math_weight = math_weight
-    
-    def compute_loss(self, policy_chosen_logps, policy_rejected_logps,
-                    reference_chosen_logps, reference_rejected_logps,
-                    math_correctness=None):
-        """
-        DPO loss with mathematical reasoning emphasis
-        """
-        # Standard DPO rewards
-        chosen_rewards = policy_chosen_logps - reference_chosen_logps
-        rejected_rewards = policy_rejected_logps - reference_rejected_logps
-        
-        # Add mathematical correctness if available
-        if math_correctness is not None:
-            chosen_rewards += self.math_weight * math_correctness
-        
-        # Compute DPO loss
-        losses = -F.logsigmoid(chosen_rewards - rejected_rewards)
-        
-        return losses.mean()
-    
-    def train_step(self, batch):
-        """
-        Custom training step with math reasoning
-        """
-        # Extract math correctness scores
-        math_correctness = batch.get('math_correctness', None)
-        
-        # Compute loss with math emphasis
-        loss = self.compute_loss(
-            batch['policy_chosen_logps'],
-            batch['policy_rejected_logps'],
-            batch['reference_chosen_logps'],
-            batch['reference_rejected_logps'],
-            math_correctness
-        )
-        
-        return loss
-```
-
-### Example: Custom GRPO for Dialogue Systems
-
-Here's a complete example of customizing GRPO for dialogue systems:
-
-```python
-import torch
-import torch.nn.functional as F
-from nemo_rl.algorithms.grpo import GRPOTrainer
-
-class DialogueGRPOTrainer(GRPOTrainer):
-    def __init__(self, *args, dialogue_weight=1.5, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.dialogue_weight = dialogue_weight
-    
-    def form_dialogue_groups(self, responses, batch_size, group_size=4):
-        """
-        Group dialogue responses by conversation context
-        """
-        # Extract conversation contexts
-        contexts = self.extract_contexts(responses)
-        
-        # Group by context similarity
-        context_embeddings = self.encode_contexts(contexts)
-        similarities = torch.mm(context_embeddings, context_embeddings.t())
-        
-        groups = []
-        used_indices = set()
-        
-        for i in range(batch_size):
-            if i in used_indices:
-                continue
-                
-            # Find similar contexts
-            sim_scores = similarities[i]
-            similar_indices = torch.argsort(sim_scores, descending=True)[:group_size]
-            
-            group = [idx.item() for idx in similar_indices if idx.item() not in used_indices]
-            
-            if len(group) == group_size:
-                groups.append(torch.tensor(group))
-                used_indices.update(group)
-        
-        return groups
-    
-    def compute_dialogue_loss(self, policy_logps, value_preds, advantages,
-                             old_policy_logps, returns, groups, dialogue_metrics):
-        """
-        GRPO loss optimized for dialogue systems
-        """
-        # Standard GRPO loss
-        base_loss = self.compute_grpo_loss(policy_logps, value_preds, advantages,
-                                          old_policy_logps, returns, groups)
-        
-        # Dialogue-specific components
-        coherence_loss = self.compute_coherence_loss(dialogue_metrics)
-        engagement_loss = self.compute_engagement_loss(dialogue_metrics)
-        
-        # Combine losses
-        total_loss = base_loss + self.dialogue_weight * (coherence_loss + engagement_loss)
-        return total_loss
-    
-    def train_step(self, batch):
-        """
-        Custom training step for dialogue GRPO
-        """
-        # Form dialogue-specific groups
-        groups = self.form_dialogue_groups(batch['responses'])
-        
-        # Extract dialogue metrics
-        dialogue_metrics = self.extract_dialogue_metrics(batch)
-        
-        # Compute custom loss
-        loss = self.compute_dialogue_loss(
-            batch['policy_logps'],
-            batch['value_preds'],
-            batch['advantages'],
-            batch['old_policy_logps'],
-            batch['returns'],
-            groups,
-            dialogue_metrics
-        )
-        
-        return loss
+logger:
+  log_dir: "logs"
+  wandb_enabled: true
+  tensorboard_enabled: true
+  wandb:
+    project: "dpo-code-generation"
+    name: "code-generation-experiment"
 ```
 
 ## Best Practices
 
-### 1. Start with Standard Implementations
+### 1. Domain-Specific Beta Selection
 
-Always begin with the standard implementations before customizing:
-
-```python
-# Start with standard algorithms
-dpo_trainer = DPOTrainer(model, tokenizer, config)
-grpo_trainer = GRPOTrainer(model, tokenizer, config)
-```
-
-### 2. Validate Custom Losses
-
-Ensure your custom loss functions are numerically stable:
+Choose beta values based on your domain:
 
 ```python
-def validate_loss(self, loss_value):
+def select_beta_for_domain(domain: str) -> float:
     """
-    Validate loss values for numerical stability
+    Select appropriate beta value for domain
     """
-    if torch.isnan(loss_value) or torch.isinf(loss_value):
-        raise ValueError("Loss is NaN or infinite")
-    
-    if loss_value < 0:
-        print("Warning: Negative loss value detected")
-```
-
-### 3. Monitor Training Dynamics
-
-Track key metrics during training:
-
-```python
-def log_training_metrics(self, loss, algorithm_type):
-    """
-    Log training metrics for monitoring
-    """
-    metrics = {
-        'loss': loss.item(),
-        'algorithm': algorithm_type
+    beta_values = {
+        "math_reasoning": 0.2,      # Higher for precise reasoning
+        "code_generation": 0.05,    # Lower for creative code
+        "creative_writing": 0.15,   # Medium for creativity
+        "factual_qa": 0.1,          # Standard for Q&A
+        "dialogue": 0.1,            # Standard for dialogue
     }
-    
-    if algorithm_type == 'dpo':
-        metrics.update({
-            'chosen_rewards_mean': self.chosen_rewards.mean().item(),
-            'rejected_rewards_mean': self.rejected_rewards.mean().item(),
-            'reward_gap': (self.chosen_rewards - self.rejected_rewards).mean().item()
-        })
-    elif algorithm_type == 'grpo':
-        metrics.update({
-            'group_quality': self.monitor_group_quality(),
-            'group_performance': self.group_performances.mean().item()
-        })
-    
-    self.logger.log(metrics)
+    return beta_values.get(domain, 0.1)
 ```
 
-### 4. Group Quality Monitoring (GRPO)
+### 2. Loss Weight Balancing
 
-Monitor group formation quality:
+Balance preference and SFT loss weights:
 
 ```python
-def monitor_group_quality(self, groups, embeddings):
+def balance_loss_weights(domain: str, config: dict) -> dict:
     """
-    Monitor the quality of formed groups
+    Balance loss weights for domain
     """
-    group_qualities = []
+    if domain == "math_reasoning":
+        config["dpo"]["sft_loss_weight"] = 0.2  # Stronger SFT
+    elif domain == "creative_writing":
+        config["dpo"]["sft_loss_weight"] = 0.0  # Focus on preference
+    elif domain == "code_generation":
+        config["dpo"]["sft_loss_weight"] = 0.05  # Weak SFT
     
-    for group in groups:
-        group_embeddings = embeddings[group]
-        centroid = group_embeddings.mean(dim=0)
-        
-        # Compute average distance to centroid
-        distances = torch.norm(group_embeddings - centroid, dim=1)
-        quality = 1.0 / (1.0 + distances.mean())
-        group_qualities.append(quality)
-    
-    return torch.tensor(group_qualities).mean()
+    return config
 ```
 
-### 5. Adaptive Training
+### 3. Validation Strategy
 
-Adjust training based on performance:
+Implement domain-specific validation:
 
 ```python
-def adaptive_training(self, performance_metrics, algorithm_type):
+def validate_domain_performance(policy, val_dataloader, domain: str):
     """
-    Adapt training based on performance
+    Validate domain-specific performance
     """
-    if algorithm_type == 'dpo':
-        reward_gap = performance_metrics.get('reward_gap', 0)
-        if reward_gap < 0.1:
-            # Poor reward separation: increase beta
-            self.beta *= 1.1
-        elif reward_gap > 0.5:
-            # Good reward separation: decrease beta
-            self.beta *= 0.9
+    # Run standard validation
+    val_metrics = validate(
+        policy=policy,
+        val_dataloader=val_dataloader,
+        tokenizer=tokenizer,
+        loss_fn=loss_fn,
+        step=step,
+        master_config=master_config,
+        val_batches=val_batches,
+        val_batch_size=val_batch_size,
+        val_mbs=val_mbs
+    )
     
-    elif algorithm_type == 'grpo':
-        group_performance = performance_metrics.get('group_performance', 0)
-        if group_performance < 0.5:
-            # Poor performance: increase learning rate
-            self.optimizer.param_groups[0]['lr'] *= 1.1
-        elif group_performance > 0.8:
-            # Good performance: decrease learning rate
-            self.optimizer.param_groups[0]['lr'] *= 0.9
+    # Add domain-specific metrics
+    if domain == "math_reasoning":
+        val_metrics["math_accuracy"] = compute_math_accuracy(policy, val_dataloader)
+    elif domain == "code_generation":
+        val_metrics["code_quality"] = compute_code_quality(policy, val_dataloader)
+    
+    return val_metrics
 ```
 
 ## Troubleshooting
 
-### Common Issues
+### Common DPO Customization Issues
 
-1. **Loss Explosion**: If loss values become very large, check your reward scaling
-2. **Training Instability**: Ensure your hyperparameters are appropriate for your domain
-3. **Poor Convergence**: Verify that your data quality is high
-4. **Poor Group Formation (GRPO)**: Ensure your grouping strategy matches your domain
-5. **Training Instability (GRPO)**: Check that group sizes are appropriate for your batch size
+1. **Loss Divergence**: Reduce beta value if loss diverges
+2. **Poor Convergence**: Increase SFT loss weight for better convergence
+3. **Overfitting**: Reduce training steps or increase validation frequency
 
 ### Debugging Tips
 
 ```python
-# Add debugging to your custom algorithms
-def debug_algorithm(self, algorithm_type, **kwargs):
+# Monitor DPO training progress
+def monitor_dpo_training(logger):
     """
-    Debug algorithm-specific components
+    Monitor DPO training with real NeMo RL logging
     """
-    if algorithm_type == 'dpo':
-        chosen_rewards = kwargs.get('chosen_rewards')
-        rejected_rewards = kwargs.get('rejected_rewards')
-        
-        print(f"Chosen rewards range: {chosen_rewards.min():.3f} to {chosen_rewards.max():.3f}")
-        print(f"Rejected rewards range: {rejected_rewards.min():.3f} to {rejected_rewards.max():.3f}")
-        print(f"Reward gap: {(chosen_rewards - rejected_rewards).mean():.3f}")
+    # Check loss components
+    preference_loss = logger.get_latest_metric("preference_loss")
+    sft_loss = logger.get_latest_metric("sft_loss")
+    total_loss = logger.get_latest_metric("loss")
     
-    elif algorithm_type == 'grpo':
-        groups = kwargs.get('groups')
-        embeddings = kwargs.get('embeddings')
-        
-        print(f"Number of groups: {len(groups)}")
-        print(f"Average group size: {sum(len(g) for g in groups) / len(groups):.2f}")
-        
-        # Check group diversity
-        for i, group in enumerate(groups):
-            group_emb = embeddings[group]
-            diversity = torch.std(group_emb).mean()
-            print(f"Group {i} diversity: {diversity:.3f}")
+    print(f"Preference Loss: {preference_loss:.4f}")
+    print(f"SFT Loss: {sft_loss:.4f}")
+    print(f"Total Loss: {total_loss:.4f}")
+    
+    # Check accuracy
+    accuracy = logger.get_latest_metric("accuracy")
+    print(f"Accuracy: {accuracy:.4f}")
 ```
 
 ## Next Steps
 
-- Learn about [Loss Functions](loss-functions) for more advanced customization
-- Explore [Multi-Objective Training](multi-objective-training) for complex objectives
-- Review [Performance & Scaling](../performance/index) for training optimization
-- Study [Mathematical Foundations](mathematical-foundations) for theoretical understanding 
+- Learn about [Model Evaluation](../research/model-evaluation-validation) for comprehensive assessment
+- Review [Experimental Design](../research/experimental-design-validation) for rigorous research
+- Explore [Performance Analysis](../research/performance-analysis) for result interpretation 

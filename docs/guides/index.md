@@ -1,7 +1,7 @@
 ---
 description: "Comprehensive collection of guides for mastering reinforcement learning with large language models using NeMo RL"
 categories: ["training-algorithms"]
-tags: ["guides", "training-algorithms", "model-development", "environment-data", "production-support", "reference"]
+tags: ["guides", "training-algorithms", "model-development", "environment-data", "reference"]
 personas: ["mle-focused", "researcher-focused", "admin-focused"]
 difficulty: "intermediate"
 content_type: "concept"
@@ -148,38 +148,8 @@ Comprehensive performance optimization and profiling techniques.
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`checklist;1.5em;sd-mr-1` Testing
-:link: production-support/testing
-:link-type: doc
-
-Comprehensive testing strategies including unit tests, functional tests, and metrics tracking.
-
-+++
-{bdg-success}`Quality`
-:::
-
-:::{grid-item-card} {octicon}`package;1.5em;sd-mr-1` Packaging
-:link: production-support/packaging
-:link-type: doc
-
-Package models and training code for deployment in production environments.
-
-+++
-{bdg-secondary}`Production`
-:::
-
-:::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` Documentation Development
-:link: production-support/documentation-development
-:link-type: doc
-
-Guidelines and best practices for developing and maintaining NeMo RL documentation.
-
-+++
-{bdg-info}`Docs`
-:::
-
 :::{grid-item-card} {octicon}`bug;1.5em;sd-mr-1` Troubleshooting
-:link: production-support/troubleshooting
+:link: troubleshooting
 :link-type: doc
 
 Resolve common problems and errors in production environments.
@@ -191,5 +161,3 @@ Resolve common problems and errors in production environments.
 ::::
 
 For additional learning resources, visit the main [Guides](../index) page.
-
----

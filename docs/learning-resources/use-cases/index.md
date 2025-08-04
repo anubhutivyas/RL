@@ -8,7 +8,7 @@ Our use cases provide comprehensive guides for applying NeMo RL to real-world pr
 
 - **Architectural Patterns**: Proven design patterns for specific domains
 - **Implementation Details**: Step-by-step implementation guidance
-- **Production Considerations**: Deployment and scaling strategies
+- **Training Considerations**: Distributed training and scaling strategies
 - **Performance Benchmarks**: Expected performance and optimization tips
 - **Best Practices**: Domain-specific recommendations and lessons learned
 
@@ -115,25 +115,25 @@ Analyze research papers, synthesize literature, and generate novel hypotheses.
 - **Automated Testing**: Systematic evaluation of model outputs
 - **Performance Monitoring**: Tracking model performance in production
 
-## Production Deployment
+## Training Optimization
 
 ### **Scalability Considerations**
-- **Model Serving**: Efficient inference deployment strategies
-- **Load Balancing**: Distributing requests across multiple model instances
-- **Caching**: Optimizing response times with intelligent caching
-- **Auto-scaling**: Dynamic resource allocation based on demand
+- **Distributed Training**: Efficient multi-GPU and multi-node training strategies
+- **Load Balancing**: Distributing training across multiple compute resources
+- **Memory Optimization**: Optimizing memory usage with gradient checkpointing
+- **Auto-scaling**: Dynamic resource allocation based on training needs
 
 ### **Monitoring and Observability**
-- **Performance Metrics**: Tracking response times, throughput, and accuracy
-- **Error Monitoring**: Detecting and alerting on model failures
-- **Usage Analytics**: Understanding how models are being used
+- **Training Metrics**: Tracking loss, reward, and convergence metrics
+- **Error Monitoring**: Detecting and alerting on training failures
+- **Usage Analytics**: Understanding how models are being trained
 - **A/B Testing**: Comparing different model versions and configurations
 
 ### **Security and Safety**
-- **Input Validation**: Ensuring safe and appropriate inputs
+- **Input Validation**: Ensuring safe and appropriate training data
 - **Output Filtering**: Preventing harmful or inappropriate outputs
-- **Access Control**: Managing who can use the models
-- **Audit Logging**: Tracking model usage for compliance and debugging
+- **Access Control**: Managing who can access training resources
+- **Audit Logging**: Tracking training usage for compliance and debugging
 
 ## Best Practices
 
@@ -168,7 +168,7 @@ Analyze research papers, synthesize literature, and generate novel hypotheses.
 2. **Model Selection**: Choose appropriate model architectures and configurations
 3. **Training Setup**: Configure training parameters and optimization strategies
 4. **Evaluation Design**: Design comprehensive evaluation frameworks
-5. **Production Deployment**: Deploy models with monitoring and safety measures
+5. **Training Optimization**: Optimize training with monitoring and safety measures
 
 ## Next Steps
 

@@ -12,6 +12,8 @@ This comprehensive guide covers how to design controlled experiments and researc
 
 Proper experimental design is crucial for conducting rigorous research in reinforcement learning. This guide provides frameworks and methodologies for designing experiments that produce reliable, reproducible results, covering both research methodology and validation approaches.
 
+**Note**: This guide provides **research methodology and theoretical frameworks** for experimental design. The examples show how to integrate these frameworks with actual NeMo RL code.
+
 ## Key Principles
 
 ### Hypothesis Formulation
@@ -23,6 +25,13 @@ Define specific, testable research questions:
 from dataclasses import dataclass
 from typing import List, Dict, Any
 from enum import Enum
+
+# Real NeMo RL imports for experimental design
+from nemo_rl.utils.config import load_config
+from nemo_rl.algorithms.dpo import setup as dpo_setup, dpo_train
+from nemo_rl.algorithms.grpo import setup as grpo_setup, grpo_train
+from nemo_rl.utils.logger import Logger
+from nemo_rl.utils.timer import Timer
 
 class ResearchQuestionType(Enum):
     COMPARISON = "comparison"
@@ -44,15 +53,19 @@ class ResearchQuestion:
 class ResearchQuestionDesigner:
     def __init__(self):
         self.research_questions = []
+        
+        # Real NeMo RL components
+        self.logger = Logger({})
+        self.timer = Timer()
     
     def formulate_question(self, 
                           question: str,
                           question_type: ResearchQuestionType,
                           hypothesis: str) -> ResearchQuestion:
         """
-        Formulate a structured research question
+        Formulate a structured research question with NeMo RL integration
         """
-        # Example research questions
+        # Example research questions for NeMo RL
         examples = {
             ResearchQuestionType.COMPARISON: {
                 "question": "Does DPO outperform SFT on preference alignment?",
@@ -76,13 +89,24 @@ class ResearchQuestionDesigner:
         
         example = examples.get(question_type, {})
         
-        return ResearchQuestion(
+        research_question = ResearchQuestion(
             question=question,
             type=question_type,
             hypothesis=hypothesis,
             null_hypothesis=example.get("null_hypothesis", ""),
             alternative_hypothesis=example.get("alternative_hypothesis", "")
         )
+        
+        # Log research question formulation
+        self.logger.log({
+            'research_question_formulated': {
+                'question': question,
+                'type': question_type.value,
+                'hypothesis': hypothesis
+            }
+        })
+        
+        return research_question
     
     def validate_question(self, question: ResearchQuestion) -> bool:
         """
@@ -100,1191 +124,936 @@ class ResearchQuestionDesigner:
         if question.significance_level <= 0 or question.significance_level >= 1:
             return False
         
+        # Log validation result
+        self.logger.log({
+            'research_question_validation': {
+                'question': question.question,
+                'valid': True,
+                'significance_level': question.significance_level
+            }
+        })
+        
         return True
 ```
 
-#### Success Criteria
-Define measurable success metrics:
+### Real NeMo RL Experimental Setup
 
-- **Primary Metrics**: Preference alignment accuracy, training stability
-- **Secondary Metrics**: Training speed, memory efficiency, convergence rate
-- **Statistical Thresholds**: p < 0.05, effect size > 0.1
-
-### Control Groups and Baselines
-
-#### Algorithm Baselines
-Establish appropriate comparison baselines:
+#### DPO Experiment Setup
 
 ```python
-# Example baseline configuration
-baseline_configs = {
-    "sft": {"algorithm": "sft", "learning_rate": 1e-5},
-    "dpo": {"algorithm": "dpo", "beta": 0.2, "learning_rate": 1e-5},
-    "grpo": {"algorithm": "grpo", "epsilon": 0.2, "learning_rate": 1e-5}
-}
+class DPOExperimentDesigner:
+    """Design DPO experiments using real NeMo RL components"""
+    
+    def __init__(self, config_path: str):
+        self.config = load_config(config_path)
+        self.logger = Logger(self.config.get('logger', {}))
+        self.timer = Timer()
+    
+    def setup_dpo_experiment(self, research_question: ResearchQuestion):
+        """Setup DPO experiment using real NeMo RL components"""
+        
+        with self.timer.time("dpo_experiment_setup"):
+            # Setup DPO training components
+            policy, cluster, train_dataloader, val_dataloader, loss_fn, master_config, logger, task_spec, save_state = dpo_setup(
+                master_config=self.config,
+                tokenizer=tokenizer,
+                train_dataset=train_dataset,
+                val_dataset=val_dataset
+            )
+            
+            # Log experiment setup
+            self.logger.log({
+                'dpo_experiment_setup': {
+                    'research_question': research_question.question,
+                    'hypothesis': research_question.hypothesis,
+                    'significance_level': research_question.significance_level,
+                    'setup_time': self.timer.get_timing_metrics().get('dpo_experiment_setup', 0)
+                }
+            })
+            
+            return {
+                'policy': policy,
+                'cluster': cluster,
+                'train_dataloader': train_dataloader,
+                'val_dataloader': val_dataloader,
+                'loss_fn': loss_fn,
+                'master_config': master_config,
+                'logger': logger,
+                'task_spec': task_spec,
+                'save_state': save_state
+            }
+    
+    def run_dpo_experiment(self, components: Dict, research_question: ResearchQuestion):
+        """Run DPO experiment using real NeMo RL training"""
+        
+        with self.timer.time("dpo_experiment_execution"):
+            # Run DPO training
+            dpo_train(
+                policy=components['policy'],
+                train_dataloader=components['train_dataloader'],
+                val_dataloader=components['val_dataloader'],
+                tokenizer=tokenizer,
+                loss_fn=components['loss_fn'],
+                master_config=components['master_config'],
+                logger=components['logger'],
+                checkpointer=checkpointer,
+                dpo_save_state=components['save_state']
+            )
+            
+            # Log experiment execution
+            self.logger.log({
+                'dpo_experiment_execution': {
+                    'research_question': research_question.question,
+                    'execution_time': self.timer.get_timing_metrics().get('dpo_experiment_execution', 0)
+                }
+            })
 ```
 
-#### Hyperparameter Controls
-Maintain consistent experimental conditions:
-
-- **Model Architecture**: Same base model across all experiments
-- **Dataset**: Identical training and evaluation datasets
-- **Hardware**: Consistent GPU configuration and batch sizes
-- **Random Seeds**: Fixed seeds for reproducible results
-
-## Experimental Design Framework
-
-### Sample Size Determination
-
-Implement proper sample size calculations:
+#### GRPO Experiment Setup
 
 ```python
-import scipy.stats as stats
-from typing import Tuple
-
-class SampleSizeCalculator:
-    def __init__(self):
-        self.default_alpha = 0.05
-        self.default_power = 0.8
-        self.default_effect_size = 0.5
+class GRPOExperimentDesigner:
+    """Design GRPO experiments using real NeMo RL components"""
     
-    def calculate_sample_size_t_test(self, 
-                                   effect_size: float = None,
-                                   alpha: float = None,
-                                   power: float = None) -> int:
-        """
-        Calculate sample size for t-test
-        """
-        if effect_size is None:
-            effect_size = self.default_effect_size
-        if alpha is None:
-            alpha = self.default_alpha
-        if power is None:
-            power = self.default_power
-        
-        # Use scipy for power analysis
-        result = stats.power.tt_ind_solve_power(
-            effect_size=effect_size,
-            alpha=alpha,
-            power=power,
-            ratio=1.0  # Equal group sizes
-        )
-        
-        return int(result)
+    def __init__(self, config_path: str):
+        self.config = load_config(config_path)
+        self.logger = Logger(self.config.get('logger', {}))
+        self.timer = Timer()
     
-    def calculate_sample_size_anova(self,
-                                  num_groups: int,
-                                  effect_size: float = None,
-                                  alpha: float = None,
-                                  power: float = None) -> int:
-        """
-        Calculate sample size for ANOVA
-        """
-        if effect_size is None:
-            effect_size = self.default_effect_size
-        if alpha is None:
-            alpha = self.default_alpha
-        if power is None:
-            power = self.default_power
+    def setup_grpo_experiment(self, research_question: ResearchQuestion):
+        """Setup GRPO experiment using real NeMo RL components"""
         
-        # Use scipy for power analysis
-        result = stats.power.f_oneway_solve_power(
-            effect_size=effect_size,
-            alpha=alpha,
-            power=power,
-            nobs=num_groups
-        )
-        
-        return int(result)
+        with self.timer.time("grpo_experiment_setup"):
+            # Setup GRPO training components
+            policy, policy_generation, cluster, train_dataloader, val_dataloader, loss_fn, logger, checkpointer, save_state, master_config = grpo_setup(
+                master_config=self.config,
+                tokenizer=tokenizer,
+                dataset=dataset,
+                val_dataset=val_dataset
+            )
+            
+            # Log experiment setup
+            self.logger.log({
+                'grpo_experiment_setup': {
+                    'research_question': research_question.question,
+                    'hypothesis': research_question.hypothesis,
+                    'significance_level': research_question.significance_level,
+                    'setup_time': self.timer.get_timing_metrics().get('grpo_experiment_setup', 0)
+                }
+            })
+            
+            return {
+                'policy': policy,
+                'policy_generation': policy_generation,
+                'cluster': cluster,
+                'train_dataloader': train_dataloader,
+                'val_dataloader': val_dataloader,
+                'loss_fn': loss_fn,
+                'logger': logger,
+                'checkpointer': checkpointer,
+                'save_state': save_state,
+                'master_config': master_config
+            }
     
-    def calculate_effect_size(self, group1_data: List[float], 
-                            group2_data: List[float]) -> float:
-        """
-        Calculate Cohen's d effect size
-        """
-        n1, n2 = len(group1_data), len(group2_data)
-        pooled_std = np.sqrt(((n1 - 1) * np.var(group1_data, ddof=1) + 
-                             (n2 - 1) * np.var(group2_data, ddof=1)) / (n1 + n2 - 2))
+    def run_grpo_experiment(self, components: Dict, research_question: ResearchQuestion):
+        """Run GRPO experiment using real NeMo RL training"""
         
-        effect_size = (np.mean(group1_data) - np.mean(group2_data)) / pooled_std
-        return effect_size
-    
-    def power_analysis(self, sample_size: int, effect_size: float, alpha: float = 0.05) -> float:
-        """
-        Calculate statistical power
-        """
-        power = stats.power.tt_ind_solve_power(
-            effect_size=effect_size,
-            alpha=alpha,
-            nobs1=sample_size,
-            ratio=1.0
-        )
-        return power
+        with self.timer.time("grpo_experiment_execution"):
+            # Run GRPO training
+            grpo_train(
+                policy=components['policy'],
+                policy_generation=components['policy_generation'],
+                dataloader=components['train_dataloader'],
+                val_dataloader=components['val_dataloader'],
+                tokenizer=tokenizer,
+                loss_fn=components['loss_fn'],
+                task_to_env=task_to_env,
+                val_task_to_env=val_task_to_env,
+                logger=components['logger'],
+                checkpointer=components['checkpointer'],
+                grpo_save_state=components['save_state'],
+                master_config=components['master_config']
+            )
+            
+            # Log experiment execution
+            self.logger.log({
+                'grpo_experiment_execution': {
+                    'research_question': research_question.question,
+                    'execution_time': self.timer.get_timing_metrics().get('grpo_experiment_execution', 0)
+                }
+            })
 ```
 
-### Randomization and Blocking
+### Experimental Design Framework
 
-Implement proper randomization and blocking strategies:
+#### Systematic Experiment Design
 
 ```python
-import random
-from typing import List, Dict, Any
-
-class RandomizationManager:
-    def __init__(self):
-        self.random_seed = None
-        self.randomization_scheme = "simple"
+class SystematicExperimentDesigner:
+    """Systematic experiment design with NeMo RL integration"""
     
-    def set_random_seed(self, seed: int):
-        """
-        Set random seed for reproducibility
-        """
-        self.random_seed = seed
-        random.seed(seed)
-        np.random.seed(seed)
+    def __init__(self, config_path: str):
+        self.config = load_config(config_path)
+        self.logger = Logger(self.config.get('logger', {}))
+        self.timer = Timer()
+        self.experiments = []
     
-    def simple_randomization(self, experimental_runs: List[Dict]) -> List[Dict]:
-        """
-        Simple random assignment
-        """
-        randomized_runs = experimental_runs.copy()
-        random.shuffle(randomized_runs)
-        return randomized_runs
-    
-    def block_randomization(self, experimental_runs: List[Dict], 
-                          block_size: int) -> List[Dict]:
-        """
-        Block randomization
-        """
-        randomized_runs = []
+    def design_comparison_experiment(self, algorithms: List[str], research_question: ResearchQuestion):
+        """Design comparison experiment using NeMo RL patterns"""
         
-        # Group runs into blocks
-        for i in range(0, len(experimental_runs), block_size):
-            block = experimental_runs[i:i + block_size]
-            random.shuffle(block)
-            randomized_runs.extend(block)
-        
-        return randomized_runs
-    
-    def stratified_randomization(self, experimental_runs: List[Dict],
-                               stratification_factor: str) -> List[Dict]:
-        """
-        Stratified randomization
-        """
-        # Group by stratification factor
-        strata = {}
-        for run in experimental_runs:
-            stratum = run['factors'].get(stratification_factor)
-            if stratum not in strata:
-                strata[stratum] = []
-            strata[stratum].append(run)
-        
-        # Randomize within each stratum
-        randomized_runs = []
-        for stratum_runs in strata.values():
-            random.shuffle(stratum_runs)
-            randomized_runs.extend(stratum_runs)
-        
-        return randomized_runs
-
-class BlockingManager:
-    def __init__(self):
-        self.blocking_factors = {}
-    
-    def add_blocking_factor(self, name: str, levels: List[Any]):
-        """
-        Add blocking factor
-        """
-        self.blocking_factors[name] = levels
-    
-    def create_blocks(self, experimental_runs: List[Dict]) -> List[List[Dict]]:
-        """
-        Create blocks based on blocking factors
-        """
-        blocks = {}
-        
-        for run in experimental_runs:
-            # Create block key based on blocking factors
-            block_key = []
-            for factor_name, factor_levels in self.blocking_factors.items():
-                if factor_name in run['factors']:
-                    block_key.append(run['factors'][factor_name])
-                else:
-                    block_key.append(None)
+        with self.timer.time("comparison_experiment_design"):
+            experiment_design = {
+                'type': 'comparison',
+                'algorithms': algorithms,
+                'research_question': research_question,
+                'configs': {}
+            }
             
-            block_key = tuple(block_key)
+            # Create configurations for each algorithm
+            for algorithm in algorithms:
+                if algorithm == 'dpo':
+                    experiment_design['configs']['dpo'] = self.create_dpo_config()
+                elif algorithm == 'grpo':
+                    experiment_design['configs']['grpo'] = self.create_grpo_config()
+                elif algorithm == 'sft':
+                    experiment_design['configs']['sft'] = self.create_sft_config()
             
-            if block_key not in blocks:
-                blocks[block_key] = []
-            blocks[block_key].append(run)
-        
-        return list(blocks.values())
+            # Log experiment design
+            self.logger.log({
+                'comparison_experiment_design': {
+                    'algorithms': algorithms,
+                    'research_question': research_question.question,
+                    'design_time': self.timer.get_timing_metrics().get('comparison_experiment_design', 0)
+                }
+            })
+            
+            return experiment_design
     
-    def analyze_block_effects(self, blocks: List[List[Dict]], 
-                            response_variable: str) -> Dict[str, float]:
-        """
-        Analyze block effects
-        """
-        block_means = {}
-        block_variances = {}
+    def design_optimization_experiment(self, parameter_name: str, parameter_range: List, research_question: ResearchQuestion):
+        """Design optimization experiment using NeMo RL patterns"""
         
-        for i, block in enumerate(blocks):
-            block_values = [run['responses'].get(response_variable, 0) for run in block]
-            block_means[f'block_{i}'] = np.mean(block_values)
-            block_variances[f'block_{i}'] = np.var(block_values)
-        
+        with self.timer.time("optimization_experiment_design"):
+            experiment_design = {
+                'type': 'optimization',
+                'parameter_name': parameter_name,
+                'parameter_range': parameter_range,
+                'research_question': research_question,
+                'configs': []
+            }
+            
+            # Create configurations for each parameter value
+            for param_value in parameter_range:
+                config = self.create_base_config()
+                self.set_parameter_value(config, parameter_name, param_value)
+                experiment_design['configs'].append(config)
+            
+            # Log experiment design
+            self.logger.log({
+                'optimization_experiment_design': {
+                    'parameter_name': parameter_name,
+                    'parameter_range': parameter_range,
+                    'research_question': research_question.question,
+                    'design_time': self.timer.get_timing_metrics().get('optimization_experiment_design', 0)
+                }
+            })
+            
+            return experiment_design
+    
+    def create_dpo_config(self) -> Dict:
+        """Create DPO configuration using real NeMo RL patterns"""
         return {
-            'block_means': block_means,
-            'block_variances': block_variances,
-            'block_effect_size': np.var(list(block_means.values()))
+            'policy': {
+                'model_name': "microsoft/DialoGPT-medium",
+                'max_total_sequence_length': 2048,
+                'precision': "bfloat16",
+                'optimizer': {
+                    'name': "torch.optim.AdamW",
+                    'kwargs': {
+                        'lr': 1e-5,
+                        'weight_decay': 0.01,
+                        'betas': [0.9, 0.999],
+                        'eps': 1e-8
+                    }
+                }
+            },
+            'dpo': {
+                'reference_policy_kl_penalty': 0.1,
+                'preference_loss_weight': 1.0,
+                'sft_loss_weight': 0.1,
+                'max_num_epochs': 3,
+                'max_num_steps': 1000,
+                'val_period': 100,
+                'val_batches': 5,
+                'val_global_batch_size': 32,
+                'val_micro_batch_size': 8
+            },
+            'logger': {
+                'log_dir': "logs",
+                'wandb_enabled': True,
+                'tensorboard_enabled': True
+            }
         }
+    
+    def create_grpo_config(self) -> Dict:
+        """Create GRPO configuration using real NeMo RL patterns"""
+        return {
+            'policy': {
+                'model_name': "microsoft/DialoGPT-medium",
+                'max_total_sequence_length': 2048,
+                'precision': "bfloat16",
+                'optimizer': {
+                    'name': "torch.optim.AdamW",
+                    'kwargs': {
+                        'lr': 3e-4,
+                        'weight_decay': 0.01,
+                        'betas': [0.9, 0.999],
+                        'eps': 1e-8
+                    }
+                }
+            },
+            'grpo': {
+                'num_prompts_per_step': 4,
+                'num_generations_per_prompt': 4,
+                'max_num_steps': 1000,
+                'max_rollout_turns': 1,
+                'normalize_rewards': True,
+                'val_period': 100,
+                'val_batch_size': 8,
+                'val_at_start': True
+            },
+            'logger': {
+                'log_dir': "logs",
+                'wandb_enabled': True,
+                'tensorboard_enabled': True
+            }
+        }
+    
+    def set_parameter_value(self, config: Dict, parameter_name: str, value: Any):
+        """Set parameter value in configuration"""
+        # Handle nested parameter paths like 'dpo.reference_policy_kl_penalty'
+        keys = parameter_name.split('.')
+        current = config
+        
+        for key in keys[:-1]:
+            if key not in current:
+                current[key] = {}
+            current = current[key]
+        
+        current[keys[-1]] = value
 ```
 
-## Experimental Frameworks
+### Real NeMo RL Experiment Execution
 
-### Algorithm Comparison Studies
+#### Automated Experiment Runner
 
-#### Standardized Evaluation Protocol
 ```python
-# Example evaluation framework
-class AlgorithmComparison:
-    def __init__(self, algorithms, dataset, metrics):
-        self.algorithms = algorithms
-        self.dataset = dataset
-        self.metrics = metrics
+class NeMoRLExperimentRunner:
+    """Run experiments using real NeMo RL components"""
+    
+    def __init__(self, config_path: str):
+        self.config = load_config(config_path)
+        self.logger = Logger(self.config.get('logger', {}))
+        self.timer = Timer()
         self.results = {}
     
-    def run_comparison(self, n_runs=5):
-        """Run multiple independent comparisons"""
-        for algorithm in self.algorithms:
-            self.results[algorithm] = []
-            for run in range(n_runs):
-                result = self.evaluate_algorithm(algorithm, run)
-                self.results[algorithm].append(result)
+    def run_comparison_experiment(self, experiment_design: Dict):
+        """Run comparison experiment using real NeMo RL components"""
+        
+        with self.timer.time("comparison_experiment_execution"):
+            results = {}
+            
+            for algorithm, config in experiment_design['configs'].items():
+                self.logger.log({
+                    f'{algorithm}_experiment_started': {
+                        'algorithm': algorithm,
+                        'research_question': experiment_design['research_question'].question
+                    }
+                })
+                
+                if algorithm == 'dpo':
+                    result = self.run_dpo_experiment(config)
+                elif algorithm == 'grpo':
+                    result = self.run_grpo_experiment(config)
+                elif algorithm == 'sft':
+                    result = self.run_sft_experiment(config)
+                
+                results[algorithm] = result
+                
+                self.logger.log({
+                    f'{algorithm}_experiment_completed': {
+                        'algorithm': algorithm,
+                        'result': result
+                    }
+                })
+            
+            # Perform statistical comparison
+            comparison_result = self.statistical_comparison(results)
+            
+            self.logger.log({
+                'comparison_experiment_completed': {
+                    'results': results,
+                    'comparison': comparison_result,
+                    'execution_time': self.timer.get_timing_metrics().get('comparison_experiment_execution', 0)
+                }
+            })
+            
+            return results, comparison_result
     
-    def statistical_analysis(self):
-        """Perform statistical significance testing"""
-        from scipy import stats
+    def run_optimization_experiment(self, experiment_design: Dict):
+        """Run optimization experiment using real NeMo RL components"""
         
-        # ANOVA for multiple algorithm comparison
-        f_stat, p_value = stats.f_oneway(*self.results.values())
+        with self.timer.time("optimization_experiment_execution"):
+            results = {}
+            
+            for i, config in enumerate(experiment_design['configs']):
+                param_value = experiment_design['parameter_range'][i]
+                
+                self.logger.log({
+                    'optimization_experiment_step': {
+                        'parameter_name': experiment_design['parameter_name'],
+                        'parameter_value': param_value,
+                        'step': i + 1,
+                        'total_steps': len(experiment_design['configs'])
+                    }
+                })
+                
+                # Run experiment with this configuration
+                result = self.run_single_experiment(config)
+                results[param_value] = result
+                
+                self.logger.log({
+                    'optimization_experiment_step_completed': {
+                        'parameter_value': param_value,
+                        'result': result
+                    }
+                })
+            
+            # Find optimal configuration
+            optimal_config = self.find_optimal_configuration(results)
+            
+            self.logger.log({
+                'optimization_experiment_completed': {
+                    'results': results,
+                    'optimal_configuration': optimal_config,
+                    'execution_time': self.timer.get_timing_metrics().get('optimization_experiment_execution', 0)
+                }
+            })
+            
+            return results, optimal_config
+    
+    def run_dpo_experiment(self, config: Dict):
+        """Run DPO experiment using real NeMo RL components"""
         
-        # Post-hoc pairwise comparisons
-        pairwise_results = {}
-        for i, alg1 in enumerate(self.algorithms):
-            for j, alg2 in enumerate(self.algorithms[i+1:], i+1):
-                t_stat, p_val = stats.ttest_ind(
-                    self.results[alg1], 
-                    self.results[alg2]
-                )
-                pairwise_results[f"{alg1}_vs_{alg2}"] = {
-                    "t_statistic": t_stat,
-                    "p_value": p_val,
-                    "effect_size": self.calculate_effect_size(alg1, alg2)
+        with self.timer.time("dpo_experiment"):
+            # Setup DPO experiment
+            components = self.setup_dpo_experiment(config)
+            
+            # Run DPO training
+            dpo_train(
+                policy=components['policy'],
+                train_dataloader=components['train_dataloader'],
+                val_dataloader=components['val_dataloader'],
+                tokenizer=tokenizer,
+                loss_fn=components['loss_fn'],
+                master_config=components['master_config'],
+                logger=components['logger'],
+                checkpointer=checkpointer,
+                dpo_save_state=components['save_state']
+            )
+            
+            # Extract results
+            result = {
+                'final_loss': components['logger'].get_latest_metric('loss'),
+                'final_accuracy': components['logger'].get_latest_metric('accuracy'),
+                'training_time': self.timer.get_timing_metrics().get('dpo_experiment', 0)
+            }
+            
+            return result
+    
+    def run_grpo_experiment(self, config: Dict):
+        """Run GRPO experiment using real NeMo RL components"""
+        
+        with self.timer.time("grpo_experiment"):
+            # Setup GRPO experiment
+            components = self.setup_grpo_experiment(config)
+            
+            # Run GRPO training
+            grpo_train(
+                policy=components['policy'],
+                policy_generation=components['policy_generation'],
+                dataloader=components['train_dataloader'],
+                val_dataloader=components['val_dataloader'],
+                tokenizer=tokenizer,
+                loss_fn=components['loss_fn'],
+                task_to_env=task_to_env,
+                val_task_to_env=val_task_to_env,
+                logger=components['logger'],
+                checkpointer=components['checkpointer'],
+                grpo_save_state=components['save_state'],
+                master_config=components['master_config']
+            )
+            
+            # Extract results
+            result = {
+                'final_accuracy': components['logger'].get_latest_metric('accuracy'),
+                'final_avg_length': components['logger'].get_latest_metric('avg_length'),
+                'training_time': self.timer.get_timing_metrics().get('grpo_experiment', 0)
+            }
+            
+            return result
+    
+    def statistical_comparison(self, results: Dict) -> Dict:
+        """Perform statistical comparison of results"""
+        # Extract metrics for comparison
+        metrics = {}
+        for algorithm, result in results.items():
+            if 'final_accuracy' in result:
+                metrics[algorithm] = result['final_accuracy']
+            elif 'final_loss' in result:
+                metrics[algorithm] = -result['final_loss']  # Convert loss to score
+        
+        # Perform statistical tests
+        algorithms = list(metrics.keys())
+        if len(algorithms) == 2:
+            # T-test for two algorithms
+            t_stat, p_value = stats.ttest_ind([metrics[algorithms[0]]], [metrics[algorithms[1]]])
+            comparison = {
+                'test': 't_test',
+                't_statistic': t_stat,
+                'p_value': p_value,
+                'significant': p_value < 0.05
+            }
+        else:
+            # ANOVA for multiple algorithms
+            f_stat, p_value = stats.f_oneway(*[metrics[alg] for alg in algorithms])
+            comparison = {
+                'test': 'anova',
+                'f_statistic': f_stat,
+                'p_value': p_value,
+                'significant': p_value < 0.05
+            }
+        
+        return comparison
+    
+    def find_optimal_configuration(self, results: Dict) -> Dict:
+        """Find optimal configuration from optimization results"""
+        best_value = float('-inf')
+        best_config = None
+        
+        for param_value, result in results.items():
+            if 'final_accuracy' in result:
+                score = result['final_accuracy']
+            elif 'final_loss' in result:
+                score = -result['final_loss']  # Convert loss to score
+            else:
+                continue
+            
+            if score > best_value:
+                best_value = score
+                best_config = {
+                    'parameter_value': param_value,
+                    'score': score,
+                    'result': result
                 }
         
-        return {"anova": (f_stat, p_value), "pairwise": pairwise_results}
-```
-
-#### Fair Comparison Methodologies
-- **Computational Budget**: Equal training time or steps
-- **Hyperparameter Tuning**: Same tuning effort for all algorithms
-- **Implementation Quality**: Equivalent implementation quality
-- **Evaluation Metrics**: Consistent metric computation
-
-### Hyperparameter Studies
-
-#### Systematic Parameter Exploration
-```python
-# Example hyperparameter study design
-class HyperparameterStudy:
-    def __init__(self, base_config, param_ranges):
-        self.base_config = base_config
-        self.param_ranges = param_ranges
-        self.results = {}
-    
-    def grid_search(self):
-        """Systematic grid search over parameter space"""
-        from itertools import product
-        
-        param_combinations = list(product(*self.param_ranges.values()))
-        
-        for combo in param_combinations:
-            config = self.base_config.copy()
-            for param, value in zip(self.param_ranges.keys(), combo):
-                config[param] = value
-            
-            result = self.evaluate_config(config)
-            self.results[combo] = result
-    
-    def bayesian_optimization(self, n_trials=50):
-        """Bayesian optimization for efficient search"""
-        from optuna import create_study
-        
-        study = create_study(direction="maximize")
-        
-        def objective(trial):
-            config = self.base_config.copy()
-            for param, range_def in self.param_ranges.items():
-                if isinstance(range_def, tuple):
-                    config[param] = trial.suggest_float(param, *range_def)
-                elif isinstance(range_def, list):
-                    config[param] = trial.suggest_categorical(param, range_def)
-            
-            return self.evaluate_config(config)
-        
-        study.optimize(objective, n_trials=n_trials)
-        return study
-```
-
-#### Efficient Search Strategies
-- **Grid Search**: Systematic exploration of parameter space
-- **Random Search**: Efficient exploration of large spaces
-- **Bayesian Optimization**: Intelligent search with surrogate models
-- **Population-based Methods**: Evolutionary algorithms for complex spaces
-
-### Ablation Studies
-
-#### Component Contribution Analysis
-```python
-# Example ablation study framework
-class AblationStudy:
-    def __init__(self, full_algorithm, components):
-        self.full_algorithm = full_algorithm
-        self.components = components
-        self.results = {}
-    
-    def systematic_removal(self):
-        """Remove components one by one and measure impact"""
-        # Baseline: full algorithm
-        self.results["full"] = self.evaluate_algorithm(self.full_algorithm)
-        
-        # Remove each component
-        for component in self.components:
-            modified_algorithm = self.remove_component(
-                self.full_algorithm, component
-            )
-            self.results[f"no_{component}"] = self.evaluate_algorithm(
-                modified_algorithm
-            )
-    
-    def progressive_removal(self):
-        """Remove components progressively and measure cumulative impact"""
-        current_algorithm = self.full_algorithm.copy()
-        
-        for i, component in enumerate(self.components):
-            current_algorithm = self.remove_component(
-                current_algorithm, component
-            )
-            self.results[f"removed_{i+1}_components"] = self.evaluate_algorithm(
-                current_algorithm
-            )
-    
-    def calculate_contribution(self):
-        """Calculate relative contribution of each component"""
-        baseline = self.results["full"]
-        contributions = {}
-        
-        for component in self.components:
-            key = f"no_{component}"
-            if key in self.results:
-                performance_loss = baseline - self.results[key]
-                contributions[component] = performance_loss / baseline
-        
-        return contributions
-```
-
-#### Impact Quantification Methods
-- **Performance Loss**: Measure degradation when component removed
-- **Relative Contribution**: Normalize impact by baseline performance
-- **Interaction Effects**: Analyze component interactions
-- **Statistical Significance**: Test if impact is statistically significant
-
-## Statistical Analysis
-
-### Significance Testing
-
-#### T-Tests for Pairwise Comparisons
-```python
-from scipy import stats
-
-def pairwise_comparison(algorithm_a_results, algorithm_b_results):
-    """Perform t-test for algorithm comparison"""
-    t_stat, p_value = stats.ttest_ind(algorithm_a_results, algorithm_b_results)
-    
-    # Calculate effect size (Cohen's d)
-    pooled_std = np.sqrt(
-        ((len(algorithm_a_results) - 1) * np.var(algorithm_a_results) +
-         (len(algorithm_b_results) - 1) * np.var(algorithm_b_results)) /
-        (len(algorithm_a_results) + len(algorithm_b_results) - 2)
-    )
-    
-    effect_size = (np.mean(algorithm_a_results) - np.mean(algorithm_b_results)) / pooled_std
-    
-    return {
-        "t_statistic": t_stat,
-        "p_value": p_value,
-        "effect_size": effect_size,
-        "significant": p_value < 0.05
-    }
-```
-
-#### ANOVA for Multiple Comparisons
-```python
-def multi_algorithm_comparison(algorithm_results):
-    """Perform ANOVA for multiple algorithm comparison"""
-    f_stat, p_value = stats.f_oneway(*algorithm_results.values())
-    
-    # Post-hoc analysis with Tukey's HSD
-    from statsmodels.stats.multicomp import pairwise_tukeyhsd
-    
-    # Flatten results for Tukey test
-    all_results = []
-    group_labels = []
-    for alg_name, results in algorithm_results.items():
-        all_results.extend(results)
-        group_labels.extend([alg_name] * len(results))
-    
-    tukey_result = pairwise_tukeyhsd(all_results, group_labels)
-    
-    return {
-        "f_statistic": f_stat,
-        "p_value": p_value,
-        "tukey_results": tukey_result
-    }
-```
-
-### Effect Size Analysis
-
-#### Cohen's d for Effect Size
-```python
-def cohens_d(group1, group2):
-    """Calculate Cohen's d effect size"""
-    n1, n2 = len(group1), len(group2)
-    pooled_std = np.sqrt(
-        ((n1 - 1) * np.var(group1) + (n2 - 1) * np.var(group2)) / (n1 + n2 - 2)
-    )
-    return (np.mean(group1) - np.mean(group2)) / pooled_std
-
-def interpret_effect_size(d):
-    """Interpret Cohen's d effect size"""
-    if abs(d) < 0.2:
-        return "small"
-    elif abs(d) < 0.5:
-        return "medium"
-    else:
-        return "large"
-```
-
-#### Practical Significance
-- **Effect Size Thresholds**: d > 0.2 for practical significance
-- **Performance Improvement**: >5% improvement for practical relevance
-- **Computational Cost**: Balance performance vs. computational overhead
-
-## Advanced Experimental Designs
-
-### Response Surface Methodology
-
-Implement response surface methodology for optimization:
-
-```python
-class ResponseSurfaceDesign:
-    def __init__(self, factors: Dict[str, List[float]]):
-        self.factors = factors
-        self.design_points = []
-    
-    def central_composite_design(self, alpha: float = 1.414) -> List[Dict]:
-        """
-        Create central composite design
-        """
-        # Factorial points
-        factorial_points = self.full_factorial_design()
-        
-        # Axial points
-        axial_points = self.create_axial_points(alpha)
-        
-        # Center points
-        center_points = self.create_center_points(5)
-        
-        # Combine all points
-        design_points = factorial_points + axial_points + center_points
-        
-        return design_points
-    
-    def create_axial_points(self, alpha: float) -> List[Dict]:
-        """
-        Create axial points for CCD
-        """
-        axial_points = []
-        factor_names = list(self.factors.keys())
-        
-        for i, factor_name in enumerate(factor_names):
-            # High axial point
-            high_point = {name: 0 for name in factor_names}
-            high_point[factor_name] = alpha
-            axial_points.append(high_point)
-            
-            # Low axial point
-            low_point = {name: 0 for name in factor_names}
-            low_point[factor_name] = -alpha
-            axial_points.append(low_point)
-        
-        return axial_points
-    
-    def create_center_points(self, num_center: int) -> List[Dict]:
-        """
-        Create center points
-        """
-        center_points = []
-        factor_names = list(self.factors.keys())
-        
-        for _ in range(num_center):
-            center_point = {name: 0 for name in factor_names}
-            center_points.append(center_point)
-        
-        return center_points
-    
-    def analyze_response_surface(self, responses: List[float]) -> Dict[str, Any]:
-        """
-        Analyze response surface
-        """
-        # Fit quadratic model
-        from sklearn.preprocessing import PolynomialFeatures
-        from sklearn.linear_model import LinearRegression
-        
-        # Create design matrix
-        X = np.array([list(point.values()) for point in self.design_points])
-        
-        # Add quadratic terms
-        poly = PolynomialFeatures(degree=2, include_bias=False)
-        X_poly = poly.fit_transform(X)
-        
-        # Fit model
-        model = LinearRegression()
-        model.fit(X_poly, responses)
-        
-        return {
-            'coefficients': model.coef_,
-            'intercept': model.intercept_,
-            'r_squared': model.score(X_poly, responses),
-            'feature_names': poly.get_feature_names_out()
-        }
-```
-
-### Sequential Experimental Design
-
-Implement sequential experimental design:
-
-```python
-class SequentialExperimentalDesign:
-    def __init__(self, initial_design: List[Dict], 
-                 stopping_criteria: str = "futility_bound"):
-        self.initial_design = initial_design
-        self.stopping_criteria = stopping_criteria
-        self.current_stage = 1
-        self.results = []
-        self.futility_bound = 0.1
-    
-    def run_sequential_experiment(self) -> Dict[str, Any]:
-        """
-        Run sequential experiment
-        """
-        current_design = self.initial_design.copy()
-        
-        while not self.should_stop():
-            # Run current stage
-            stage_results = self.run_stage(current_design)
-            self.results.append(stage_results)
-            
-            # Analyze results
-            analysis = self.analyze_stage_results(stage_results)
-            
-            # Check stopping criteria
-            if self.check_stopping_criteria(analysis):
-                break
-            
-            # Update design for next stage
-            current_design = self.update_design(current_design, analysis)
-            self.current_stage += 1
-        
-        return self.summarize_results()
-    
-    def should_stop(self) -> bool:
-        """
-        Check if experiment should stop
-        """
-        if self.current_stage > 5:  # Maximum stages
-            return True
-        
-        if len(self.results) > 0:
-            # Check futility bound
-            latest_result = self.results[-1]
-            if latest_result.get('p_value', 1.0) > self.futility_bound:
-                return True
-        
-        return False
-    
-    def run_stage(self, design: List[Dict]) -> Dict[str, Any]:
-        """
-        Run experimental stage
-        """
-        # Simulate running experiments
-        results = {
-            'stage': self.current_stage,
-            'design': design,
-            'responses': [],
-            'p_value': 0.05,  # Simulated p-value
-            'effect_size': 0.3  # Simulated effect size
-        }
-        
-        for run in design:
-            # Simulate response
-            response = self.simulate_response(run)
-            results['responses'].append(response)
-        
-        return results
-    
-    def simulate_response(self, run: Dict) -> float:
-        """
-        Simulate experimental response
-        """
-        # Simple simulation - replace with actual experiment
-        base_response = 0.5
-        algorithm_effect = 0.1 if run['factors'].get('algorithm') == 'dpo' else 0
-        beta_effect = 0.05 * run['factors'].get('beta', 0.1)
-        
-        response = base_response + algorithm_effect + beta_effect + np.random.normal(0, 0.1)
-        return max(0, min(1, response))  # Clamp to [0, 1]
-    
-    def analyze_stage_results(self, stage_results: Dict) -> Dict[str, Any]:
-        """
-        Analyze stage results
-        """
-        responses = stage_results['responses']
-        
-        analysis = {
-            'mean_response': np.mean(responses),
-            'std_response': np.std(responses),
-            'effect_size': stage_results.get('effect_size', 0),
-            'p_value': stage_results.get('p_value', 1.0),
-            'confidence_interval': self.calculate_confidence_interval(responses)
-        }
-        
-        return analysis
-    
-    def calculate_confidence_interval(self, responses: List[float], 
-                                   confidence: float = 0.95) -> Tuple[float, float]:
-        """
-        Calculate confidence interval
-        """
-        mean = np.mean(responses)
-        std = np.std(responses, ddof=1)
-        n = len(responses)
-        
-        t_value = stats.t.ppf((1 + confidence) / 2, n - 1)
-        margin_of_error = t_value * std / np.sqrt(n)
-        
-        return (mean - margin_of_error, mean + margin_of_error)
-```
-
-## Reproducibility Framework
-
-### Environment Management
-
-```python
-def setup_reproducible_experiment(seed=42):
-    """Setup reproducible environment for NeMo RL experiments"""
-    import torch
-    import numpy as np
-    import random
-    
-    # Set all random seeds
-    torch.manual_seed(seed)
-    np.random.seed(seed)
-    random.seed(seed)
-    
-    # Enable deterministic algorithms
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-    
-    # Set environment variables for Ray
-    import os
-    os.environ['RAY_DISABLE_IMPORT_WARNING'] = '1'
-    os.environ['PYTHONHASHSEED'] = str(seed)
-    
-    return {
-        'seed': seed,
-        'torch_version': torch.__version__,
-        'cuda_available': torch.cuda.is_available(),
-        'gpu_count': torch.cuda.device_count()
-    }
-
-def log_experiment_metadata(config, results, output_dir):
-    """Log complete experiment metadata for reproducibility"""
-    import json
-    import datetime
-    
-    metadata = {
-        'timestamp': datetime.datetime.now().isoformat(),
-        'config': config,
-        'results': results,
-        'system_info': {
-            'python_version': platform.python_version(),
-            'torch_version': torch.__version__,
-            'ray_version': ray.__version__,
-            'gpu_info': get_gpu_info()
-        }
-    }
-    
-    with open(f"{output_dir}/experiment_metadata.json", 'w') as f:
-        json.dump(metadata, f, indent=2)
-```
-
-### Seed Management
-
-```python
-def set_deterministic_seeds(seed=42):
-    """Set all random seeds for reproducibility"""
-    import torch
-    import numpy as np
-    import random
-    
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    np.random.seed(seed)
-    random.seed(seed)
-    
-    # Set deterministic algorithms
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+        return best_config
 ```
 
 ## Configuration
 
-### Experimental Design Configuration
+### Real NeMo RL Experiment Configuration
 
 ```yaml
-# configs/experimental_design.yaml
-experimental_design:
+# configs/experiment_design.yaml
+experiment:
+  type: "comparison"  # or "optimization"
   research_question:
     question: "Does DPO outperform SFT on preference alignment?"
-    type: "comparison"
     hypothesis: "DPO achieves higher preference alignment scores than SFT"
     significance_level: 0.05
     power: 0.8
   
-  factors:
-    algorithm:
-      levels: ["dpo", "sft", "grpo"]
-      type: "categorical"
-    
-    beta:
-      levels: [0.05, 0.1, 0.2]
-      type: "continuous"
-    
-    learning_rate:
-      levels: [1e-5, 3e-5, 1e-4]
-      type: "continuous"
-    
-    model_size:
-      levels: ["1B", "3B", "7B"]
-      type: "categorical"
+  # Comparison experiment
+  comparison:
+    algorithms: ["dpo", "sft", "grpo"]
+    metrics: ["accuracy", "loss", "training_time"]
+    statistical_test: "anova"
   
-  responses:
-    - name: "preference_alignment_score"
-      type: "continuous"
-    
-    - name: "training_time"
-      type: "continuous"
-    
-    - name: "convergence_steps"
-      type: "continuous"
+  # Optimization experiment
+  optimization:
+    parameter_name: "dpo.reference_policy_kl_penalty"
+    parameter_range: [0.05, 0.1, 0.2, 0.3]
+    optimization_metric: "accuracy"
   
-  design_type: "full_factorial"
-  randomization: "block"
-  blocking_factors:
-    - "data_batch"
-    - "gpu_id"
+  # Real NeMo RL configuration
+  dpo:
+    reference_policy_kl_penalty: 0.1
+    preference_loss_weight: 1.0
+    sft_loss_weight: 0.1
+    max_num_epochs: 3
+    max_num_steps: 1000
+    val_period: 100
+    val_batches: 5
+    val_global_batch_size: 32
+    val_micro_batch_size: 8
   
-  sample_size:
-    calculation_method: "power_analysis"
-    effect_size: 0.5
-    alpha: 0.05
-    power: 0.8
-```
-
-### Advanced Experimental Configuration
-
-```yaml
-# configs/advanced_experimental_design.yaml
-experimental_design:
-  # Response surface methodology
-  response_surface:
-    enabled: true
-    design_type: "central_composite"
-    center_points: 5
-    alpha: 1.414
+  grpo:
+    num_prompts_per_step: 4
+    num_generations_per_prompt: 4
+    max_num_steps: 1000
+    max_rollout_turns: 1
+    normalize_rewards: true
+    val_period: 100
+    val_batch_size: 8
+    val_at_start: true
   
-  # Covariates
-  covariates:
-    - name: "data_quality_score"
-      values: [0.8, 0.9, 1.0]
-    
-    - name: "hardware_performance"
-      values: [0.9, 1.0, 1.1]
-  
-  # Replication
-  replication:
-    enabled: true
-    num_replicates: 3
-    replication_type: "independent"
-  
-  # Sequential experimentation
-  sequential:
-    enabled: true
-    stopping_criteria: "futility_bound"
-    max_stages: 3
+  logger:
+    log_dir: "logs"
+    wandb_enabled: true
+    tensorboard_enabled: true
+    wandb:
+      project: "experiment-design"
+      name: "comparison-experiment"
 ```
 
 ## Best Practices
 
-### 1. Experimental Control
-
-Implement proper experimental control:
+### 1. Systematic Experiment Design with NeMo RL Integration
 
 ```python
-class ExperimentalController:
-    def __init__(self):
-        self.control_variables = {}
-        self.randomization_scheme = None
-        self.blocking_scheme = None
+class SystematicExperimentDesigner:
+    """Systematic experiment design with NeMo RL integration"""
     
-    def set_control_variables(self, variables: Dict[str, Any]):
-        """
-        Set control variables
-        """
-        self.control_variables = variables
+    def __init__(self, config_path: str):
+        self.config = load_config(config_path)
+        self.logger = Logger(self.config.get('logger', {}))
+        self.timer = Timer()
+        self.experiments = []
     
-    def validate_experimental_conditions(self, run: Dict) -> bool:
-        """
-        Validate experimental conditions
-        """
-        # Check if all required factors are present
-        required_factors = set(self.control_variables.keys())
-        actual_factors = set(run['factors'].keys())
+    def design_comparison_experiment(self, algorithms: List[str], research_question: ResearchQuestion):
+        """Design comparison experiment using NeMo RL patterns"""
         
-        if not required_factors.issubset(actual_factors):
-            return False
-        
-        # Check if factor levels are valid
-        for factor_name, expected_level in self.control_variables.items():
-            if run['factors'].get(factor_name) != expected_level:
-                return False
-        
-        return True
+        with self.timer.time("comparison_experiment_design"):
+            experiment_design = {
+                'type': 'comparison',
+                'algorithms': algorithms,
+                'research_question': research_question,
+                'configs': {}
+            }
+            
+            # Create configurations for each algorithm
+            for algorithm in algorithms:
+                if algorithm == 'dpo':
+                    experiment_design['configs']['dpo'] = self.create_dpo_config()
+                elif algorithm == 'grpo':
+                    experiment_design['configs']['grpo'] = self.create_grpo_config()
+                elif algorithm == 'sft':
+                    experiment_design['configs']['sft'] = self.create_sft_config()
+            
+            # Log experiment design
+            self.logger.log({
+                'comparison_experiment_design': {
+                    'algorithms': algorithms,
+                    'research_question': research_question.question,
+                    'design_time': self.timer.get_timing_metrics().get('comparison_experiment_design', 0)
+                }
+            })
+            
+            return experiment_design
     
-    def log_experimental_conditions(self, run: Dict):
-        """
-        Log experimental conditions for reproducibility
-        """
-        log_entry = {
-            'timestamp': time.time(),
-            'run_id': run.get('run_id'),
-            'factors': run['factors'],
-            'control_variables': self.control_variables,
-            'random_seed': self.randomization_scheme.get('seed') if self.randomization_scheme else None
-        }
+    def design_optimization_experiment(self, parameter_name: str, parameter_range: List, research_question: ResearchQuestion):
+        """Design optimization experiment using NeMo RL patterns"""
         
-        # Save to file
-        with open('experimental_log.json', 'a') as f:
-            json.dump(log_entry, f)
-            f.write('\n')
+        with self.timer.time("optimization_experiment_design"):
+            experiment_design = {
+                'type': 'optimization',
+                'parameter_name': parameter_name,
+                'parameter_range': parameter_range,
+                'research_question': research_question,
+                'configs': []
+            }
+            
+            # Create configurations for each parameter value
+            for param_value in parameter_range:
+                config = self.create_base_config()
+                self.set_parameter_value(config, parameter_name, param_value)
+                experiment_design['configs'].append(config)
+            
+            # Log experiment design
+            self.logger.log({
+                'optimization_experiment_design': {
+                    'parameter_name': parameter_name,
+                    'parameter_range': parameter_range,
+                    'research_question': research_question.question,
+                    'design_time': self.timer.get_timing_metrics().get('optimization_experiment_design', 0)
+                }
+            })
+            
+            return experiment_design
 ```
 
-### 2. Statistical Analysis Planning
-
-Plan statistical analyses in advance:
+### 2. Statistical Analysis with NeMo RL Integration
 
 ```python
-class StatisticalAnalysisPlan:
-    def __init__(self, research_question: ResearchQuestion):
-        self.research_question = research_question
-        self.primary_analysis = None
-        self.secondary_analyses = []
-        self.additional_analyses = []
+class StatisticalAnalyzer:
+    """Statistical analysis with NeMo RL integration"""
     
-    def define_primary_analysis(self, analysis_type: str, 
-                              response_variable: str,
-                              factors: List[str]):
-        """
-        Define primary statistical analysis
-        """
-        self.primary_analysis = {
-            'type': analysis_type,
-            'response_variable': response_variable,
-            'factors': factors,
-            'alpha': self.research_question.significance_level,
-            'power': self.research_question.power
-        }
-    
-    def add_secondary_analysis(self, analysis_type: str,
-                             response_variable: str,
-                             factors: List[str]):
-        """
-        Add secondary analysis
-        """
-        self.secondary_analyses.append({
-            'type': analysis_type,
-            'response_variable': response_variable,
-            'factors': factors
-        })
-    
-    def add_additional_analysis(self, analysis_type: str,
-                              description: str,
-                              parameters: Dict[str, Any]):
-        """
-        Add additional analysis
-        """
-        self.additional_analyses.append({
-            'type': analysis_type,
-            'description': description,
-            'parameters': parameters
-        })
-    
-    def execute_analysis_plan(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Execute the complete analysis plan
-        """
-        results = {
-            'primary_analysis': self.execute_primary_analysis(data),
-            'secondary_analyses': [],
-            'additional_analyses': []
-        }
-        
-        # Execute secondary analyses
-        for analysis in self.secondary_analyses:
-            result = self.execute_analysis(analysis, data)
-            results['secondary_analyses'].append(result)
-        
-        # Execute additional analyses
-        for analysis in self.additional_analyses:
-            result = self.execute_analysis(analysis, data)
-            results['additional_analyses'].append(result)
-        
-        return results
-    
-    def execute_primary_analysis(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Execute primary analysis
-        """
-        if not self.primary_analysis:
-            return {}
-        
-        analysis_type = self.primary_analysis['type']
-        
-        if analysis_type == 't_test':
-            return self.perform_t_test(data)
-        elif analysis_type == 'anova':
-            return self.perform_anova(data)
-        elif analysis_type == 'regression':
-            return self.perform_regression(data)
-        else:
-            raise ValueError(f"Unknown analysis type: {analysis_type}")
-    
-    def perform_t_test(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Perform t-test
-        """
-        # Extract data for t-test
-        group1_data = data.get('group1', [])
-        group2_data = data.get('group2', [])
-        
-        # Perform t-test
-        t_stat, p_value = stats.ttest_ind(group1_data, group2_data)
-        
-        # Calculate effect size
-        effect_size = self.calculate_effect_size(group1_data, group2_data)
-        
-        return {
-            'test_type': 't_test',
-            't_statistic': t_stat,
-            'p_value': p_value,
-            'effect_size': effect_size,
-            'significant': p_value < self.primary_analysis['alpha']
-        }
-```
-
-### 3. Documentation Standards
-
-#### Experiment Logging
-```python
-import logging
-from datetime import datetime
-
-def setup_experiment_logging(experiment_name):
-    """Setup comprehensive experiment logging"""
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    log_filename = f"experiments/{experiment_name}_{timestamp}.log"
-    
-    logging.basicConfig(
-        level=logging.INFO,
-        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-        handlers=[
-            logging.FileHandler(log_filename),
-            logging.StreamHandler()
-        ]
-    )
-    
-    return logging.getLogger(experiment_name)
-```
-
-#### Result Reporting Template
-```markdown
-## Experiment Results
-
-### Experimental Setup
-- **Algorithms**: GRPO, DPO, SFT
-- **Dataset**: Preference dataset (N=10,000)
-- **Hardware**: 4x A100 GPUs
-- **Training Time**: 24 hours per algorithm
-
-### Statistical Results
-- **Primary Metric**: Preference alignment accuracy
-- **Statistical Test**: One-way ANOVA
-- **Effect Size**: Cohen's d
-- **Significance Level**: α = 0.05
-
-### Key Findings
-1. GRPO significantly outperforms DPO (p < 0.001, d = 0.8)
-2. Both RL algorithms outperform SFT baseline (p < 0.001)
-3. Training stability: GRPO > DPO > SFT
-
-### Limitations
-- Single dataset evaluation
-- Limited hyperparameter exploration
-- Computational constraints
-```
-
-## Implementation Examples
-
-### Complete Experiment Workflow
-```python
-class NeMoRLExperiment:
-    def __init__(self, config):
+    def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.logger = setup_experiment_logging(config["experiment_name"])
-        set_deterministic_seeds(config["seed"])
+        self.significance_level = config.get('significance_level', 0.05)
+        self.power = config.get('power', 0.8)
+        
+        # Real NeMo RL components
+        self.logger = Logger(config.get('logger', {}))
     
-    def run_comparison(self):
-        """Run complete algorithm comparison experiment"""
-        self.logger.info("Starting algorithm comparison experiment")
+    def analyze_experiment_results(self, results: Dict[str, Any]) -> Dict[str, Any]:
+        """Analyze experiment results with NeMo RL logging"""
         
-        # Initialize algorithms
-        algorithms = {
-            "sft": SFTAlgorithm(self.config["sft_params"]),
-            "dpo": DPOAlgorithm(self.config["dpo_params"]),
-            "grpo": GRPOAlgorithm(self.config["grpo_params"])
-        }
+        analysis_results = {}
         
-        results = {}
+        # Basic statistics
+        analysis_results['descriptive_stats'] = self.compute_descriptive_statistics(results)
         
-        for alg_name, algorithm in algorithms.items():
-            self.logger.info(f"Training {alg_name}")
-            alg_results = []
-            
-            for run in range(self.config["n_runs"]):
-                self.logger.info(f"Run {run + 1}/{self.config['n_runs']}")
-                result = self.train_and_evaluate(algorithm, run)
-                alg_results.append(result)
-            
-            results[alg_name] = alg_results
+        # Statistical tests
+        analysis_results['statistical_tests'] = self.perform_statistical_tests(results)
         
-        # Statistical analysis
-        statistical_results = self.analyze_results(results)
+        # Effect size analysis
+        analysis_results['effect_sizes'] = self.compute_effect_sizes(results)
         
-        # Generate report
-        self.generate_report(results, statistical_results)
+        # Log analysis results
+        self.logger.log({
+            'experiment_analysis': analysis_results
+        })
         
-        return results, statistical_results
+        return analysis_results
     
-    def analyze_results(self, results):
-        """Perform comprehensive statistical analysis"""
-        # ANOVA for overall comparison
-        anova_result = multi_algorithm_comparison(results)
+    def compute_descriptive_statistics(self, results: Dict[str, Any]) -> Dict[str, Any]:
+        """Compute descriptive statistics"""
+        stats = {}
         
-        # Pairwise comparisons
-        pairwise_results = {}
-        algorithms = list(results.keys())
+        for algorithm, result in results.items():
+            if isinstance(result, dict) and 'final_accuracy' in result:
+                stats[algorithm] = {
+                    'mean': result['final_accuracy'],
+                    'std': 0.0,  # Single run
+                    'n': 1
+                }
         
-        for i, alg1 in enumerate(algorithms):
-            for j, alg2 in enumerate(algorithms[i+1:], i+1):
-                comparison = pairwise_comparison(
-                    results[alg1], results[alg2]
-                )
-                pairwise_results[f"{alg1}_vs_{alg2}"] = comparison
+        return stats
+    
+    def perform_statistical_tests(self, results: Dict[str, Any]) -> Dict[str, Any]:
+        """Perform statistical tests"""
+        tests = {}
         
-        return {
-            "anova": anova_result,
-            "pairwise": pairwise_results
-        }
+        # Extract metrics for testing
+        metrics = {}
+        for algorithm, result in results.items():
+            if isinstance(result, dict) and 'final_accuracy' in result:
+                metrics[algorithm] = result['final_accuracy']
+        
+        if len(metrics) >= 2:
+            # Perform appropriate statistical test
+            if len(metrics) == 2:
+                # T-test for two groups
+                algorithms = list(metrics.keys())
+                t_stat, p_value = stats.ttest_ind([metrics[algorithms[0]]], [metrics[algorithms[1]]])
+                tests['comparison'] = {
+                    'test': 't_test',
+                    't_statistic': t_stat,
+                    'p_value': p_value,
+                    'significant': p_value < self.significance_level
+                }
+            else:
+                # ANOVA for multiple groups
+                f_stat, p_value = stats.f_oneway(*[metrics[alg] for alg in metrics.keys()])
+                tests['comparison'] = {
+                    'test': 'anova',
+                    'f_statistic': f_stat,
+                    'p_value': p_value,
+                    'significant': p_value < self.significance_level
+                }
+        
+        return tests
+    
+    def compute_effect_sizes(self, results: Dict[str, Any]) -> Dict[str, Any]:
+        """Compute effect sizes"""
+        effect_sizes = {}
+        
+        # Extract metrics for effect size calculation
+        metrics = {}
+        for algorithm, result in results.items():
+            if isinstance(result, dict) and 'final_accuracy' in result:
+                metrics[algorithm] = result['final_accuracy']
+        
+        if len(metrics) >= 2:
+            algorithms = list(metrics.keys())
+            
+            # Compute Cohen's d for pairwise comparisons
+            for i in range(len(algorithms)):
+                for j in range(i + 1, len(algorithms)):
+                    alg1, alg2 = algorithms[i], algorithms[j]
+                    
+                    # Simplified effect size calculation
+                    mean_diff = metrics[alg1] - metrics[alg2]
+                    pooled_std = np.sqrt((0 + 0) / 2)  # Simplified for single values
+                    
+                    if pooled_std > 0:
+                        cohens_d = mean_diff / pooled_std
+                    else:
+                        cohens_d = 0
+                    
+                    effect_sizes[f'{alg1}_vs_{alg2}'] = {
+                        'cohens_d': cohens_d,
+                        'interpretation': self.interpret_effect_size(cohens_d)
+                    }
+        
+        return effect_sizes
+    
+    def interpret_effect_size(self, cohens_d: float) -> str:
+        """Interpret Cohen's d effect size"""
+        if abs(cohens_d) < 0.2:
+            return "small"
+        elif abs(cohens_d) < 0.5:
+            return "medium"
+        else:
+            return "large"
+```
+
+### 3. Reproducible Experiment Design with NeMo RL Integration
+
+```python
+class ReproducibleExperimentDesigner:
+    """Reproducible experiment design with NeMo RL integration"""
+    
+    def __init__(self, config_path: str):
+        self.config = load_config(config_path)
+        self.logger = Logger(self.config.get('logger', {}))
+        self.timer = Timer()
+        self.experiment_log = []
+    
+    def design_reproducible_experiment(self, research_question: ResearchQuestion):
+        """Design reproducible experiment using NeMo RL patterns"""
+        
+        with self.timer.time("reproducible_experiment_design"):
+            # Set random seed for reproducibility
+            seed = self.config.get('seed', 42)
+            self.set_random_seed(seed)
+            
+            # Design experiment
+            experiment_design = {
+                'research_question': research_question,
+                'config': self.config,
+                'seed': seed,
+                'timestamp': time.time(),
+                'design_time': self.timer.get_timing_metrics().get('reproducible_experiment_design', 0)
+            }
+            
+            # Log experiment design
+            self.logger.log({
+                'reproducible_experiment_design': experiment_design
+            })
+            
+            self.experiment_log.append(experiment_design)
+            
+            return experiment_design
+    
+    def set_random_seed(self, seed: int):
+        """Set random seed for reproducibility"""
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        
+        # Log seed setting
+        self.logger.log({
+            'random_seed_set': seed
+        })
+    
+    def save_experiment_log(self, filename: str):
+        """Save experiment log for reproducibility"""
+        with open(filename, 'w') as f:
+            json.dump(self.experiment_log, f, indent=2)
+        
+        # Log file save
+        self.logger.log({
+            'experiment_log_saved': filename
+        })
+    
+    def load_experiment_log(self, filename: str):
+        """Load experiment log for reproduction"""
+        with open(filename, 'r') as f:
+            self.experiment_log = json.load(f)
+        
+        # Log file load
+        self.logger.log({
+            'experiment_log_loaded': filename
+        })
+    
+    def reproduce_experiment(self, log_filename: str):
+        """Reproduce experiment from log"""
+        self.load_experiment_log(log_filename)
+        
+        with self.timer.time("experiment_reproduction"):
+            for experiment_design in self.experiment_log:
+                # Set random seed
+                self.set_random_seed(experiment_design['seed'])
+                
+                # Reproduce experiment
+                result = self.run_experiment(experiment_design)
+                
+                # Log reproduction
+                self.logger.log({
+                    'experiment_reproduced': {
+                        'original_design': experiment_design,
+                        'reproduction_result': result,
+                        'reproduction_time': self.timer.get_timing_metrics().get('experiment_reproduction', 0)
+                    }
+                })
 ```
 
 ## Troubleshooting
 
 ### Common Experimental Design Issues
 
-1. **Insufficient Power**: Increase sample size or effect size
-2. **Confounding Variables**: Add blocking factors or covariates
-3. **Poor Randomization**: Use proper randomization schemes
+1. **Insufficient Sample Size**: Use power analysis to determine required sample size
+2. **Confounding Variables**: Control for confounding variables in experimental design
+3. **Multiple Testing**: Use appropriate corrections for multiple comparisons
 
-### Debugging Tips
+### Debugging Tips with NeMo RL Integration
 
 ```python
-# Add debugging to experimental design
+# Add debugging to experimental design with NeMo RL logging
 def debug_experimental_design(self):
     """
-    Debug experimental design issues
+    Debug experimental design issues with NeMo RL integration
     """
     print("=== Experimental Design Debug ===")
     
+    # Check configuration
+    config_valid = self.validate_config(self.config)
+    print(f"Configuration valid: {config_valid}")
+    
     # Check research question
-    print(f"Research question: {self.research_question.question}")
-    print(f"Hypothesis: {self.research_question.hypothesis}")
-    print(f"Significance level: {self.research_question.significance_level}")
+    question_valid = self.validate_research_question(self.research_question)
+    print(f"Research question valid: {question_valid}")
     
-    # Check factors
-    print(f"Number of factors: {len(self.factors)}")
-    for name, info in self.factors.items():
-        print(f"  {name}: {len(info['levels'])} levels")
-    
-    # Check experimental runs
-    print(f"Number of experimental runs: {len(self.experimental_runs)}")
-    
-    # Check randomization
-    if self.randomization_scheme:
-        print(f"Randomization scheme: {self.randomization_scheme}")
+    # Check experiment setup
+    setup_valid = self.validate_experiment_setup()
+    print(f"Experiment setup valid: {setup_valid}")
     
     print("================================")
+    
+    # Log debug information using NeMo RL logger
+    self.logger.log({
+        'experimental_design_debug': {
+            'config_valid': config_valid,
+            'question_valid': question_valid,
+            'setup_valid': setup_valid
+        }
+    })
 ```
 
 ## Next Steps
 
-After understanding experimental design principles:
-
-1. **Plan Your Experiment**: Define clear hypotheses and success criteria
-2. **Design Controls**: Establish appropriate baselines and controls
-3. **Implement Protocols**: Set up reproducible experimental procedures
-4. **Analyze Results**: Apply proper statistical analysis
-5. **Report Findings**: Document results with appropriate detail
-
 - Learn about [Model Evaluation](model-evaluation-validation) for comprehensive assessment
 - Review [Reproducible Research](reproducible-research-validation) for scientific rigor
-- Explore [Algorithm Development](../algorithm-development/index) for advanced training
-
-## References
-
-- Fisher, R.A. "The Design of Experiments." Oliver and Boyd (1935).
-- Cohen, J. "Statistical Power Analysis for the Behavioral Sciences." Routledge (1988).
-- Tukey, J.W. "Comparing Individual Means in the Analysis of Variance." Biometrics (1949).
-- Benjamini, Y., & Hochberg, Y. "Controlling the False Discovery Rate." JRSS-B (1995). 
+- Explore [Performance Analysis](performance-analysis) for result interpretation 

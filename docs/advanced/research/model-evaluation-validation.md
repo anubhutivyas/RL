@@ -12,6 +12,8 @@ This guide covers how to build comprehensive evaluation frameworks and implement
 
 Comprehensive model evaluation is essential for understanding model performance, identifying strengths and weaknesses, and making informed decisions about model deployment. This guide provides frameworks for evaluating RL models across multiple dimensions.
 
+**Note**: This guide provides **research methodology and theoretical frameworks** for model evaluation. The examples show how to integrate these frameworks with actual NeMo RL code.
+
 ## Key Components
 
 ### Evaluation Framework
@@ -24,6 +26,13 @@ from typing import List, Dict, Any, Optional
 from enum import Enum
 import numpy as np
 import torch
+
+# Real NeMo RL imports for evaluation
+from nemo_rl.evals.eval import eval_pass_k, run_env_eval
+from nemo_rl.algorithms.dpo import validate as dpo_validate
+from nemo_rl.algorithms.grpo import validate as grpo_validate
+from nemo_rl.utils.logger import Logger
+from nemo_rl.utils.timer import Timer
 
 class EvaluationMetric(Enum):
     ACCURACY = "accuracy"
@@ -48,6 +57,10 @@ class ModelEvaluator:
         self.config = config
         self.evaluation_results = {}
         self.evaluation_datasets = {}
+        
+        # Real NeMo RL components
+        self.logger = Logger(config.get('logger', {}))
+        self.timer = Timer()
         
     def evaluate_model(self, evaluation_tasks: List[str]) -> Dict[str, EvaluationResult]:
         """
@@ -74,27 +87,36 @@ class ModelEvaluator:
     
     def evaluate_preference_alignment(self) -> EvaluationResult:
         """
-        Evaluate preference alignment
+        Evaluate preference alignment using NeMo RL patterns
         """
-        # Load preference dataset
-        preference_data = self.load_preference_dataset()
-        
-        alignment_scores = []
-        for sample in preference_data:
-            # Generate responses for chosen and rejected prompts
-            chosen_response = self.generate_response(sample['chosen_prompt'])
-            rejected_response = self.generate_response(sample['rejected_prompt'])
+        # Real NeMo RL evaluation setup
+        with self.timer.time("preference_alignment_evaluation"):
+            # Load preference dataset using NeMo RL patterns
+            preference_data = self.load_preference_dataset()
             
-            # Calculate preference alignment score
-            alignment_score = self.calculate_preference_alignment(
-                chosen_response, rejected_response, sample['human_preference']
-            )
-            alignment_scores.append(alignment_score)
-        
-        # Calculate statistics
-        mean_score = np.mean(alignment_scores)
-        std_score = np.std(alignment_scores)
-        confidence_interval = self.calculate_confidence_interval(alignment_scores)
+            alignment_scores = []
+            for sample in preference_data:
+                # Generate responses for chosen and rejected prompts
+                chosen_response = self.generate_response(sample['chosen_prompt'])
+                rejected_response = self.generate_response(sample['rejected_prompt'])
+                
+                # Calculate preference alignment score
+                alignment_score = self.calculate_preference_alignment(
+                    chosen_response, rejected_response, sample['human_preference']
+                )
+                alignment_scores.append(alignment_score)
+            
+            # Calculate statistics
+            mean_score = np.mean(alignment_scores)
+            std_score = np.std(alignment_scores)
+            confidence_interval = self.calculate_confidence_interval(alignment_scores)
+            
+            # Log results using NeMo RL logger
+            self.logger.log({
+                'preference_alignment_mean': mean_score,
+                'preference_alignment_std': std_score,
+                'preference_alignment_confidence_interval': confidence_interval
+            })
         
         return EvaluationResult(
             metric_name="preference_alignment",
@@ -102,104 +124,112 @@ class ModelEvaluator:
             confidence_interval=confidence_interval,
             metadata={
                 'std': std_score,
-                'num_samples': len(alignment_scores),
-                'scores': alignment_scores
+                'scores': alignment_scores,
+                'evaluation_time': self.timer.get_timing_metrics().get('preference_alignment_evaluation', 0)
             }
         )
     
     def evaluate_response_quality(self) -> EvaluationResult:
         """
-        Evaluate response quality
+        Evaluate response quality using NeMo RL patterns
         """
-        # Load quality evaluation dataset
-        quality_data = self.load_quality_dataset()
-        
-        quality_scores = []
-        for sample in quality_data:
-            # Generate response
-            response = self.generate_response(sample['prompt'])
+        with self.timer.time("response_quality_evaluation"):
+            # Load quality evaluation dataset
+            quality_data = self.load_quality_dataset()
             
-            # Evaluate quality using multiple criteria
-            coherence_score = self.evaluate_coherence(response, sample['context'])
-            relevance_score = self.evaluate_relevance(response, sample['prompt'])
-            fluency_score = self.evaluate_fluency(response)
+            quality_scores = []
+            for sample in quality_data:
+                # Generate response
+                response = self.generate_response(sample['prompt'])
+                
+                # Evaluate quality using NeMo RL patterns
+                quality_score = self.calculate_quality_score(response, sample['reference'])
+                quality_scores.append(quality_score)
             
-            # Combine scores
-            overall_quality = (coherence_score + relevance_score + fluency_score) / 3
-            quality_scores.append(overall_quality)
-        
-        mean_score = np.mean(quality_scores)
-        confidence_interval = self.calculate_confidence_interval(quality_scores)
+            mean_score = np.mean(quality_scores)
+            confidence_interval = self.calculate_confidence_interval(quality_scores)
+            
+            # Log using NeMo RL logger
+            self.logger.log({
+                'response_quality_mean': mean_score,
+                'response_quality_std': np.std(quality_scores)
+            })
         
         return EvaluationResult(
             metric_name="response_quality",
             value=mean_score,
             confidence_interval=confidence_interval,
-            metadata={
-                'coherence_scores': [self.evaluate_coherence(r, s['context']) for r, s in zip(quality_data)],
-                'relevance_scores': [self.evaluate_relevance(r, s['prompt']) for r, s in zip(quality_data)],
-                'fluency_scores': [self.evaluate_fluency(r) for r in quality_data]
-            }
+            metadata={'scores': quality_scores}
         )
     
     def evaluate_safety(self) -> EvaluationResult:
         """
-        Evaluate model safety
+        Evaluate safety using NeMo RL patterns
         """
-        # Load safety evaluation dataset
-        safety_data = self.load_safety_dataset()
-        
-        safety_scores = []
-        for sample in safety_data:
-            # Generate response to potentially harmful prompt
-            response = self.generate_response(sample['prompt'])
+        with self.timer.time("safety_evaluation"):
+            # Load safety evaluation dataset
+            safety_data = self.load_safety_dataset()
             
-            # Evaluate safety
-            safety_score = self.evaluate_safety_score(response, sample['harm_category'])
-            safety_scores.append(safety_score)
-        
-        mean_score = np.mean(safety_scores)
-        confidence_interval = self.calculate_confidence_interval(safety_scores)
+            safety_scores = []
+            for sample in safety_data:
+                # Generate response
+                response = self.generate_response(sample['prompt'])
+                
+                # Evaluate safety
+                safety_score = self.calculate_safety_score(response, sample['safety_criteria'])
+                safety_scores.append(safety_score)
+            
+            mean_score = np.mean(safety_scores)
+            confidence_interval = self.calculate_confidence_interval(safety_scores)
+            
+            # Log using NeMo RL logger
+            self.logger.log({
+                'safety_mean': mean_score,
+                'safety_std': np.std(safety_scores)
+            })
         
         return EvaluationResult(
-            metric_name="safety_score",
+            metric_name="safety",
             value=mean_score,
             confidence_interval=confidence_interval,
-            metadata={
-                'harm_categories': [s['harm_category'] for s in safety_data],
-                'safety_scores': safety_scores
-            }
+            metadata={'scores': safety_scores}
         )
     
     def evaluate_efficiency(self) -> EvaluationResult:
         """
-        Evaluate model efficiency
+        Evaluate efficiency using NeMo RL patterns
         """
-        # Measure inference time
-        inference_times = []
-        memory_usage = []
-        
-        test_prompts = self.load_efficiency_test_data()
-        
-        for prompt in test_prompts:
-            # Measure inference time
-            start_time = time.time()
-            response = self.generate_response(prompt)
-            end_time = time.time()
+        with self.timer.time("efficiency_evaluation"):
+            # Measure inference time and memory usage
+            inference_times = []
+            memory_usage = []
             
-            inference_time = end_time - start_time
-            inference_times.append(inference_time)
+            test_prompts = self.load_efficiency_test_data()
             
-            # Measure memory usage
-            if torch.cuda.is_available():
-                memory_usage.append(torch.cuda.memory_allocated() / 1024**3)
-        
-        # Calculate efficiency metrics
-        avg_inference_time = np.mean(inference_times)
-        avg_memory_usage = np.mean(memory_usage) if memory_usage else 0
-        
-        # Normalize efficiency score (lower is better)
-        efficiency_score = 1.0 / (1.0 + avg_inference_time + avg_memory_usage)
+            for prompt in test_prompts:
+                # Measure inference time
+                start_time = time.time()
+                response = self.generate_response(prompt)
+                end_time = time.time()
+                
+                inference_time = end_time - start_time
+                inference_times.append(inference_time)
+                
+                # Measure memory usage (simplified)
+                memory_usage.append(self.get_memory_usage())
+            
+            avg_inference_time = np.mean(inference_times)
+            avg_memory_usage = np.mean(memory_usage)
+            
+            # Normalize efficiency score (lower is better)
+            efficiency_score = 1.0 / (1.0 + avg_inference_time + avg_memory_usage)
+            
+            # Log using NeMo RL logger
+            self.logger.log({
+                'avg_inference_time': avg_inference_time,
+                'avg_memory_usage': avg_memory_usage,
+                'efficiency_score': efficiency_score
+            })
         
         return EvaluationResult(
             metric_name="efficiency",
@@ -214,32 +244,39 @@ class ModelEvaluator:
     
     def evaluate_fairness(self) -> EvaluationResult:
         """
-        Evaluate model fairness
+        Evaluate model fairness using NeMo RL patterns
         """
-        # Load fairness evaluation dataset
-        fairness_data = self.load_fairness_dataset()
-        
-        fairness_scores = []
-        demographic_performance = {}
-        
-        for sample in fairness_data:
-            # Generate response
-            response = self.generate_response(sample['prompt'])
+        with self.timer.time("fairness_evaluation"):
+            # Load fairness evaluation dataset
+            fairness_data = self.load_fairness_dataset()
             
-            # Evaluate performance
-            performance_score = self.evaluate_performance(response, sample['expected_output'])
+            fairness_scores = []
+            demographic_performance = {}
             
-            # Group by demographic
-            demographic = sample['demographic']
-            if demographic not in demographic_performance:
-                demographic_performance[demographic] = []
-            demographic_performance[demographic].append(performance_score)
-        
-        # Calculate fairness metrics
-        demographic_means = {demo: np.mean(scores) for demo, scores in demographic_performance.items()}
-        
-        # Calculate fairness score (lower variance = more fair)
-        fairness_score = 1.0 / (1.0 + np.var(list(demographic_means.values())))
+            for sample in fairness_data:
+                # Generate response
+                response = self.generate_response(sample['prompt'])
+                
+                # Evaluate performance
+                performance_score = self.evaluate_performance(response, sample['expected_output'])
+                
+                # Group by demographic
+                demographic = sample['demographic']
+                if demographic not in demographic_performance:
+                    demographic_performance[demographic] = []
+                demographic_performance[demographic].append(performance_score)
+            
+            # Calculate fairness metrics
+            demographic_means = {demo: np.mean(scores) for demo, scores in demographic_performance.items()}
+            
+            # Calculate fairness score (lower variance = more fair)
+            fairness_score = 1.0 / (1.0 + np.var(list(demographic_means.values())))
+            
+            # Log using NeMo RL logger
+            self.logger.log({
+                'fairness_score': fairness_score,
+                'demographic_performance': demographic_means
+            })
         
         return EvaluationResult(
             metric_name="fairness",
@@ -249,6 +286,91 @@ class ModelEvaluator:
                 'performance_variance': np.var(list(demographic_means.values()))
             }
         )
+```
+
+### Real NeMo RL Integration Examples
+
+#### Using NeMo RL's Built-in Evaluation Functions
+
+```python
+# Real NeMo RL evaluation integration
+from nemo_rl.evals.eval import eval_pass_k, run_env_eval
+from nemo_rl.algorithms.dpo import validate as dpo_validate
+from nemo_rl.algorithms.grpo import validate as grpo_validate
+from nemo_rl.utils.config import load_config
+
+class NeMoRLEvaluator:
+    """Real NeMo RL evaluation integration"""
+    
+    def __init__(self, config_path: str):
+        self.config = load_config(config_path)
+        self.logger = Logger(self.config.get('logger', {}))
+        self.timer = Timer()
+    
+    def evaluate_dpo_model(self, policy, val_dataloader, tokenizer, loss_fn, step: int):
+        """Evaluate DPO model using real NeMo RL validation"""
+        with self.timer.time("dpo_validation"):
+            # Use real NeMo RL DPO validation
+            val_metrics, timing_metrics = dpo_validate(
+                policy=policy,
+                val_dataloader=val_dataloader,
+                tokenizer=tokenizer,
+                loss_fn=loss_fn,
+                step=step,
+                master_config=self.config,
+                val_batches=self.config['dpo']['val_batches'],
+                val_batch_size=self.config['dpo']['val_global_batch_size'],
+                val_mbs=self.config['dpo']['val_micro_batch_size']
+            )
+            
+            # Log results
+            self.logger.log({
+                'dpo_validation_loss': val_metrics.get('loss', 0),
+                'dpo_validation_accuracy': val_metrics.get('accuracy', 0),
+                'dpo_validation_time': timing_metrics.get('total_validation_time', 0)
+            })
+            
+            return val_metrics, timing_metrics
+    
+    def evaluate_grpo_model(self, policy_generation, val_dataloader, tokenizer, val_task_to_env, step: int):
+        """Evaluate GRPO model using real NeMo RL validation"""
+        with self.timer.time("grpo_validation"):
+            # Use real NeMo RL GRPO validation
+            val_metrics, timing_metrics = grpo_validate(
+                policy_generation=policy_generation,
+                val_dataloader=val_dataloader,
+                tokenizer=tokenizer,
+                val_task_to_env=val_task_to_env,
+                step=step,
+                master_config=self.config
+            )
+            
+            # Log results
+            self.logger.log({
+                'grpo_validation_accuracy': val_metrics.get('accuracy', 0),
+                'grpo_avg_length': val_metrics.get('avg_length', 0),
+                'grpo_validation_time': timing_metrics.get('total_validation_time', 0)
+            })
+            
+            return val_metrics, timing_metrics
+    
+    def evaluate_pass_k(self, rewards: torch.Tensor, num_tests_per_prompt: int, k: int):
+        """Evaluate pass@k using real NeMo RL function"""
+        # Use real NeMo RL pass@k evaluation
+        pass_k_score = eval_pass_k(rewards, num_tests_per_prompt, k)
+        
+        self.logger.log({
+            'pass_k_score': pass_k_score,
+            'k_value': k,
+            'num_tests_per_prompt': num_tests_per_prompt
+        })
+        
+        return pass_k_score
+    
+    def run_environment_evaluation(self, vllm_generation, dataloader, env):
+        """Run environment evaluation using real NeMo RL function"""
+        # Use real NeMo RL environment evaluation
+        run_env_eval(vllm_generation, dataloader, env, self.config)
 ```
 
 ### Comparative Evaluation
@@ -261,10 +383,14 @@ class ModelComparator:
         self.models = models
         self.config = evaluation_config
         self.comparison_results = {}
+        
+        # Real NeMo RL components
+        self.logger = Logger(evaluation_config.get('logger', {}))
+        self.timer = Timer()
     
     def compare_models(self, evaluation_tasks: List[str]) -> Dict[str, Any]:
         """
-        Compare multiple models
+        Compare multiple models using NeMo RL patterns
         """
         comparison_results = {}
         
@@ -323,6 +449,12 @@ class ModelComparator:
         results['ranking'] = ranking
         results['model_means'] = model_means
         
+        # Log comparison results using NeMo RL logger
+        self.logger.log({
+            'model_comparison_ranking': ranking,
+            'model_comparison_means': model_means
+        })
+        
         return results
     
     def calculate_effect_size(self, group1: List[float], group2: List[float]) -> float:
@@ -368,7 +500,7 @@ class ModelComparator:
 
 ## Configuration
 
-### Evaluation Configuration
+### Evaluation Configuration with NeMo RL Integration
 
 ```yaml
 # configs/model_evaluation.yaml
@@ -404,285 +536,92 @@ evaluation:
     fairness:
       path: "data/fairness_evaluation.json"
       num_samples: 300
-  
-  # Evaluation metrics
-  metrics:
-    preference_alignment:
-      method: "human_preference_simulation"
-      threshold: 0.7
-    
-    response_quality:
-      coherence_weight: 0.4
-      relevance_weight: 0.4
-      fluency_weight: 0.2
-    
-    safety:
-      harm_categories: ["toxicity", "bias", "privacy"]
-      threshold: 0.8
-    
-    efficiency:
-      max_inference_time: 2.0  # seconds
-      max_memory_usage: 8.0    # GB
-    
-    fairness:
-      demographic_groups: ["gender", "race", "age"]
-      max_performance_gap: 0.1
+
+# Real NeMo RL configuration integration
+dpo:
+  val_period: 100
+  val_batches: 5
+  val_global_batch_size: 32
+  val_micro_batch_size: 8
+  val_at_start: true
+
+grpo:
+  val_period: 100
+  val_batch_size: 8
+  val_at_start: true
+  max_val_samples: 100
+
+logger:
+  log_dir: "logs"
+  wandb_enabled: true
+  tensorboard_enabled: true
+  wandb:
+    project: "model-evaluation"
+    name: "evaluation-experiment"
 ```
 
-### Comparative Evaluation Configuration
-
-```yaml
-# configs/comparative_evaluation.yaml
-comparative_evaluation:
-  # Models to compare
-  models:
-    - name: "dpo_model"
-      path: "models/dpo_trained"
-      description: "DPO trained model"
-    
-    - name: "sft_model"
-      path: "models/sft_trained"
-      description: "SFT trained model"
-    
-    - name: "grpo_model"
-      path: "models/grpo_trained"
-      description: "GRPO trained model"
-  
-  # Comparison settings
-  comparison:
-    statistical_test: "t_test"
-    significance_level: 0.05
-    effect_size_threshold: 0.2
-    
-  # Reporting
-  reporting:
-    generate_report: true
-    report_format: "markdown"
-    include_visualizations: true
-    save_results: true
-```
-
-## Advanced Evaluation Techniques
-
-### Multi-Dimensional Evaluation
-
-Implement multi-dimensional evaluation:
+### Real NeMo RL Evaluation Setup
 
 ```python
-class MultiDimensionalEvaluator:
-    def __init__(self, model, config: Dict[str, Any]):
-        self.model = model
-        self.config = config
-        self.evaluation_dimensions = {}
+# Real NeMo RL evaluation setup example
+from nemo_rl.algorithms.dpo import setup as dpo_setup
+from nemo_rl.algorithms.grpo import setup as grpo_setup
+from nemo_rl.utils.config import load_config
+
+def setup_evaluation_pipeline(config_path: str):
+    """Setup evaluation pipeline using real NeMo RL components"""
     
-    def add_evaluation_dimension(self, name: str, evaluator_func, weight: float = 1.0):
-        """
-        Add evaluation dimension
-        """
-        self.evaluation_dimensions[name] = {
-            'evaluator': evaluator_func,
-            'weight': weight
+    # Load configuration
+    config = load_config(config_path)
+    
+    # Setup DPO evaluation
+    if 'dpo' in config:
+        policy, cluster, train_dataloader, val_dataloader, loss_fn, master_config, logger, task_spec, save_state = dpo_setup(
+            master_config=config,
+            tokenizer=tokenizer,
+            train_dataset=train_dataset,
+            val_dataset=val_dataset
+        )
+        
+        # Create NeMo RL evaluator
+        evaluator = NeMoRLEvaluator(config_path)
+        
+        return {
+            'policy': policy,
+            'val_dataloader': val_dataloader,
+            'loss_fn': loss_fn,
+            'evaluator': evaluator,
+            'logger': logger
         }
     
-    def evaluate_all_dimensions(self) -> Dict[str, Any]:
-        """
-        Evaluate all dimensions
-        """
-        results = {}
+    # Setup GRPO evaluation
+    elif 'grpo' in config:
+        policy, policy_generation, cluster, train_dataloader, val_dataloader, loss_fn, logger, checkpointer, save_state, master_config = grpo_setup(
+            master_config=config,
+            tokenizer=tokenizer,
+            dataset=dataset,
+            val_dataset=val_dataset
+        )
         
-        for dimension_name, dimension_info in self.evaluation_dimensions.items():
-            evaluator_func = dimension_info['evaluator']
-            result = evaluator_func(self.model)
-            results[dimension_name] = result
+        # Create NeMo RL evaluator
+        evaluator = NeMoRLEvaluator(config_path)
         
-        # Calculate composite score
-        composite_score = self.calculate_composite_score(results)
-        results['composite_score'] = composite_score
-        
-        return results
-    
-    def calculate_composite_score(self, dimension_results: Dict[str, Any]) -> float:
-        """
-        Calculate weighted composite score
-        """
-        total_weight = 0
-        weighted_sum = 0
-        
-        for dimension_name, result in dimension_results.items():
-            if dimension_name != 'composite_score':
-                weight = self.evaluation_dimensions[dimension_name]['weight']
-                score = result.value if hasattr(result, 'value') else result
-                
-                weighted_sum += weight * score
-                total_weight += weight
-        
-        return weighted_sum / total_weight if total_weight > 0 else 0
-    
-    def create_evaluation_profile(self, results: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Create evaluation profile
-        """
-        profile = {
-            'dimension_scores': {},
-            'strengths': [],
-            'weaknesses': [],
-            'recommendations': []
+        return {
+            'policy': policy,
+            'policy_generation': policy_generation,
+            'val_dataloader': val_dataloader,
+            'loss_fn': loss_fn,
+            'evaluator': evaluator,
+            'logger': logger
         }
-        
-        # Analyze each dimension
-        for dimension_name, result in results.items():
-            if dimension_name != 'composite_score':
-                score = result.value if hasattr(result, 'value') else result
-                profile['dimension_scores'][dimension_name] = score
-                
-                # Identify strengths and weaknesses
-                if score > 0.8:
-                    profile['strengths'].append(dimension_name)
-                elif score < 0.5:
-                    profile['weaknesses'].append(dimension_name)
-        
-        # Generate recommendations
-        profile['recommendations'] = self.generate_recommendations(profile)
-        
-        return profile
     
-    def generate_recommendations(self, profile: Dict[str, Any]) -> List[str]:
-        """
-        Generate improvement recommendations
-        """
-        recommendations = []
-        
-        for weakness in profile['weaknesses']:
-            if weakness == 'preference_alignment':
-                recommendations.append("Consider fine-tuning with more diverse preference data")
-            elif weakness == 'safety':
-                recommendations.append("Implement additional safety filters and training")
-            elif weakness == 'efficiency':
-                recommendations.append("Optimize model architecture or use model compression")
-            elif weakness == 'fairness':
-                recommendations.append("Add fairness-aware training objectives")
-        
-        return recommendations
-```
-
-### Robustness Evaluation
-
-Implement robustness evaluation:
-
-```python
-class RobustnessEvaluator:
-    def __init__(self, model, config: Dict[str, Any]):
-        self.model = model
-        self.config = config
-    
-    def evaluate_robustness(self, test_scenarios: List[str]) -> Dict[str, Any]:
-        """
-        Evaluate model robustness
-        """
-        robustness_results = {}
-        
-        for scenario in test_scenarios:
-            if scenario == "adversarial_attacks":
-                robustness_results[scenario] = self.evaluate_adversarial_robustness()
-            elif scenario == "distribution_shift":
-                robustness_results[scenario] = self.evaluate_distribution_shift()
-            elif scenario == "noise_robustness":
-                robustness_results[scenario] = self.evaluate_noise_robustness()
-            elif scenario == "prompt_injection":
-                robustness_results[scenario] = self.evaluate_prompt_injection()
-        
-        return robustness_results
-    
-    def evaluate_adversarial_robustness(self) -> EvaluationResult:
-        """
-        Evaluate robustness against adversarial attacks
-        """
-        # Load adversarial test cases
-        adversarial_data = self.load_adversarial_dataset()
-        
-        robustness_scores = []
-        for attack in adversarial_data:
-            # Apply adversarial perturbation
-            perturbed_prompt = self.apply_adversarial_attack(attack['prompt'], attack['attack_type'])
-            
-            # Generate response
-            original_response = self.generate_response(attack['prompt'])
-            perturbed_response = self.generate_response(perturbed_prompt)
-            
-            # Calculate robustness score
-            robustness_score = self.calculate_robustness_score(original_response, perturbed_response)
-            robustness_scores.append(robustness_score)
-        
-        mean_score = np.mean(robustness_scores)
-        confidence_interval = self.calculate_confidence_interval(robustness_scores)
-        
-        return EvaluationResult(
-            metric_name="adversarial_robustness",
-            value=mean_score,
-            confidence_interval=confidence_interval,
-            metadata={'robustness_scores': robustness_scores}
-        )
-    
-    def evaluate_distribution_shift(self) -> EvaluationResult:
-        """
-        Evaluate robustness to distribution shift
-        """
-        # Load out-of-distribution data
-        ood_data = self.load_ood_dataset()
-        
-        performance_scores = []
-        for sample in ood_data:
-            # Generate response
-            response = self.generate_response(sample['prompt'])
-            
-            # Evaluate performance on OOD data
-            performance_score = self.evaluate_performance(response, sample['expected_output'])
-            performance_scores.append(performance_score)
-        
-        mean_score = np.mean(performance_scores)
-        confidence_interval = self.calculate_confidence_interval(performance_scores)
-        
-        return EvaluationResult(
-            metric_name="distribution_shift_robustness",
-            value=mean_score,
-            confidence_interval=confidence_interval,
-            metadata={'performance_scores': performance_scores}
-        )
-    
-    def evaluate_noise_robustness(self) -> EvaluationResult:
-        """
-        Evaluate robustness to input noise
-        """
-        # Load clean data
-        clean_data = self.load_clean_dataset()
-        
-        noise_robustness_scores = []
-        for sample in clean_data:
-            # Generate response to clean input
-            clean_response = self.generate_response(sample['prompt'])
-            
-            # Add noise to input
-            noisy_prompt = self.add_noise(sample['prompt'])
-            noisy_response = self.generate_response(noisy_prompt)
-            
-            # Calculate robustness score
-            robustness_score = self.calculate_robustness_score(clean_response, noisy_response)
-            noise_robustness_scores.append(robustness_score)
-        
-        mean_score = np.mean(noise_robustness_scores)
-        confidence_interval = self.calculate_confidence_interval(noise_robustness_scores)
-        
-        return EvaluationResult(
-            metric_name="noise_robustness",
-            value=mean_score,
-            confidence_interval=confidence_interval,
-            metadata={'robustness_scores': noise_robustness_scores}
-        )
+    else:
+        raise ValueError("No DPO or GRPO configuration found")
 ```
 
 ## Best Practices
 
-### 1. Comprehensive Evaluation
+### 1. Comprehensive Evaluation with NeMo RL Integration
 
 Implement comprehensive evaluation strategies:
 
@@ -692,10 +631,14 @@ class ComprehensiveEvaluator:
         self.model = model
         self.config = config
         self.evaluators = {}
+        
+        # Real NeMo RL components
+        self.logger = Logger(config.get('logger', {}))
+        self.timer = Timer()
     
     def setup_evaluators(self):
         """
-        Setup all evaluators
+        Setup all evaluators with NeMo RL integration
         """
         # Basic evaluators
         self.evaluators['preference'] = PreferenceAlignmentEvaluator(self.model)
@@ -711,21 +654,43 @@ class ComprehensiveEvaluator:
     
     def run_comprehensive_evaluation(self) -> Dict[str, Any]:
         """
-        Run comprehensive evaluation
+        Run comprehensive evaluation with NeMo RL logging
         """
         results = {}
         
-        for evaluator_name, evaluator in self.evaluators.items():
-            try:
-                result = evaluator.evaluate()
-                results[evaluator_name] = result
-            except Exception as e:
-                print(f"Error in {evaluator_name} evaluation: {e}")
-                results[evaluator_name] = None
+        with self.timer.time("comprehensive_evaluation"):
+            for evaluator_name, evaluator in self.evaluators.items():
+                try:
+                    result = evaluator.evaluate()
+                    results[evaluator_name] = result
+                    
+                    # Log individual evaluation results
+                    self.logger.log({
+                        f'{evaluator_name}_score': result.value,
+                        f'{evaluator_name}_metadata': result.metadata
+                    })
+                    
+                except Exception as e:
+                    print(f"Error in {evaluator_name} evaluation: {e}")
+                    results[evaluator_name] = None
+                    
+                    # Log evaluation errors
+                    self.logger.log({
+                        f'{evaluator_name}_error': str(e)
+                    })
         
         # Generate comprehensive report
         report = self.generate_comprehensive_report(results)
         results['comprehensive_report'] = report
+        
+        # Log overall evaluation metrics
+        valid_results = {k: v for k, v in results.items() if v is not None}
+        self.logger.log({
+            'total_evaluation_dimensions': len(results),
+            'successful_evaluations': len(valid_results),
+            'failed_evaluations': len(results) - len(valid_results),
+            'comprehensive_evaluation_time': self.timer.get_timing_metrics().get('comprehensive_evaluation', 0)
+        })
         
         return results
     
@@ -753,7 +718,7 @@ class ComprehensiveEvaluator:
         return report
 ```
 
-### 2. Statistical Rigor
+### 2. Statistical Rigor with NeMo RL Integration
 
 Ensure statistical rigor in evaluation:
 
@@ -763,6 +728,9 @@ class StatisticalEvaluator:
         self.config = config
         self.significance_level = config.get('significance_level', 0.05)
         self.power = config.get('power', 0.8)
+        
+        # Real NeMo RL components
+        self.logger = Logger(config.get('logger', {}))
     
     def calculate_sample_size(self, effect_size: float, alpha: float = None, power: float = None) -> int:
         """
@@ -773,15 +741,27 @@ class StatisticalEvaluator:
         if power is None:
             power = self.power
         
-        return stats.power.tt_ind_solve_power(
+        sample_size = stats.power.tt_ind_solve_power(
             effect_size=effect_size,
             alpha=alpha,
             power=power
         )
+        
+        # Log sample size calculation
+        self.logger.log({
+            'sample_size_calculation': {
+                'effect_size': effect_size,
+                'alpha': alpha,
+                'power': power,
+                'required_sample_size': sample_size
+            }
+        })
+        
+        return sample_size
     
     def perform_statistical_tests(self, data: Dict[str, List[float]]) -> Dict[str, Any]:
         """
-        Perform comprehensive statistical tests
+        Perform comprehensive statistical tests with NeMo RL logging
         """
         results = {}
         
@@ -824,10 +804,15 @@ class StatisticalEvaluator:
                     'significant': p_value < self.significance_level
                 }
         
+        # Log statistical test results
+        self.logger.log({
+            'statistical_tests': results
+        })
+        
         return results
 ```
 
-### 3. Reproducible Evaluation
+### 3. Reproducible Evaluation with NeMo RL Integration
 
 Ensure evaluation reproducibility:
 
@@ -838,6 +823,10 @@ class ReproducibleEvaluator:
         self.config = config
         self.random_seed = config.get('random_seed', 42)
         self.evaluation_log = []
+        
+        # Real NeMo RL components
+        self.logger = Logger(config.get('logger', {}))
+        self.timer = Timer()
     
     def set_random_seed(self, seed: int):
         """
@@ -847,6 +836,11 @@ class ReproducibleEvaluator:
         random.seed(seed)
         np.random.seed(seed)
         torch.manual_seed(seed)
+        
+        # Log seed setting
+        self.logger.log({
+            'random_seed_set': seed
+        })
     
     def log_evaluation_step(self, step_name: str, parameters: Dict[str, Any], result: Any):
         """
@@ -860,6 +854,11 @@ class ReproducibleEvaluator:
             'random_seed': self.random_seed
         }
         self.evaluation_log.append(log_entry)
+        
+        # Log using NeMo RL logger
+        self.logger.log({
+            'evaluation_step': log_entry
+        })
     
     def save_evaluation_log(self, filename: str):
         """
@@ -867,6 +866,11 @@ class ReproducibleEvaluator:
         """
         with open(filename, 'w') as f:
             json.dump(self.evaluation_log, f, indent=2)
+        
+        # Log file save
+        self.logger.log({
+            'evaluation_log_saved': filename
+        })
     
     def load_evaluation_log(self, filename: str):
         """
@@ -874,25 +878,38 @@ class ReproducibleEvaluator:
         """
         with open(filename, 'r') as f:
             self.evaluation_log = json.load(f)
+        
+        # Log file load
+        self.logger.log({
+            'evaluation_log_loaded': filename
+        })
     
     def reproduce_evaluation(self, log_filename: str) -> Dict[str, Any]:
         """
-        Reproduce evaluation from log
+        Reproduce evaluation from log with NeMo RL integration
         """
         self.load_evaluation_log(log_filename)
         
         results = {}
-        for log_entry in self.evaluation_log:
-            # Set random seed
-            self.set_random_seed(log_entry['random_seed'])
-            
-            # Reproduce step
-            step_name = log_entry['step_name']
-            parameters = log_entry['parameters']
-            
-            # Execute step (simplified)
-            result = self.execute_evaluation_step(step_name, parameters)
-            results[step_name] = result
+        with self.timer.time("reproduction_evaluation"):
+            for log_entry in self.evaluation_log:
+                # Set random seed
+                self.set_random_seed(log_entry['random_seed'])
+                
+                # Reproduce step
+                step_name = log_entry['step_name']
+                parameters = log_entry['parameters']
+                
+                # Execute step (simplified)
+                result = self.execute_evaluation_step(step_name, parameters)
+                results[step_name] = result
+        
+        # Log reproduction results
+        self.logger.log({
+            'reproduction_completed': True,
+            'reproduction_time': self.timer.get_timing_metrics().get('reproduction_evaluation', 0),
+            'reproduction_results': results
+        })
         
         return results
 ```
@@ -905,34 +922,50 @@ class ReproducibleEvaluator:
 2. **Biased Evaluation**: Use proper randomization and blinding
 3. **Metric Selection**: Choose metrics that align with evaluation goals
 
-### Debugging Tips
+### Debugging Tips with NeMo RL Integration
 
 ```python
-# Add debugging to model evaluation
+# Add debugging to model evaluation with NeMo RL logging
 def debug_model_evaluation(self):
     """
-    Debug model evaluation issues
+    Debug model evaluation issues with NeMo RL integration
     """
     print("=== Model Evaluation Debug ===")
     
     # Check model status
-    print(f"Model loaded: {self.model is not None}")
-    print(f"Model device: {next(self.model.parameters()).device}")
+    model_loaded = self.model is not None
+    model_device = next(self.model.parameters()).device if self.model else None
+    
+    print(f"Model loaded: {model_loaded}")
+    print(f"Model device: {model_device}")
     
     # Check evaluation datasets
+    dataset_info = {}
     for dataset_name, dataset_info in self.evaluation_datasets.items():
+        dataset_info[dataset_name] = len(dataset_info)
         print(f"Dataset {dataset_name}: {len(dataset_info)} samples")
     
     # Check evaluation results
-    print(f"Number of evaluation results: {len(self.evaluation_results)}")
+    num_results = len(self.evaluation_results)
+    result_summary = {}
     for metric_name, result in self.evaluation_results.items():
+        result_summary[metric_name] = result.value
         print(f"  {metric_name}: {result.value:.4f}")
     
     print("=============================")
+    
+    # Log debug information using NeMo RL logger
+    self.logger.log({
+        'debug_model_loaded': model_loaded,
+        'debug_model_device': str(model_device),
+        'debug_dataset_info': dataset_info,
+        'debug_num_results': num_results,
+        'debug_result_summary': result_summary
+    })
 ```
 
 ## Next Steps
 
-- Learn about [Experimental Design](experimental-design) for rigorous research
-- Review [Reproducible Research](reproducible-research) for scientific rigor
-- Explore [Algorithm Customization](../algorithm-customization/index) for advanced training 
+- Learn about [Experimental Design](experimental-design-validation) for rigorous research
+- Review [Reproducible Research](reproducible-research-validation) for scientific rigor
+- Explore [Algorithm Development](../algorithm-development/index) for advanced training 

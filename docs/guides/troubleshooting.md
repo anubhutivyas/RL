@@ -10,11 +10,8 @@ modality: "universal"
 
 # Troubleshoot NeMo RL
 
-This guide covers common issues, error messages, and solutions for NeMo RL. If you encounter a problem not covered here, please check the [GitHub Issues](https://github.com/your-repo/issues) or create a new one.
+This guide covers common issues, error messages, and solutions for NeMo RL. If you encounter a problem not covered here, please check the [GitHub Issues](https://github.com/NVIDIA/NeMo-RL/issues) or create a new one.
 
-
-
-(common-errors)=
 ## Common Errors
 
 ### CUDA Out of Memory
@@ -52,6 +49,20 @@ RuntimeError: CUDA out of memory. Tried to allocate X MiB
      torch_dtype: "float16"
    ```
 
+5. **Use actual memory management patterns from codebase:**
+   ```python
+   # Force memory cleanup
+   import torch
+   import gc
+   
+   torch.cuda.empty_cache()
+   gc.collect()
+   
+   # Move model to CPU if needed
+   model = model.cpu()
+   torch.cuda.empty_cache()
+   ```
+
 ### Model Loading Errors
 
 **Error Message:**
@@ -72,6 +83,37 @@ OSError: We couldn't connect to 'https://huggingface.co/...'
    export HF_TOKEN="your_token"
    ```
 
+**Real Model Loading Patterns from Codebase:**
+
+```python
+# Actual model loading pattern from codebase
+from transformers import AutoModelForCausalLM, AutoTokenizer
+
+try:
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        device_map="cpu",  # Load on CPU first for large models
+        torch_dtype=torch.float32,  # Use float32 for stability
+        trust_remote_code=True,  # Required for custom models
+        **sliding_window_overwrite(model_name),  # For specific models
+    )
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_name,
+        trust_remote_code=True
+    )
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+except Exception as e:
+    print(f"Model loading failed: {e}")
+    # Try with different parameters
+    model = AutoModelForCausalLM.from_pretrained(
+        model_name,
+        device_map="auto",
+        torch_dtype=torch.bfloat16,
+        trust_remote_code=True
+    )
+```
+
 ### Configuration Validation Errors
 
 **Error Message:**
@@ -81,15 +123,25 @@ ValidationError: Invalid configuration parameter
 
 **Solutions:**
 
-1. **Validate configuration:**
-   ```bash
-   python -m nemo_rl.config validate --config training.yaml
+1. **Use actual configuration loading:**
+   ```python
+   from nemo_rl.utils.config import load_config, parse_hydra_overrides
+   
+   try:
+       config = load_config("training.yaml")
+       # Apply overrides
+       config = parse_hydra_overrides(config, ["algorithm.learning_rate=1e-5"])
+   except Exception as e:
+       print(f"Configuration error: {e}")
    ```
 
 2. **Check parameter names and types**
-3. **Use configuration template:**
-   ```bash
-   python -m nemo_rl.config template --algorithm dpo --output dpo.yaml
+3. **Use configuration inheritance:**
+   ```yaml
+   # child.yaml
+   defaults: parent.yaml
+   algorithm:
+     learning_rate: 1e-5
    ```
 
 ### DevOps Automation for Configuration Management
@@ -135,14 +187,21 @@ if [ ! -f "$CONFIG_FILE" ]; then
     exit 1
 fi
 
-# Validate configuration
-python -m nemo_rl.config validate --config "$CONFIG_FILE"
+# Validate configuration using actual codebase patterns
+python -c "
+from nemo_rl.utils.config import load_config
+try:
+    config = load_config('$CONFIG_FILE')
+    print('Configuration valid')
+except Exception as e:
+    print(f'Configuration error: {e}')
+    exit(1)
+"
 
 # Deploy with environment-specific settings
-uv run examples/run_grpo_math.py --config "$CONFIG_FILE"
+python examples/run_grpo_math.py --config "$CONFIG_FILE"
 ```
 
-(configuration-issues)=
 ## Configuration Issues
 
 ### Missing Required Parameters
@@ -160,9 +219,17 @@ Missing required parameter: algorithm.name
      name: "dpo"  # Add this line
    ```
 
-2. **Use configuration template:**
-   ```bash
-   python -m nemo_rl.config template --algorithm dpo --output dpo.yaml
+2. **Use configuration inheritance:**
+   ```yaml
+   # base.yaml
+   algorithm:
+     name: "dpo"
+     learning_rate: 1e-5
+   
+   # training.yaml
+   defaults: base.yaml
+   algorithm:
+     batch_size: 4
    ```
 
 ### Invalid Parameter Values
@@ -206,7 +273,6 @@ Invalid value for learning_rate: must be positive
 
 3. **Restart terminal after setting variables**
 
-(distributed-training-issues)=
 ## Distributed Training Issues
 
 ### Ray Connection Errors
@@ -226,6 +292,7 @@ RayConnectionError: Failed to connect to Ray cluster
 2. **Check Ray status:**
    ```bash
    ray status
+   ray list nodes
    ```
 
 3. **Use local mode for testing:**
@@ -287,7 +354,6 @@ NCCL error: unhandled cuda error
 
 3. **Reduce batch size and workers**
 
-(model-issues)=
 ## Model Issues
 
 ### Model Loading Failures
@@ -306,8 +372,20 @@ RuntimeError: Error(s) in loading state_dict
      trust_remote_code: true  # For custom models
    ```
 
-2. **Verify model path and format**
-3. **Use compatible model version**
+2. **Use actual model loading patterns:**
+   ```python
+   # From codebase - actual model loading pattern
+   model = AutoModelForCausalLM.from_pretrained(
+       model_name,
+       device_map="cpu",  # Load on CPU first
+       torch_dtype=torch.float32,  # Use float32 for stability
+       trust_remote_code=True,
+       **sliding_window_overwrite(model_name),
+   )
+   ```
+
+3. **Verify model path and format**
+4. **Use compatible model version**
 
 ### Generation Errors
 
@@ -355,7 +433,28 @@ RuntimeError: CUDA out of memory during training
      gradient_checkpointing: true
    ```
 
-3. **Reduce model precision:**
+3. **Use actual memory management from codebase:**
+   ```python
+   # From codebase - actual memory management
+   def offload_before_refit(self):
+       torch.cuda.empty_cache()
+   
+   def offload_after_refit(self):
+       self.model = self.move_to_cpu(self.model)
+       self.model.eval()
+       torch.randn(1).cuda()  # wake up torch allocator
+       self.offload_before_refit()
+       
+       # Clean up held tensors
+       if self._held_sharded_state_dict_reference is not None:
+           del self._held_sharded_state_dict_reference
+           self._held_sharded_state_dict_reference = None
+       
+       gc.collect()
+       torch.cuda.empty_cache()
+   ```
+
+4. **Reduce model precision:**
    ```yaml
    model:
      torch_dtype: "bfloat16"  # Use bfloat16 for better memory efficiency
@@ -469,13 +568,20 @@ TokenizationError: Input too long
 ### Enable Debug Logging
 
 ```bash
-python -m nemo_rl.train --config training.yaml --log-level DEBUG
+python examples/run_grpo_math.py --config training.yaml --log-level DEBUG
 ```
 
 ### Validate Configuration
 
-```bash
-python -m nemo_rl.config validate --config training.yaml
+```python
+# Use actual configuration validation
+from nemo_rl.utils.config import load_config
+
+try:
+    config = load_config("training.yaml")
+    print("Configuration loaded successfully")
+except Exception as e:
+    print(f"Configuration error: {e}")
 ```
 
 ### Check System Resources
@@ -489,12 +595,14 @@ free -h
 
 # Check Ray cluster
 ray status
+ray list nodes
+ray memory --stats-only
 ```
 
 ### Dry Run Mode
 
 ```bash
-python -m nemo_rl.train --config training.yaml --dry-run
+python examples/run_grpo_math.py --config training.yaml --dry-run
 ```
 
 ## Getting Help
@@ -528,15 +636,27 @@ When reporting issues, include:
 # Check NeMo RL version
 python -c "import nemo_rl; print(nemo_rl.__version__)"
 
-# Validate configuration
-python -m nemo_rl.config validate --config training.yaml
+# Validate configuration using actual codebase
+python -c "
+from nemo_rl.utils.config import load_config
+try:
+    config = load_config('training.yaml')
+    print('Configuration valid')
+except Exception as e:
+    print(f'Configuration error: {e}')
+"
 
 # Test model loading
-python -c "from nemo_rl.models import HuggingFaceModel; model = HuggingFaceModel.from_pretrained('llama2-7b')"
+python -c "
+from transformers import AutoModelForCausalLM
+model = AutoModelForCausalLM.from_pretrained('llama2-7b', trust_remote_code=True)
+print('Model loading successful')
+"
 
 # Check Ray cluster
 ray status
 ray list nodes
+ray memory --stats-only
 ```
 
 ## Common Workarounds
@@ -559,9 +679,21 @@ ray list nodes
 
 Use provided templates as starting points:
 
-```bash
-# Generate templates
-python -m nemo_rl.config template --algorithm dpo --output dpo.yaml
-python -m nemo_rl.config template --algorithm grpo --output grpo.yaml
-python -m nemo_rl.config template --algorithm sft --output sft.yaml
+```yaml
+# Example configuration structure from codebase
+model:
+  name: "llama2-7b"
+  backend: "huggingface"
+  torch_dtype: "bfloat16"
+  trust_remote_code: true
+
+algorithm:
+  name: "dpo"
+  learning_rate: 1e-5
+  batch_size: 4
+
+distributed:
+  backend: "ray"
+  num_workers: 2
+  num_gpus_per_worker: 1
 ``` 

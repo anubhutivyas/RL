@@ -410,7 +410,7 @@ class CitationAnalyzer:
         return key_papers
 ```
 
-## Production Deployment
+## Training Optimization
 
 ### Research Quality Monitoring
 

@@ -21,7 +21,7 @@ Performance optimization is crucial for efficient RL training, especially when w
 :link: memory-optimization
 :link-type: doc
 
-Optimize memory usage with gradient checkpointing, mixed precision, and model sharding techniques.
+Optimize memory usage with CPU offloading, model management, and memory-efficient techniques.
 
 +++
 {bdg-warning}`Advanced`
@@ -31,7 +31,7 @@ Optimize memory usage with gradient checkpointing, mixed precision, and model sh
 :link: distributed-training
 :link-type: doc
 
-Scale training across multiple GPUs and nodes with efficient communication and load balancing.
+Scale training across multiple GPUs and nodes with efficient Ray-based communication and load balancing.
 
 +++
 {bdg-warning}`Advanced`
@@ -41,7 +41,7 @@ Scale training across multiple GPUs and nodes with efficient communication and l
 :link: profiling
 :link-type: doc
 
-Profile and analyze training performance with PyTorch profiler and memory analysis tools.
+Profile and analyze training performance with NSYS, PyTorch profiler and memory analysis tools.
 
 +++
 {bdg-info}`Intermediate`
@@ -67,16 +67,6 @@ Benchmark training speed, memory usage, and scalability across different configu
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} {octicon}`zap;1.5em;sd-mr-1` Mixed Precision
-:link: mixed-precision
-:link-type: doc
-
-Use lower precision training to reduce memory usage and speed up training.
-
-+++
-{bdg-info}`Intermediate`
-:::
-
 ::::
 
 ## Key Performance Areas
@@ -84,15 +74,15 @@ Use lower precision training to reduce memory usage and speed up training.
 ### Memory Optimization
 NeMo RL provides advanced memory optimization techniques:
 
-- **Gradient Checkpointing**: Reduce memory usage by recomputing intermediate activations
-- **Mixed Precision Training**: Use lower precision to reduce memory and speed up training
-- **Model Sharding**: Distribute model across multiple GPUs
-- **Memory Profiling**: Monitor and optimize memory usage patterns
+- **CPU Offloading**: Move models and optimizer states to CPU
+- **Model Management**: Efficient device placement and memory cleanup
+- **Memory Monitoring**: Track and optimize memory usage patterns
+
 
 ### Distributed Training
 Scale training across multiple devices:
 
-- **Communication Optimization**: Efficient gradient compression and overlap
+- **Ray-Based Computing**: Efficient distributed computing with Ray
 - **Load Balancing**: Dynamic batching and workload distribution
 - **Sharding Strategies**: Choose appropriate model sharding approaches
 - **Network Optimization**: Optimize inter-node communication
@@ -101,7 +91,7 @@ Scale training across multiple devices:
 Comprehensive monitoring and profiling:
 
 - **Real-Time Metrics**: Monitor training speed, memory usage, and throughput
-- **Profiling Tools**: Use PyTorch profiler for detailed performance analysis
+- **Profiling Tools**: Use NSYS and PyTorch profiler for detailed performance analysis
 - **Benchmarking**: Compare performance across different configurations
 - **Alerting**: Set up alerts for performance issues
 
@@ -113,7 +103,7 @@ Comprehensive monitoring and profiling:
 - Establish performance baselines
 
 ### 2. Memory Optimization
-- Enable gradient checkpointing for large models
+- Enable CPU offloading for large models
 - Use mixed precision training
 - Optimize data loading and preprocessing
 
@@ -136,7 +126,7 @@ Comprehensive monitoring and profiling:
 
 ### 2. Memory First
 - Optimize memory usage before speed
-- Use gradient checkpointing for large models
+- Use CPU offloading for large models
 - Enable mixed precision training
 
 ### 3. Data Loading
@@ -160,7 +150,7 @@ Comprehensive monitoring and profiling:
 
 1. **Memory Issues**
    - Reduce batch size
-   - Enable gradient checkpointing
+   - Enable CPU offloading
    - Use mixed precision
 
 2. **Slow Training**
@@ -169,7 +159,7 @@ Comprehensive monitoring and profiling:
    - Use distributed training
 
 3. **Communication Overhead**
-   - Use gradient compression
+   - Use efficient Ray communication
    - Overlap communication
    - Optimize network configuration
 
@@ -183,11 +173,9 @@ For additional learning resources, visit the main [Advanced](../index) page.
 :hidden:
 :caption: Performance
 :maxdepth: 2
-index
 memory-optimization
 distributed-training
 profiling
 monitoring
 benchmarking
-mixed-precision
-::::
+:::::

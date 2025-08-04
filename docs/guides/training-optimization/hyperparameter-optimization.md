@@ -521,6 +521,6 @@ def debug_optimization(optimizer, objective_function):
 
 ## Getting Help
 
-- [Advanced Training Techniques](../../advanced/training/index.md) - Advanced training methods
+- [Advanced Training Techniques](../../advanced/algorithm-development/index.md) - Advanced training methods
 - [Performance Monitoring](../../advanced/performance/monitoring.md) - Monitor training performance
 - [Troubleshooting](../troubleshooting.md) - Common issues and solutions 

@@ -126,24 +126,12 @@ Understand the logging system and observability features in NeMo RL.
 {bdg-secondary}`Monitoring`
 :::
 
-
-
 ::::
 
 ## Development Infrastructure
 
 ::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
-
-:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Loss Functions
-:link: design-principles/loss-functions
-:link-type: doc
-
-Understand the mathematical foundations and implementation of RL loss functions.
-
-+++
-{bdg-warning}`Advanced`
-:::
 
 :::{grid-item-card} {octicon}`download;1.5em;sd-mr-1` Checkpointing
 :link: development-infrastructure/checkpointing

@@ -358,10 +358,10 @@ print(prof.key_averages().table(sort_by="cuda_time_total"))
 
 ## Get Help
 
-- [Troubleshooting](../../troubleshooting) - Common model integration issues
+- [Troubleshooting](../troubleshooting) - Common model integration issues
 - [Configuration Reference](../../../references/configuration-reference) - Model configuration parameters
 - [Community Support](https://github.com/NVIDIA/NeMo-RL/issues) - GitHub discussions
-- [Model Examples](../../../examples) - Working model integration examples
+- [Model Examples](https://github.com/NVIDIA/NeMo-RL/tree/main/examples) - Working model integration examples
 
 ---
 

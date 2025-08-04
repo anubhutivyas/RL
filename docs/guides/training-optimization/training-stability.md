@@ -482,6 +482,6 @@ def debug_training_stability(model, dataloader, num_steps=100):
 
 ## Getting Help
 
-- [Advanced Training Techniques](../../advanced/training/index.md) - Advanced training methods
+- [Advanced Training Techniques](../../advanced/algorithm-development/index.md) - Advanced training methods
 - [Performance Monitoring](../../advanced/performance/monitoring.md) - Monitor training performance
 - [Troubleshooting](../troubleshooting.md) - Common issues and solutions 

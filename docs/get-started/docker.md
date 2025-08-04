@@ -169,4 +169,4 @@ After setting up Docker:
 1. **Run Your First Job**: Try the [quickstart guide](quickstart) inside the container
 2. **Configure Clusters**: Set up [distributed training](cluster.md) with Docker
 3. **Customize Images**: Modify Dockerfiles for your specific needs
-4. **Production Deployment**: Use Docker for [production deployments](../guides/production-support/index)
+4. **Production Deployment**: Use Docker for [production deployments](../guides/troubleshooting)

@@ -52,7 +52,8 @@ NeMo RL provides a robust distributed training framework built on Ray:
 
 ```python
 import ray
-from nemo_rl.distributed import RayTrainer, DistributedTrainer
+from nemo_rl.distributed.virtual_cluster import RayVirtualCluster, init_ray
+from nemo_rl.distributed.worker_groups import RayWorkerGroup, RayWorkerBuilder
 from typing import Dict, Any, List
 import torch
 import torch.distributed as dist
@@ -70,9 +71,9 @@ class DistributedTrainingFramework:
         self._initialize_ray()
         
         # Initialize distributed components
-        self.trainer = None
+        self.cluster = None
+        self.worker_group = None
         self.data_loader = None
-        self.optimizer = None
     
     def _initialize_ray(self):
         """Initialize Ray for distributed computing."""
@@ -87,16 +88,27 @@ class DistributedTrainingFramework:
     
     def setup_distributed_training(self):
         """Setup distributed training environment."""
-        # Initialize process group
-        dist.init_process_group(
-            backend='nccl',  # Use NCCL for GPU communication
-            init_method='env://'
+        # Initialize Ray
+        init_ray()
+        
+        # Create virtual cluster
+        self.cluster = RayVirtualCluster(
+            bundle_ct_per_node_list=[self.gpus_per_node] * self.num_nodes,
+            use_gpus=True,
+            num_gpus_per_node=self.gpus_per_node,
+            max_colocated_worker_groups=1
         )
         
-        # Get local rank and world size
-        self.local_rank = int(os.environ.get('LOCAL_RANK', 0))
-        self.rank = int(os.environ.get('RANK', 0))
-        self.world_size = int(os.environ.get('WORLD_SIZE', 1))
+        # Create worker builder
+        builder = RayWorkerBuilder("nemo_rl.models.policy.DTensorPolicyWorker")
+        
+        # Create worker group
+        self.worker_group = RayWorkerGroup(
+            cluster=self.cluster,
+            remote_worker_builder=builder,
+            workers_per_node=2,
+            name_prefix="policy_worker"
+        )
         
         # Set device
         self.device = torch.device(f'cuda:{self.local_rank}')
@@ -1052,10 +1064,10 @@ After completing this tutorial:
 
 ## Related Resources
 
-- **[Distributed Training Guide](../../advanced/performance/distributed-training)**: Distributed training fundamentals
+- **[Distributed Training Guide](../../../advanced/performance/distributed-training)**: Distributed training fundamentals
 - **[Ray Distributed Computing](../../api-docs/distributed)**: Ray distributed computing documentation
 - **[Cluster Setup Guide](../../get-started/cluster)**: Cluster setup and management
-- **[Performance Optimization](../../advanced/performance)**: Performance optimization techniques
+- **[Performance Optimization](../../../advanced/performance/index)**: Performance optimization techniques
 
 ## Summary
 

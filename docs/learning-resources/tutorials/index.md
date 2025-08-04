@@ -30,15 +30,7 @@ For experienced practitioners. Master advanced reinforcement learning, distribut
 ::::{grid} 1 2 2 2
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`target;1.5em;sd-mr-1` Multi-Objective Training with Dynamic Balancing
-:link: multi-objective-training
-:link-type: doc
 
-Learn to implement multi-objective training with dynamic weight balancing and Pareto optimization.
-
-+++
-{bdg-warning}`Advanced`
-:::
 
 :::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Custom Environments
 :link: custom-environments
@@ -80,17 +72,13 @@ Scale your training across multiple GPUs and nodes with advanced distributed tra
 3. **Basic Examples** → Apply concepts to real datasets
 
 ### **Advanced Path** (4+ weeks)
-1. **Multi-Objective Training with Dynamic Balancing** → Advanced optimization techniques
+
 2. **Distributed Training and Scaling** → Scale training across multiple GPUs and nodes
 3. **Advanced Performance** → [Performance and Optimization](../../advanced/performance/index)
 
 ## Tutorial Descriptions
 
-### **Multi-Objective Training with Dynamic Balancing**
-- **Advanced Optimization**: Learn to implement multi-objective training with dynamic weight balancing
-- **Pareto Optimization**: Master Pareto frontier analysis and optimization techniques
-- **Dynamic Weighting**: Implement adaptive weight adjustment strategies
-- **Performance Trade-offs**: Balance multiple objectives effectively
+
 
 ### **Custom Environments**
 - **Domain-Specific Tasks**: Build custom environments for reinforcement learning
@@ -122,7 +110,7 @@ Scale your training across multiple GPUs and nodes with advanced distributed tra
 - Completion of intermediate tutorials
 - Experience with distributed computing (for distributed training)
 - Understanding of performance optimization concepts
-- Familiarity with multi-objective optimization concepts
+
 
 ## Getting Started
 
@@ -148,7 +136,7 @@ For additional learning resources, visit the main [Learning Resources](../index)
 :hidden:
 :caption: Tutorials
 :maxdepth: 2
-multi-objective-training
+
 custom-environments
 custom-loss-functions
 distributed-training-scaling

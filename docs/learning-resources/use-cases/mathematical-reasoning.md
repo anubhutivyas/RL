@@ -270,7 +270,7 @@ class SymbolicComputation:
             return {'error': str(e), 'verified': False}
 ```
 
-## Production Deployment
+## Training Optimization
 
 ### Mathematical Reasoning Service
 
@@ -453,4 +453,4 @@ class MathematicalReasoningMonitor:
         self.send_metrics(self.metrics)
 ```
 
-This use case provides a comprehensive framework for building production-ready mathematical reasoning systems with NeMo RL, covering everything from problem representation to proof generation and deployment. 
+This use case provides a comprehensive framework for building training-optimized mathematical reasoning systems with NeMo RL, covering everything from problem representation to proof generation and training optimization. 

@@ -1,6 +1,6 @@
 # Code Generation
 
-Train NeMo RL models to generate, debug, and optimize code across multiple programming languages. This use case covers architectural patterns for building code generation systems that can handle syntax validation, multi-language support, and production deployment.
+Train NeMo RL models to generate, debug, and optimize code across multiple programming languages. This use case covers architectural patterns for building code generation systems that can handle syntax validation, multi-language support, and training optimization.
 
 ## Overview
 
@@ -28,69 +28,176 @@ Code generation with RL involves training models to understand programming langu
 ### Multi-Stage Training Pipeline
 
 ```python
-# Example: Code generation training pipeline
-class CodeGenerationPipeline:
-    def __init__(self):
-        self.sft_model = SupervisedFineTuning()  # Base code understanding
-        self.rl_model = GroupRelativePolicyOptimization()  # Code quality optimization
-        self.evaluator = CodeQualityEvaluator()  # Automated assessment
+# Example: Code generation training pipeline using NeMo RL
+from nemo_rl.algorithms.sft import setup as sft_setup, sft_train
+from nemo_rl.algorithms.grpo import setup as grpo_setup, grpo_train
+from nemo_rl.environments.interfaces import EnvironmentInterface
+
+class CodeGenerationTraining:
+    def __init__(self, config):
+        self.config = config
+        self.tokenizer = None
+        self.policy = None
     
-    def train(self, dataset):
-        # Stage 1: SFT for basic code understanding
-        self.sft_model.train(dataset.code_examples)
+    def train_sft(self, dataset):
+        """Stage 1: Supervised Fine-Tuning for code understanding"""
+        # Setup SFT training
+        policy, cluster, dataloader, loss_fn, master_config, logger, task_spec, save_state = sft_setup(
+            master_config=self.config,
+            tokenizer=self.tokenizer,
+            train_dataset=dataset,
+            val_dataset=dataset  # Use same dataset for validation
+        )
         
-        # Stage 2: RL for code quality optimization
-        self.rl_model.train(
-            policy_model=self.sft_model,
-            environment=CodeGenerationEnvironment(),
-            reward_function=self.evaluator.assess_code_quality
+        # Run SFT training
+        sft_train(
+            policy=policy,
+            dataloader=dataloader,
+            tokenizer=self.tokenizer,
+            loss_fn=loss_fn,
+            master_config=master_config,
+            logger=logger,
+            checkpointer=checkpointer,
+            sft_save_state=save_state
+        )
+        
+        return policy
+    
+    def train_grpo(self, policy, environment):
+        """Stage 2: GRPO for code quality optimization"""
+        # Setup GRPO training
+        policy, policy_generation, cluster, dataloader, val_dataloader, loss_fn, logger, checkpointer, grpo_state, master_config = grpo_setup(
+            config=self.config,
+            tokenizer=self.tokenizer,
+            dataset=dataset,
+            val_dataset=val_dataset
+        )
+        
+        # Run GRPO training
+        grpo_train(
+            policy=policy,
+            policy_generation=policy_generation,
+            dataloader=dataloader,
+            val_dataloader=val_dataloader,
+            loss_fn=loss_fn,
+            master_config=master_config,
+            logger=logger,
+            checkpointer=checkpointer,
+            grpo_state=grpo_state
         )
 ```
 
 ### Environment Design
 
 ```python
-class CodeGenerationEnvironment:
+from nemo_rl.environments.interfaces import EnvironmentInterface, EnvironmentReturn
+from typing import List, Optional, Dict, Any
+import torch
+import subprocess
+import tempfile
+import os
+
+class CodeGenerationEnvironment(EnvironmentInterface):
+    """Real code generation environment for NeMo RL."""
+    
     def __init__(self, target_language="python"):
         self.language = target_language
-        self.compiler = LanguageCompiler(target_language)
-        self.test_suite = TestSuite()
+        self.compiler = self._get_compiler(target_language)
     
-    def step(self, action):
-        # action: generated code snippet
-        try:
-            # Compile and test the generated code
-            compilation_success = self.compiler.compile(action)
-            test_results = self.test_suite.run(action)
+    def step(
+        self,
+        message_log_batch: List[List[Dict[str, str]]],
+        metadata: List[Optional[Dict[str, Any]]],
+    ) -> EnvironmentReturn:
+        """Process code generation batch and return rewards."""
+        observations = []
+        rewards = []
+        terminateds = []
+        
+        for i, message_log in enumerate(message_log_batch):
+            # Extract generated code from assistant response
+            code = self._extract_code(message_log)
             
-            # Calculate reward based on multiple factors
-            reward = self.calculate_reward(
-                compilation_success=compilation_success,
-                test_results=test_results,
-                code_quality=self.assess_quality(action)
-            )
+            # Evaluate code quality
+            reward = self._evaluate_code(code)
             
-            return reward, test_results
-        except Exception as e:
-            return -1.0, {"error": str(e)}
+            observations.append({"role": "assistant", "content": code})
+            rewards.append(reward)
+            terminateds.append(True)  # Code generation is single-turn
+        
+        return EnvironmentReturn(
+            observations=observations,
+            metadata=metadata,
+            next_stop_strings=[None] * len(message_log_batch),
+            rewards=torch.tensor(rewards),
+            terminateds=torch.tensor(terminateds)
+        )
     
-    def calculate_reward(self, compilation_success, test_results, code_quality):
+    def _extract_code(self, message_log: List[Dict[str, str]]) -> str:
+        """Extract code from assistant response."""
+        for message in reversed(message_log):
+            if message["role"] == "assistant":
+                return message["content"]
+        return ""
+    
+    def _evaluate_code(self, code: str) -> float:
+        """Evaluate code quality and return reward."""
+        if not code.strip():
+            return -1.0
+        
         reward = 0.0
         
-        # Compilation reward
-        if compilation_success:
+        # Basic syntax check
+        if self._check_syntax(code):
             reward += 0.3
         else:
             reward -= 0.5
         
-        # Test passing reward
-        test_pass_rate = test_results.get("pass_rate", 0.0)
-        reward += test_pass_rate * 0.4
-        
-        # Code quality reward
-        reward += code_quality * 0.3
+        # Code quality metrics
+        reward += self._assess_code_quality(code) * 0.7
         
         return reward
+    
+    def _check_syntax(self, code: str) -> bool:
+        """Check if code has valid syntax."""
+        try:
+            if self.language == "python":
+                compile(code, '<string>', 'exec')
+                return True
+            # Add other language checks as needed
+            return True
+        except:
+            return False
+    
+    def _assess_code_quality(self, code: str) -> float:
+        """Assess code quality metrics."""
+        quality_score = 0.0
+        
+        # Length penalty (prefer concise code)
+        if len(code) < 100:
+            quality_score += 0.2
+        elif len(code) > 1000:
+            quality_score -= 0.2
+        
+        # Complexity penalty
+        if code.count('if') + code.count('for') + code.count('while') < 5:
+            quality_score += 0.3
+        
+        return min(max(quality_score, 0.0), 1.0)
+    
+    def global_post_process_and_metrics(self, batch: Dict[str, Any]) -> tuple[Dict[str, Any], Dict[str, Any]]:
+        """Post-process batch and compute global metrics."""
+        # Calculate global metrics
+        avg_reward = batch.get("rewards", torch.tensor([0.0])).mean().item()
+        success_rate = (batch.get("rewards", torch.tensor([0.0])) > 0.0).float().mean().item()
+        
+        metrics = {
+            "avg_reward": avg_reward,
+            "success_rate": success_rate,
+            "total_samples": len(batch.get("rewards", []))
+        }
+        
+        return batch, metrics
 ```
 
 ## Implementation Considerations
@@ -154,9 +261,9 @@ class CodeQualityReward:
         return total_reward
 ```
 
-## Production Deployment
+## Training Optimization
 
-### Model Serving Architecture
+### Distributed Training Architecture
 
 ```python
 class CodeGenerationService:
@@ -326,4 +433,4 @@ class CodeGenerationMonitor:
         self.send_metrics(self.metrics)
 ```
 
-This use case provides a comprehensive framework for building production-ready code generation systems with NeMo RL, covering everything from data preparation to deployment and monitoring. 
+This use case provides a comprehensive framework for building training-optimized code generation systems with NeMo RL, covering everything from data preparation to training optimization and monitoring. 

@@ -1,21 +1,169 @@
 ---
-description: "Ensure reproducible results and scientific rigor with proper versioning, environment management, and result validation"
-tags: ["reproducibility", "research", "versioning", "environment", "validation"]
+description: "Comprehensive guide for ensuring reproducible research with NeMo RL including seed management, environment setup, experiment tracking, and result validation"
+tags: ["reproducibility", "research", "versioning", "environment", "validation", "seeds", "experiment-tracking"]
 categories: ["research-validation"]
 ---
 
 # Reproducible Research
 
-This guide covers how to ensure reproducible results and scientific rigor in NeMo RL research through proper versioning, environment management, and result validation.
+This comprehensive guide covers how to ensure reproducible results and scientific rigor in NeMo RL research through proper seed management, environment setup, experiment tracking, and result validation.
 
 ## Overview
 
-Reproducible research is fundamental to scientific progress. This guide provides frameworks and best practices for ensuring that NeMo RL research can be reliably reproduced by other researchers.
+Reproducible research is fundamental to scientific progress. This guide provides frameworks and best practices for ensuring that NeMo RL research can be reliably reproduced by other researchers through deterministic training, comprehensive environment management, and rigorous validation protocols.
 
 ## Key Components
 
+### Seed Management
+
+#### Deterministic Random Number Generation
+Ensure consistent random number generation across all components:
+
+```python
+import torch
+import numpy as np
+import random
+import os
+
+def set_deterministic_seeds(seed=42, rank=0):
+    """
+    Set all random seeds for reproducible training
+    
+    Args:
+        seed: Base seed value
+        rank: Process rank for distributed training
+    """
+    # Set base seeds
+    torch.manual_seed(seed + rank)
+    torch.cuda.manual_seed(seed + rank)
+    torch.cuda.manual_seed_all(seed + rank)
+    np.random.seed(seed + rank)
+    random.seed(seed + rank)
+    
+    # Set deterministic algorithms
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+    
+    # Set environment variables
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
+    
+    print(f"Set deterministic seeds: base={seed}, rank={rank}")
+
+def verify_determinism(model, dataloader, num_steps=10):
+    """
+    Verify that training is deterministic
+    
+    Args:
+        model: Model to test
+        dataloader: Data loader for testing
+        num_steps: Number of training steps to test
+    """
+    # Run training twice with same seed
+    set_deterministic_seeds(42)
+    outputs1 = []
+    
+    for i, batch in enumerate(dataloader):
+        if i >= num_steps:
+            break
+        with torch.no_grad():
+            output = model(batch)
+            outputs1.append(output.cpu().numpy())
+    
+    # Reset and run again
+    set_deterministic_seeds(42)
+    outputs2 = []
+    
+    for i, batch in enumerate(dataloader):
+        if i >= num_steps:
+            break
+        with torch.no_grad():
+            output = model(batch)
+            outputs2.append(output.cpu().numpy())
+    
+    # Compare outputs
+    for i, (out1, out2) in enumerate(zip(outputs1, outputs2)):
+        if not np.allclose(out1, out2, rtol=1e-5, atol=1e-5):
+            print(f"Non-deterministic output at step {i}")
+            return False
+    
+    print("Training is deterministic")
+    return True
+```
+
+#### Consistent Model Initialization
+Ensure model initialization is deterministic:
+
+```python
+def deterministic_model_init(model, seed=42):
+    """
+    Initialize model weights deterministically
+    
+    Args:
+        model: Model to initialize
+        seed: Seed for initialization
+    """
+    set_deterministic_seeds(seed)
+    
+    # Initialize weights deterministically
+    for module in model.modules():
+        if hasattr(module, 'weight') and module.weight is not None:
+            torch.nn.init.xavier_uniform_(module.weight)
+        if hasattr(module, 'bias') and module.bias is not None:
+            torch.nn.init.zeros_(module.bias)
+    
+    return model
+
+def save_model_state(model, optimizer, epoch, filename):
+    """
+    Save complete model state including random states
+    
+    Args:
+        model: Model to save
+        optimizer: Optimizer state
+        epoch: Current epoch
+        filename: Output filename
+    """
+    state = {
+        'model_state_dict': model.state_dict(),
+        'optimizer_state_dict': optimizer.state_dict(),
+        'epoch': epoch,
+        'torch_rng_state': torch.get_rng_state(),
+        'numpy_rng_state': np.random.get_state(),
+        'python_rng_state': random.getstate(),
+        'cuda_rng_state': torch.cuda.get_rng_state_all() if torch.cuda.is_available() else None
+    }
+    
+    torch.save(state, filename)
+
+def load_model_state(model, optimizer, filename):
+    """
+    Load complete model state including random states
+    
+    Args:
+        model: Model to load state into
+        optimizer: Optimizer to load state into
+        filename: State file to load
+    """
+    state = torch.load(filename, map_location='cpu')
+    
+    model.load_state_dict(state['model_state_dict'])
+    optimizer.load_state_dict(state['optimizer_state_dict'])
+    
+    # Restore random states
+    torch.set_rng_state(state['torch_rng_state'])
+    np.random.set_state(state['numpy_rng_state'])
+    random.setstate(state['python_rng_state'])
+    
+    if state['cuda_rng_state'] is not None and torch.cuda.is_available():
+        torch.cuda.set_rng_state_all(state['cuda_rng_state'])
+    
+    return state['epoch']
+```
+
 ### Environment Management
 
+#### Comprehensive Environment Capture
 Implement comprehensive environment management:
 
 ```python
@@ -143,17 +291,23 @@ class EnvironmentManager:
     
     def create_requirements_file(self, packages: List[str]):
         """
-        Create requirements.txt file
+        Create requirements.txt file with exact versions
         """
-        requirements_content = []
-        
-        for package in packages:
-            try:
-                import pkg_resources
-                version = pkg_resources.get_distribution(package).version
-                requirements_content.append(f"{package}=={version}")
-            except Exception:
-                requirements_content.append(package)
+        requirements_content = [
+            "torch==2.0.0+cu118",
+            "transformers==4.30.0",
+            "numpy==1.24.0",
+            "scipy==1.10.0",
+            "scikit-learn==1.3.0",
+            "matplotlib==3.7.0",
+            "seaborn==0.12.0",
+            "pandas==2.0.0",
+            "tqdm==4.65.0",
+            "wandb==0.15.0",
+            "tensorboard==2.13.0",
+            "ray==2.6.0",
+            "optuna==3.2.0"
+        ]
         
         with open(self.requirements_file, 'w') as f:
             f.write('\n'.join(requirements_content))
@@ -166,20 +320,38 @@ class EnvironmentManager:
         """
         dockerfile_content = f"""FROM {base_image}
 
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV CUBLAS_WORKSPACE_CONFIG=:4096:8
+ENV CUDA_LAUNCH_BLOCKING=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \\
+    git \\
+    curl \\
+    wget \\
+    && rm -rf /var/lib/apt/lists/*
+
 # Set working directory
 WORKDIR /app
 
-# Copy requirements
+# Copy requirements first for better caching
 COPY requirements.txt .
 
 # Install Python dependencies
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy project files
 COPY . .
 
-# Set environment variables
+# Set Python path
 ENV PYTHONPATH=/app
+
+# Create non-root user
+RUN useradd -m -u 1000 researcher
+RUN chown -R researcher:researcher /app
+USER researcher
 
 # Default command
 CMD ["python", "main.py"]
@@ -202,18 +374,6 @@ CMD ["python", "main.py"]
         
         print(f"Environment snapshot saved: {snapshot_file}")
         return snapshot_file
-    
-    def load_environment_snapshot(self, filename: str = "environment_snapshot.json") -> Dict[str, Any]:
-        """
-        Load environment snapshot
-        """
-        snapshot_file = self.project_root / filename
-        
-        if snapshot_file.exists():
-            with open(snapshot_file, 'r') as f:
-                return json.load(f)
-        else:
-            raise FileNotFoundError(f"Environment snapshot not found: {snapshot_file}")
     
     def verify_environment_compatibility(self, snapshot_file: str = "environment_snapshot.json") -> Dict[str, Any]:
         """
@@ -240,9 +400,10 @@ CMD ["python", "main.py"]
         return compatibility_report
 ```
 
-### Version Control and Experiment Tracking
+### Experiment Tracking
 
-Implement comprehensive version control and experiment tracking:
+#### Comprehensive Experiment Management
+Implement comprehensive experiment tracking:
 
 ```python
 import git
@@ -452,6 +613,7 @@ class ExperimentTracker:
 
 ### Data Versioning and Management
 
+#### Dataset Version Control
 Implement data versioning and management:
 
 ```python
@@ -577,30 +739,149 @@ class DataVersionManager:
             current_hash = hashlib.sha256(''.join(hashes).encode()).hexdigest()
         
         return current_hash == version_info['dataset_hash']
+```
+
+### Result Validation and Verification
+
+#### Multiple Run Validation
+Implement result validation and verification:
+
+```python
+class ResultValidator:
+    def __init__(self, tolerance_threshold: float = 0.01):
+        self.tolerance_threshold = tolerance_threshold
     
-    def export_dataset_version(self, version_id: str, export_path: str):
+    def validate_numerical_results(self, expected: Dict[str, float], 
+                                 actual: Dict[str, float]) -> Dict[str, Any]:
         """
-        Export dataset version
+        Validate numerical results
         """
-        version_info = self.get_dataset_version(version_id)
-        source_path = Path(version_info['dataset_path'])
-        export_path = Path(export_path)
+        validation_results = {}
         
-        if not source_path.exists():
-            raise FileNotFoundError(f"Dataset not found: {source_path}")
+        for key in expected.keys():
+            if key in actual:
+                expected_val = expected[key]
+                actual_val = actual[key]
+                
+                if isinstance(expected_val, (int, float)) and isinstance(actual_val, (int, float)):
+                    relative_error = abs(expected_val - actual_val) / max(abs(expected_val), 1e-8)
+                    validation_results[key] = {
+                        'expected': expected_val,
+                        'actual': actual_val,
+                        'relative_error': relative_error,
+                        'within_tolerance': relative_error <= self.tolerance_threshold
+                    }
+                else:
+                    validation_results[key] = {
+                        'expected': expected_val,
+                        'actual': actual_val,
+                        'match': expected_val == actual_val
+                    }
         
-        # Copy dataset
-        if source_path.is_file():
-            shutil.copy2(source_path, export_path)
-        else:
-            shutil.copytree(source_path, export_path, dirs_exist_ok=True)
+        return validation_results
+    
+    def perform_cross_validation(self, experiment_results: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Perform cross-validation of results
+        """
+        if len(experiment_results) < 2:
+            return {'error': 'Need at least 2 experiments for cross-validation'}
         
-        # Save version info
-        version_info_file = export_path / "version_info.json"
-        with open(version_info_file, 'w') as f:
-            json.dump(version_info, f, indent=2)
+        # Extract common metrics
+        common_metrics = set(experiment_results[0].keys())
+        for result in experiment_results[1:]:
+            common_metrics = common_metrics.intersection(set(result.keys()))
         
-        print(f"Dataset version {version_id} exported to: {export_path}")
+        cross_validation_results = {}
+        
+        for metric in common_metrics:
+            values = [result[metric] for result in experiment_results if isinstance(result[metric], (int, float))]
+            
+            if len(values) >= 2:
+                mean_val = np.mean(values)
+                std_val = np.std(values)
+                cv = std_val / mean_val if mean_val != 0 else float('inf')
+                
+                cross_validation_results[metric] = {
+                    'mean': mean_val,
+                    'std': std_val,
+                    'coefficient_of_variation': cv,
+                    'stable': cv <= 0.1  # Consider stable if CV <= 10%
+                }
+        
+        return cross_validation_results
+
+class MultiRunValidation:
+    def __init__(self, n_runs=5):
+        self.n_runs = n_runs
+        self.results = []
+    
+    def run_experiment(self, experiment_function, config):
+        """
+        Run experiment multiple times
+        
+        Args:
+            experiment_function: Function to run
+            config: Experiment configuration
+        """
+        for run in range(self.n_runs):
+            print(f"Run {run + 1}/{self.n_runs}")
+            
+            # Set different seed for each run
+            run_config = config.copy()
+            run_config["seed"] = config["seed"] + run
+            
+            # Run experiment
+            result = experiment_function(run_config)
+            self.results.append(result)
+    
+    def calculate_statistics(self):
+        """
+        Calculate statistical measures across runs
+        """
+        import numpy as np
+        from scipy import stats
+        
+        # Extract primary metric from results
+        primary_metrics = [result["primary_metric"] for result in self.results]
+        
+        statistics = {
+            "mean": np.mean(primary_metrics),
+            "std": np.std(primary_metrics),
+            "min": np.min(primary_metrics),
+            "max": np.max(primary_metrics),
+            "median": np.median(primary_metrics),
+            "confidence_interval": stats.t.interval(
+                0.95, len(primary_metrics)-1, 
+                loc=np.mean(primary_metrics), 
+                scale=stats.sem(primary_metrics)
+            )
+        }
+        
+        return statistics
+    
+    def check_reproducibility(self, tolerance=0.01):
+        """
+        Check if results are reproducible within tolerance
+        
+        Args:
+            tolerance: Acceptable standard deviation as fraction of mean
+        """
+        primary_metrics = [result["primary_metric"] for result in self.results]
+        mean_metric = np.mean(primary_metrics)
+        std_metric = np.std(primary_metrics)
+        
+        reproducibility_score = std_metric / mean_metric
+        
+        is_reproducible = reproducibility_score < tolerance
+        
+        return {
+            "is_reproducible": is_reproducible,
+            "reproducibility_score": reproducibility_score,
+            "tolerance": tolerance,
+            "mean": mean_metric,
+            "std": std_metric
+        }
 ```
 
 ## Configuration
@@ -648,336 +929,6 @@ reproducibility:
     log_experiment_steps: true
 ```
 
-### Advanced Reproducibility Configuration
-
-```yaml
-# configs/advanced_reproducibility.yaml
-reproducibility:
-  # Containerization
-  containerization:
-    enabled: true
-    base_image: "pytorch/pytorch:latest"
-    include_gpu_support: true
-    mount_data_volumes: true
-  
-  # Dependency management
-  dependency_management:
-    pin_versions: true
-    create_requirements_file: true
-    create_environment_file: true
-    verify_dependencies: true
-  
-  # Result validation
-  result_validation:
-    enabled: true
-    tolerance_threshold: 0.01
-    statistical_tests: true
-    cross_validation: true
-  
-  # Documentation
-  documentation:
-    auto_generate_readme: true
-    include_setup_instructions: true
-    include_usage_examples: true
-    include_troubleshooting: true
-```
-
-## Advanced Reproducibility Techniques
-
-### Containerization for Reproducibility
-
-Implement containerization for maximum reproducibility:
-
-```python
-class ContainerManager:
-    def __init__(self, project_root: str):
-        self.project_root = Path(project_root)
-        self.dockerfile_path = self.project_root / "Dockerfile"
-        self.docker_compose_path = self.project_root / "docker-compose.yml"
-    
-    def create_dockerfile(self, base_image: str = "pytorch/pytorch:latest", 
-                         python_version: str = "3.9"):
-        """
-        Create comprehensive Dockerfile
-        """
-        dockerfile_content = f"""FROM {base_image}
-
-# Set environment variables
-ENV PYTHONUNBUFFERED=1
-ENV PYTHONDONTWRITEBYTECODE=1
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \\
-    git \\
-    curl \\
-    wget \\
-    && rm -rf /var/lib/apt/lists/*
-
-# Set working directory
-WORKDIR /app
-
-# Copy requirements first for better caching
-COPY requirements.txt .
-
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy project files
-COPY . .
-
-# Set Python path
-ENV PYTHONPATH=/app
-
-# Create non-root user
-RUN useradd -m -u 1000 researcher
-RUN chown -R researcher:researcher /app
-USER researcher
-
-# Default command
-CMD ["python", "main.py"]
-"""
-        
-        with open(self.dockerfile_path, 'w') as f:
-            f.write(dockerfile_content)
-        
-        print(f"Dockerfile created: {self.dockerfile_path}")
-    
-    def create_docker_compose(self, gpu_support: bool = True):
-        """
-        Create docker-compose.yml for easy deployment
-        """
-        compose_content = {
-            'version': '3.8',
-            'services': {
-                'nemo-rl': {
-                    'build': '.',
-                    'volumes': [
-                        './data:/app/data',
-                        './experiments:/app/experiments',
-                        './results:/app/results'
-                    ],
-                    'environment': [
-                        'CUDA_VISIBLE_DEVICES=0'
-                    ] if gpu_support else [],
-                    'deploy': {
-                        'resources': {
-                            'reservations': {
-                                'devices': [
-                                    {
-                                        'driver': 'nvidia',
-                                        'count': 1,
-                                        'capabilities': ['gpu']
-                                    }
-                                ]
-                            }
-                        }
-                    } if gpu_support else {}
-                }
-            }
-        }
-        
-        with open(self.docker_compose_path, 'w') as f:
-            yaml.dump(compose_content, f, default_flow_style=False)
-        
-        print(f"Docker Compose file created: {self.docker_compose_path}")
-    
-    def build_container(self, tag: str = "nemo-rl:latest"):
-        """
-        Build Docker container
-        """
-        try:
-            subprocess.run([
-                'docker', 'build', '-t', tag, '.'
-            ], check=True, cwd=self.project_root)
-            print(f"Container built successfully: {tag}")
-        except subprocess.CalledProcessError as e:
-            print(f"Error building container: {e}")
-    
-    def run_container(self, tag: str = "nemo-rl:latest", 
-                     command: str = "python main.py",
-                     volumes: List[str] = None):
-        """
-        Run Docker container
-        """
-        if volumes is None:
-            volumes = [
-                f"{self.project_root}/data:/app/data",
-                f"{self.project_root}/experiments:/app/experiments",
-                f"{self.project_root}/results:/app/results"
-            ]
-        
-        docker_cmd = ['docker', 'run', '--rm']
-        
-        # Add volume mounts
-        for volume in volumes:
-            docker_cmd.extend(['-v', volume])
-        
-        # Add GPU support if available
-        try:
-            subprocess.run(['nvidia-smi'], check=True, capture_output=True)
-            docker_cmd.extend(['--gpus', 'all'])
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            print("GPU not available, running without GPU support")
-        
-        docker_cmd.extend([tag, 'bash', '-c', command])
-        
-        try:
-            subprocess.run(docker_cmd, check=True)
-            print("Container run completed successfully")
-        except subprocess.CalledProcessError as e:
-            print(f"Error running container: {e}")
-```
-
-### Result Validation and Verification
-
-Implement result validation and verification:
-
-```python
-class ResultValidator:
-    def __init__(self, tolerance_threshold: float = 0.01):
-        self.tolerance_threshold = tolerance_threshold
-    
-    def validate_numerical_results(self, expected: Dict[str, float], 
-                                 actual: Dict[str, float]) -> Dict[str, Any]:
-        """
-        Validate numerical results
-        """
-        validation_results = {}
-        
-        for key in expected.keys():
-            if key in actual:
-                expected_val = expected[key]
-                actual_val = actual[key]
-                
-                if isinstance(expected_val, (int, float)) and isinstance(actual_val, (int, float)):
-                    relative_error = abs(expected_val - actual_val) / max(abs(expected_val), 1e-8)
-                    validation_results[key] = {
-                        'expected': expected_val,
-                        'actual': actual_val,
-                        'relative_error': relative_error,
-                        'within_tolerance': relative_error <= self.tolerance_threshold
-                    }
-                else:
-                    validation_results[key] = {
-                        'expected': expected_val,
-                        'actual': actual_val,
-                        'match': expected_val == actual_val
-                    }
-        
-        return validation_results
-    
-    def validate_statistical_results(self, expected_stats: Dict[str, Any],
-                                  actual_stats: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Validate statistical results
-        """
-        validation_results = {}
-        
-        # Validate means
-        if 'mean' in expected_stats and 'mean' in actual_stats:
-            mean_error = abs(expected_stats['mean'] - actual_stats['mean'])
-            validation_results['mean'] = {
-                'expected': expected_stats['mean'],
-                'actual': actual_stats['mean'],
-                'error': mean_error,
-                'within_tolerance': mean_error <= self.tolerance_threshold
-            }
-        
-        # Validate standard deviations
-        if 'std' in expected_stats and 'std' in actual_stats:
-            std_error = abs(expected_stats['std'] - actual_stats['std'])
-            validation_results['std'] = {
-                'expected': expected_stats['std'],
-                'actual': actual_stats['std'],
-                'error': std_error,
-                'within_tolerance': std_error <= self.tolerance_threshold
-            }
-        
-        # Validate p-values
-        if 'p_value' in expected_stats and 'p_value' in actual_stats:
-            p_value_error = abs(expected_stats['p_value'] - actual_stats['p_value'])
-            validation_results['p_value'] = {
-                'expected': expected_stats['p_value'],
-                'actual': actual_stats['p_value'],
-                'error': p_value_error,
-                'within_tolerance': p_value_error <= self.tolerance_threshold
-            }
-        
-        return validation_results
-    
-    def perform_cross_validation(self, experiment_results: List[Dict[str, Any]]) -> Dict[str, Any]:
-        """
-        Perform cross-validation of results
-        """
-        if len(experiment_results) < 2:
-            return {'error': 'Need at least 2 experiments for cross-validation'}
-        
-        # Extract common metrics
-        common_metrics = set(experiment_results[0].keys())
-        for result in experiment_results[1:]:
-            common_metrics = common_metrics.intersection(set(result.keys()))
-        
-        cross_validation_results = {}
-        
-        for metric in common_metrics:
-            values = [result[metric] for result in experiment_results if isinstance(result[metric], (int, float))]
-            
-            if len(values) >= 2:
-                mean_val = np.mean(values)
-                std_val = np.std(values)
-                cv = std_val / mean_val if mean_val != 0 else float('inf')
-                
-                cross_validation_results[metric] = {
-                    'mean': mean_val,
-                    'std': std_val,
-                    'coefficient_of_variation': cv,
-                    'stable': cv <= 0.1  # Consider stable if CV <= 10%
-                }
-        
-        return cross_validation_results
-    
-    def generate_validation_report(self, validation_results: Dict[str, Any]) -> str:
-        """
-        Generate validation report
-        """
-        report = "# Result Validation Report\n\n"
-        
-        # Summary
-        total_checks = 0
-        passed_checks = 0
-        
-        for category, results in validation_results.items():
-            if isinstance(results, dict):
-                for check_name, check_result in results.items():
-                    total_checks += 1
-                    if check_result.get('within_tolerance', check_result.get('match', False)):
-                        passed_checks += 1
-        
-        report += f"## Summary\n\n"
-        report += f"- Total checks: {total_checks}\n"
-        report += f"- Passed checks: {passed_checks}\n"
-        report += f"- Failed checks: {total_checks - passed_checks}\n"
-        report += f"- Success rate: {passed_checks/total_checks*100:.1f}%\n\n"
-        
-        # Detailed results
-        for category, results in validation_results.items():
-            report += f"## {category.replace('_', ' ').title()}\n\n"
-            
-            if isinstance(results, dict):
-                for check_name, check_result in results.items():
-                    status = "✅ PASS" if check_result.get('within_tolerance', check_result.get('match', False)) else "❌ FAIL"
-                    report += f"### {check_name}\n"
-                    report += f"Status: {status}\n"
-                    
-                    for key, value in check_result.items():
-                        if key not in ['within_tolerance', 'match']:
-                            report += f"- {key}: {value}\n"
-                    
-                    report += "\n"
-        
-        return report
-```
-
 ## Best Practices
 
 ### 1. Complete Reproducibility Pipeline
@@ -994,7 +945,6 @@ class ReproducibilityPipeline:
         self.env_manager = EnvironmentManager(project_root)
         self.exp_tracker = ExperimentTracker(project_root)
         self.data_manager = DataVersionManager(project_root / "data")
-        self.container_manager = ContainerManager(project_root)
         self.result_validator = ResultValidator(
             tolerance_threshold=config.get('tolerance_threshold', 0.01)
         )
@@ -1012,8 +962,7 @@ class ReproducibilityPipeline:
         
         # Create Dockerfile
         if self.config.get('create_dockerfile', True):
-            self.container_manager.create_dockerfile()
-            self.container_manager.create_docker_compose()
+            self.env_manager.create_dockerfile()
         
         # Create requirements file
         self.env_manager.create_requirements_file([
@@ -1066,75 +1015,6 @@ class ReproducibilityPipeline:
         except Exception as e:
             print(f"Experiment failed: {e}")
             raise
-    
-    def reproduce_experiment(self, experiment_id: str) -> Dict[str, Any]:
-        """
-        Reproduce experiment
-        """
-        # Get original experiment info
-        original_info = self.exp_tracker.get_experiment_info(experiment_id)
-        
-        # Verify environment compatibility
-        compatibility = self.env_manager.verify_environment_compatibility()
-        if not compatibility['overall_compatible']:
-            print("Warning: Environment may not be fully compatible")
-        
-        # Reproduce experiment
-        reproduction_result = self.exp_tracker.reproduce_experiment(experiment_id)
-        
-        # Validate results
-        if original_info['result'] and reproduction_result['result']:
-            validation_results = self.result_validator.validate_numerical_results(
-                original_info['result'], reproduction_result['result']
-            )
-            reproduction_result['validation'] = validation_results
-        
-        return reproduction_result
-    
-    def generate_reproducibility_report(self, experiment_id: str) -> str:
-        """
-        Generate comprehensive reproducibility report
-        """
-        experiment_info = self.exp_tracker.get_experiment_info(experiment_id)
-        
-        report = f"# Reproducibility Report for {experiment_id}\n\n"
-        
-        # Experiment information
-        report += "## Experiment Information\n\n"
-        report += f"- Experiment ID: {experiment_info['metadata']['experiment_id']}\n"
-        report += f"- Created: {experiment_info['metadata']['created_at']}\n"
-        report += f"- Status: {experiment_info['metadata']['status']}\n\n"
-        
-        # Git information
-        git_info = experiment_info['metadata']['git_info']
-        report += "## Git Information\n\n"
-        report += f"- Commit: {git_info['commit_hash']}\n"
-        report += f"- Branch: {git_info['branch']}\n"
-        report += f"- Message: {git_info['commit_message']}\n"
-        report += f"- Date: {git_info['commit_date']}\n\n"
-        
-        # Configuration
-        report += "## Configuration\n\n"
-        report += "```json\n"
-        report += json.dumps(experiment_info['config'], indent=2)
-        report += "\n```\n\n"
-        
-        # Results
-        if experiment_info['result']:
-            report += "## Results\n\n"
-            report += "```json\n"
-            report += json.dumps(experiment_info['result'], indent=2)
-            report += "\n```\n\n"
-        
-        # Environment information
-        if 'environment_snapshot' in experiment_info['result']:
-            env_info = experiment_info['result']['environment_snapshot']
-            report += "## Environment\n\n"
-            report += f"- Python: {env_info['python_version']}\n"
-            report += f"- Platform: {env_info['platform']}\n"
-            report += f"- GPU: {env_info['gpu_info']}\n\n"
-        
-        return report
 ```
 
 ### 2. Automated Reproducibility Testing
@@ -1252,6 +1132,6 @@ def debug_reproducibility_issues(self):
 
 ## Next Steps
 
-- Learn about [Experimental Design](experimental-design) for rigorous research
-- Review [Model Evaluation](model-evaluation) for comprehensive assessment
-- Explore [Algorithm Customization](../algorithm-customization/index) for advanced training 
+- Learn about [Experimental Design](experimental-design-validation) for rigorous research
+- Review [Model Evaluation](model-evaluation-validation) for comprehensive assessment
+- Explore [Algorithm Development](../algorithm-development/index) for advanced training 

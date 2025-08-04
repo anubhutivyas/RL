@@ -25,7 +25,7 @@ For detailed design philosophy, implementation specifics, and advanced architect
 RL Actors are the fundamental building blocks of NeMo RL. Each actor represents a specific component of the RL system:
 
 - **Policy Model/Training Framework**: Handles model training and updates
-- **Fast Inference Framework**: Provides high-throughput inference (vLLM, SGLANG, TRT-LLM)
+- **Generation Framework**: Provides high-throughput inference using VLLM backend
 - **Reward Environments**: Implements reward computation and environment simulation
 - **Critics**: Evaluates model performance and provides feedback
 

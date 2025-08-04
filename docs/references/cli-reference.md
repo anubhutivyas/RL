@@ -146,11 +146,13 @@ All scripts support these global options:
 
 NeMo RL respects these environment variables:
 
-- `NEMO_RL_LOG_LEVEL`: Default logging level
-- `NEMO_RL_CONFIG_PATH`: Default configuration directory
-- `NEMO_RL_CACHE_DIR`: Cache directory for models and data
 - `RAY_ADDRESS`: Ray cluster address
 - `NRL_NSYS_WORKER_PATTERNS`: Enable nsys profiling
+- `HF_HOME`: HuggingFace cache directory
+- `HF_TOKEN`: HuggingFace authentication token
+- `WANDB_API_KEY`: Weights & Biases API key for logging
+- `HF_DATASETS_CACHE`: HuggingFace datasets cache directory
+- `RAY_ENABLE_MULTI_PROCESSES_GPU_COUNT`: Enable multi-process GPU support
 
 ## Examples
 

@@ -37,15 +37,7 @@ Large-scale distributed training example with DeepScaleR integration.
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} {octicon}`eye;1.5em;sd-mr-1` Multi-Modal RL Training
-:link: multi-modal-rl-training
-:link-type: doc
 
-Advanced vision-language integration with cross-modal attention mechanisms.
-
-+++
-{bdg-warning}`Advanced`
-:::
 
 ::::
 
@@ -61,19 +53,13 @@ Advanced vision-language integration with cross-modal attention mechanisms.
 
 ### **GRPO on DeepScaleR**
 - **Domain**: Large-scale distributed training
-- **Platform**: DeepScaleR cloud infrastructure
+- **Dataset**: DeepScaleR dataset for mathematical reasoning
 - **Model Size**: Large models (1.5B+ parameters)
 - **Training**: Group Relative Policy Optimization with distributed computing
 - **Scaling**: Multi-GPU and multi-node training strategies
-- **Use Case**: Production-scale RL training, cloud deployment
+- **Use Case**: Large-scale distributed training on mathematical reasoning dataset
 
-### **Multi-Modal RL Training**
-- **Domain**: Vision-language integration with RL
-- **Modalities**: Text, images, and cross-modal attention
-- **Model Size**: Configurable (1B to 70B parameters)
-- **Training**: Multi-modal GRPO with visual preference datasets
-- **Features**: Cross-modal attention, visual reasoning, multi-modal evaluation
-- **Use Case**: Visual AI assistants, robotics, autonomous systems
+
 
 
 
@@ -213,7 +199,7 @@ For additional learning resources, visit the main [Learning Resources](../index)
 :maxdepth: 2
 sft-openmathinstruct2
 grpo-deepscaler
-multi-modal-rl-training
+
 :::: 
 
  

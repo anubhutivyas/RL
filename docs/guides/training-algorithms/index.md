@@ -51,7 +51,7 @@ Advanced reinforcement learning algorithm for training language models with grou
 {bdg-warning}`Advanced`
 :::
 
-:::{grid-item-card} {octicon}`chart;1.5em;sd-mr-1` Evaluation
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Evaluation
 :link: eval
 :link-type: doc
 
@@ -222,16 +222,16 @@ python -m nemo_rl.eval --config eval_config.yaml
 
 ## Next Steps
 
-- [SFT Training](sft) - Learn supervised fine-tuning fundamentals
-- [DPO Training](dpo) - Master preference optimization
-- [GRPO Training](grpo) - Explore advanced RL techniques
-- [Evaluation](eval) - Comprehensive model evaluation
+- [SFT Training](sft.md) - Learn supervised fine-tuning fundamentals
+- [DPO Training](dpo.md) - Master preference optimization
+- [GRPO Training](grpo.md) - Explore advanced RL techniques
+- [Evaluation](eval.md) - Comprehensive model evaluation
 - [Model Development](../model-development/index) - Customize models for your use case
 - [Performance Optimization](../training-optimization/index) - Optimize training efficiency
 
 ## Get Help
 
-- [Troubleshooting](../../troubleshooting) - Common training issues and solutions
+- [Troubleshooting](../troubleshooting) - Common training issues and solutions
 - [API Documentation](../../../api-docs/index) - Complete algorithm documentation
 - [Configuration Reference](../../../references/configuration-reference) - Training parameters
 - [Community Support](https://github.com/NVIDIA/NeMo-RL/issues) - GitHub discussions

@@ -239,35 +239,7 @@ When contributing to NeMo RL, please follow these guidelines:
 3. **Update Documentation**: Keep API documentation current with code changes
 4. **Follow Patterns**: Use established patterns for consistency
 
-For more information on contributing, see the [Development Guide](../guides/production-support/testing).
+For more information on contributing, see the [Development Guide](../guides/troubleshooting).
 
----
 
-::::{toctree}
-:hidden:
-:caption: API Documentation
-:maxdepth: 2
-index
-distributed
-models
-converters
-auto-generated.md
-nemo_rl/nemo_rl
-nemo_rl/nemo_rl.algorithms
-nemo_rl/nemo_rl.data
-nemo_rl/nemo_rl.distributed
-nemo_rl/nemo_rl.environments
-nemo_rl/nemo_rl.evals
-nemo_rl/nemo_rl.experience
-nemo_rl/nemo_rl.metrics
-nemo_rl/nemo_rl.models
-nemo_rl/nemo_rl.utils
-nemo_rl/nemo_rl.converters
-nemo_rl/nemo_rl.data.hf_datasets
-nemo_rl/nemo_rl.models.generation
-nemo_rl/nemo_rl.models.dtensor
-nemo_rl/nemo_rl.models.huggingface
-nemo_rl/nemo_rl.models.megatron
-nemo_rl/nemo_rl.models.policy
-::::
 

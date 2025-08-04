@@ -130,7 +130,7 @@ After completing your first training run:
 2. **Scale Up**: Set up [distributed training](cluster.md) for larger models
 3. **Optimize Performance**: Use [profiling tools](../guides/environment-data/nsys-profiling) for training optimization
 4. **Customize**: Learn to [add new models](../guides/model-development/adding-new-models) and environments
-5. **Deploy**: Follow the [production support guide](../guides/production-support/index) for production deployment
+5. **Deploy**: Follow the [troubleshooting guide](../guides/troubleshooting) for production deployment
 
 ## Get Help
 

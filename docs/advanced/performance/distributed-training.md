@@ -1,16 +1,16 @@
 ---
-description: "Scale from single GPU to multi-node clusters with efficient distributed training strategies"
-tags: ["distributed", "training", "scaling", "multi-gpu", "clusters"]
+description: "Scale from single GPU to multi-node clusters with Ray-based distributed training strategies"
+tags: ["distributed", "training", "scaling", "multi-gpu", "clusters", "ray"]
 categories: ["performance"]
 ---
 
 # Distributed Training
 
-This guide covers how to scale NeMo RL from single GPU to multi-node clusters with efficient distributed training strategies.
+This guide covers how to scale NeMo RL from single GPU to multi-node clusters with efficient Ray-based distributed training strategies.
 
 ## Overview
 
-NeMo RL provides robust distributed training capabilities that allow you to scale your training across multiple GPUs and nodes. This is essential for training large models efficiently and reducing training time.
+NeMo RL provides robust distributed training capabilities using Ray for distributed computing, allowing you to scale your training across multiple GPUs and nodes. This is essential for training large models efficiently and reducing training time.
 
 ## Key Components
 
@@ -20,16 +20,28 @@ NeMo RL uses Ray for distributed computing, providing seamless scaling:
 
 ```python
 import ray
-from nemo_rl.distributed import RayTrainer
+from nemo_rl.distributed.virtual_cluster import RayVirtualCluster, init_ray
+from nemo_rl.distributed.worker_groups import RayWorkerGroup, RayWorkerBuilder
 
 # Initialize Ray
-ray.init()
+init_ray()
 
-# Create distributed trainer
-trainer = RayTrainer(
-    model=model,
-    config=config,
-    num_workers=4  # Number of worker processes
+# Create virtual cluster
+cluster = RayVirtualCluster(
+    bundle_ct_per_node_list=[8, 8, 8, 8],  # 4 nodes with 8 GPUs each
+    num_gpus_per_node=8,
+    use_gpus=True
+)
+
+# Create worker builder
+builder = RayWorkerBuilder("nemo_rl.models.policy.DTensorPolicyWorker")
+
+# Create worker group
+worker_group = RayWorkerGroup(
+    cluster=cluster,
+    remote_worker_builder=builder,
+    workers_per_node=2,  # 2 workers per node
+    name_prefix="policy_worker"
 )
 ```
 
@@ -38,542 +50,347 @@ trainer = RayTrainer(
 Start with single node multi-GPU training:
 
 ```python
-from nemo_rl.distributed import DistributedTrainer
+from nemo_rl.distributed.virtual_cluster import RayVirtualCluster
 
-class MultiGPUTrainer(DistributedTrainer):
-    def __init__(self, model, config, num_gpus=4):
-        super().__init__(model, config)
-        self.num_gpus = num_gpus
-        
-        # Initialize distributed training
-        self.setup_distributed()
+def setup_single_node_training():
+    """
+    Setup single node multi-GPU training
+    """
+    # Create single node cluster
+    cluster = RayVirtualCluster(
+        bundle_ct_per_node_list=[8],  # Single node with 8 GPUs
+        num_gpus_per_node=8,
+        use_gpus=True
+    )
     
-    def setup_distributed(self):
-        """
-        Setup distributed training environment
-        """
-        # Initialize process group
-        torch.distributed.init_process_group(
-            backend='nccl',  # Use NCCL for GPU communication
-            init_method='env://'
-        )
-        
-        # Wrap model with DistributedDataParallel
-        self.model = torch.nn.parallel.DistributedDataParallel(
-            self.model,
-            device_ids=[self.local_rank]
-        )
+    # Create worker builder
+    builder = RayWorkerBuilder("nemo_rl.models.policy.DTensorPolicyWorker")
     
-    def train_step(self, batch):
-        """
-        Distributed training step
-        """
-        # Move batch to correct device
-        batch = {k: v.to(self.device) for k, v in batch.items()}
-        
-        # Forward pass
-        outputs = self.model(batch)
-        
-        # Compute loss
-        loss = self.compute_loss(outputs, batch)
-        
-        # Backward pass
-        loss.backward()
-        
-        # Synchronize gradients across processes
-        self.synchronize_gradients()
-        
-        return loss
+    # Create worker group
+    worker_group = RayWorkerGroup(
+        cluster=cluster,
+        remote_worker_builder=builder,
+        workers_per_node=4,  # 4 workers on single node
+        name_prefix="single_node_worker"
+    )
+    
+    return worker_group
+```
+
+### Multi-Node Training
+
+Scale to multiple nodes:
+
+```python
+def setup_multi_node_training():
+    """
+    Setup multi-node distributed training
+    """
+    # Create multi-node cluster
+    cluster = RayVirtualCluster(
+        bundle_ct_per_node_list=[8, 8, 8, 8],  # 4 nodes
+        num_gpus_per_node=8,
+        use_gpus=True
+    )
+    
+    # Create worker builder
+    builder = RayWorkerBuilder("nemo_rl.models.policy.DTensorPolicyWorker")
+    
+    # Create worker group across nodes
+    worker_group = RayWorkerGroup(
+        cluster=cluster,
+        remote_worker_builder=builder,
+        workers_per_node=2,  # 2 workers per node = 8 total workers
+        name_prefix="multi_node_worker"
+    )
+    
+    return worker_group
 ```
 
 ## Configuration
 
 ### Distributed Training Configuration
 
-```yaml
-# configs/distributed_training.yaml
-distributed:
-  enabled: true
-  backend: nccl  # or gloo for CPU
-  num_gpus: 4
-  num_nodes: 2
-  
-  # Communication settings
-  communication:
-    timeout: 1800  # 30 minutes
-    bucket_cap_mb: 25
-    
-  # Gradient synchronization
-  gradient_sync:
-    enabled: true
-    bucket_size: 25
-    
-  # Mixed precision
-  mixed_precision:
-    enabled: true
-    dtype: float16
-    
-  # Memory optimization
-  memory_optimization:
-    gradient_checkpointing: true
-    activation_checkpointing: true
-```
-
-### Multi-Node Configuration
+Configure distributed training in your YAML config:
 
 ```yaml
-# configs/multi_node.yaml
-distributed:
-  enabled: true
-  num_nodes: 4
+# Real NeMo RL distributed training config
+cluster:
   gpus_per_node: 8
+  num_nodes: 4  # Total nodes in cluster
+
+policy:
+  dtensor_cfg:
+    enabled: true
+    tensor_parallel_size: 4     # Distribute across 4 GPUs
+    context_parallel_size: 1    # No context parallelism
+    cpu_offload: true           # Enable CPU offloading
+    sequence_parallel: false    # Disable for simplicity
+    
+  # Distributed training settings
+  train_global_batch_size: 64   # Global batch size across all workers
+  train_micro_batch_size: 1     # Micro batch size per worker
+  generation_batch_size: 32      # Generation batch size
+  logprob_batch_size: 4         # Logprob batch size
+```
+
+### Advanced Distributed Configuration
+
+```yaml
+# Advanced distributed training
+cluster:
+  gpus_per_node: 8
+  num_nodes: 4
+
+policy:
+  dtensor_cfg:
+    enabled: true
+    tensor_parallel_size: 8     # Full node parallelism
+    context_parallel_size: 1
+    cpu_offload: true
+    sequence_parallel: true      # Enable for large models
+    custom_parallel_plan: null
+    
+  # Advanced distributed settings
+  train_global_batch_size: 128
+  train_micro_batch_size: 1
+  max_total_sequence_length: 8192
   
-  # Node configuration
-  nodes:
-    - address: "192.168.1.10"
-      gpus: [0, 1, 2, 3, 4, 5, 6, 7]
-    - address: "192.168.1.11"
-      gpus: [0, 1, 2, 3, 4, 5, 6, 7]
-    - address: "192.168.1.12"
-      gpus: [0, 1, 2, 3, 4, 5, 6, 7]
-    - address: "192.168.1.13"
-      gpus: [0, 1, 2, 3, 4, 5, 6, 7]
+  # Optimizer settings for distributed training
+  optimizer:
+    name: "torch.optim.AdamW"
+    kwargs:
+      foreach: False  # Required for DTensor
+      fused: False    # Required for DTensor
+      weight_decay: 0.01
 ```
 
-## Advanced Strategies
+## Training Patterns
 
-### Pipeline Parallelism
-
-For very large models, implement pipeline parallelism:
+### Distributed Training Loop
 
 ```python
-class PipelineParallelTrainer(DistributedTrainer):
-    def __init__(self, model, config, num_stages=4):
-        super().__init__(model, config)
-        self.num_stages = num_stages
-        self.stage_id = self.rank // (self.world_size // num_stages)
-        
-        # Split model into stages
-        self.model_stages = self.split_model_into_stages()
+def distributed_training_loop(worker_group, data, loss_fn):
+    """
+    Distributed training loop using NeMo RL patterns
+    """
+    # Run training across all workers
+    futures = worker_group.run_all_workers_single_data(
+        method_name="train",
+        data=data,
+        loss_fn=loss_fn
+    )
     
-    def split_model_into_stages(self):
-        """
-        Split model into pipeline stages
-        """
-        stages = []
-        layers_per_stage = len(self.model.layers) // self.num_stages
-        
-        for i in range(self.num_stages):
-            start_idx = i * layers_per_stage
-            end_idx = (i + 1) * layers_per_stage if i < self.num_stages - 1 else len(self.model.layers)
-            
-            stage = self.model.layers[start_idx:end_idx]
-            stages.append(stage)
-        
-        return stages
+    # Get results from all workers
+    results = worker_group.get_all_worker_results(futures)
     
-    def forward_pipeline(self, batch):
-        """
-        Forward pass through pipeline stages
-        """
-        # Split batch into micro-batches
-        micro_batches = self.split_batch(batch)
-        
-        # Process through pipeline stages
-        outputs = []
-        for micro_batch in micro_batches:
-            stage_output = self.process_through_stages(micro_batch)
-            outputs.append(stage_output)
-        
-        return self.combine_outputs(outputs)
+    return results
 ```
 
-### Data Parallelism with Gradient Accumulation
-
-Implement efficient data parallelism with gradient accumulation:
+### Distributed Inference
 
 ```python
-class GradientAccumulationTrainer(DistributedTrainer):
-    def __init__(self, model, config, accumulation_steps=4):
-        super().__init__(model, config)
-        self.accumulation_steps = accumulation_steps
-        self.accumulation_counter = 0
+def distributed_inference(worker_group, data):
+    """
+    Distributed inference using NeMo RL patterns
+    """
+    # Run inference across all workers
+    futures = worker_group.run_all_workers_single_data(
+        method_name="get_logprobs",
+        data=data
+    )
     
-    def train_step(self, batch):
-        """
-        Training step with gradient accumulation
-        """
-        # Forward pass
-        outputs = self.model(batch)
-        loss = self.compute_loss(outputs, batch)
-        
-        # Scale loss for gradient accumulation
-        scaled_loss = loss / self.accumulation_steps
-        
-        # Backward pass
-        scaled_loss.backward()
-        
-        self.accumulation_counter += 1
-        
-        # Update weights after accumulation steps
-        if self.accumulation_counter % self.accumulation_steps == 0:
-            self.optimizer.step()
-            self.optimizer.zero_grad()
-            
-            # Synchronize gradients across processes
-            self.synchronize_gradients()
-        
-        return loss
+    # Get results from all workers
+    logprobs = worker_group.get_all_worker_results(futures)
+    
+    return logprobs
 ```
 
-### Sharded Data Parallelism
-
-For memory-efficient training with large models:
+### Sharded Data Training
 
 ```python
-from torch.distributed.fsdp import FullyShardedDataParallel as FSDP
-
-class ShardedDataParallelTrainer(DistributedTrainer):
-    def __init__(self, model, config):
-        super().__init__(model, config)
-        
-        # Wrap model with FSDP
-        self.model = FSDP(
-            self.model,
-            mixed_precision=True,
-            cpu_offload=True,
-            auto_wrap_policy=self.get_auto_wrap_policy()
-        )
+def sharded_data_training(worker_group, data):
+    """
+    Training with sharded data across workers
+    """
+    # Run training with sharded data
+    futures = worker_group.run_all_workers_sharded_data(
+        method_name="train",
+        data=data,
+        in_sharded_axes=["batch"],  # Shard along batch dimension
+        replicate_on_axes=["model"], # Replicate model across workers
+        output_is_replicated=["loss"] # Loss is replicated
+    )
     
-    def get_auto_wrap_policy(self):
-        """
-        Define auto-wrap policy for FSDP
-        """
-        from torch.distributed.fsdp.wrap import transformer_auto_wrap_policy
-        
-        return transformer_auto_wrap_policy(
-            self.model,
-            transformer_layer_cls={torch.nn.TransformerEncoderLayer}
-        )
+    # Get results
+    results = worker_group.get_all_worker_results(futures)
     
-    def train_step(self, batch):
-        """
-        Training step with sharded data parallelism
-        """
-        # Forward pass
-        outputs = self.model(batch)
-        loss = self.compute_loss(outputs, batch)
-        
-        # Backward pass
-        loss.backward()
-        
-        # Optimizer step (handled by FSDP)
-        self.optimizer.step()
-        self.optimizer.zero_grad()
-        
-        return loss
-```
-
-## Performance Optimization
-
-### Communication Optimization
-
-Optimize inter-process communication:
-
-```python
-class OptimizedCommunicationTrainer(DistributedTrainer):
-    def __init__(self, model, config):
-        super().__init__(model, config)
-        
-        # Optimize communication
-        self.setup_communication_optimization()
-    
-    def setup_communication_optimization(self):
-        """
-        Setup communication optimization
-        """
-        # Use gradient bucketing
-        torch.distributed.init_process_group(
-            backend='nccl',
-            init_method='env://',
-            timeout=datetime.timedelta(seconds=1800)
-        )
-        
-        # Enable gradient compression
-        self.gradient_compression = True
-        
-        # Setup all-reduce fusion
-        self.all_reduce_fusion = True
-    
-    def synchronize_gradients(self):
-        """
-        Optimized gradient synchronization
-        """
-        if self.gradient_compression:
-            # Compress gradients before communication
-            compressed_gradients = self.compress_gradients()
-            torch.distributed.all_reduce(compressed_gradients)
-            self.decompress_gradients(compressed_gradients)
-        else:
-            # Standard all-reduce
-            for param in self.model.parameters():
-                if param.grad is not None:
-                    torch.distributed.all_reduce(param.grad.data, op=torch.distributed.ReduceOp.SUM)
-```
-
-### Memory Optimization
-
-Implement memory-efficient distributed training:
-
-```python
-class MemoryOptimizedTrainer(DistributedTrainer):
-    def __init__(self, model, config):
-        super().__init__(model, config)
-        
-        # Enable memory optimizations
-        self.setup_memory_optimization()
-    
-    def setup_memory_optimization(self):
-        """
-        Setup memory optimization techniques
-        """
-        # Enable gradient checkpointing
-        if hasattr(self.model, 'gradient_checkpointing_enable'):
-            self.model.gradient_checkpointing_enable()
-        
-        # Enable activation checkpointing
-        self.activation_checkpointing = True
-        
-        # Use mixed precision training
-        self.scaler = torch.cuda.amp.GradScaler()
-    
-    def train_step(self, batch):
-        """
-        Memory-optimized training step
-        """
-        # Use automatic mixed precision
-        with torch.cuda.amp.autocast():
-            outputs = self.model(batch)
-            loss = self.compute_loss(outputs, batch)
-        
-        # Scale loss and backward pass
-        self.scaler.scale(loss).backward()
-        
-        # Unscale gradients and optimizer step
-        self.scaler.unscale_(self.optimizer)
-        self.optimizer.step()
-        self.optimizer.zero_grad()
-        
-        # Update scaler
-        self.scaler.step(self.optimizer)
-        self.scaler.update()
-        
-        return loss
-```
-
-## Monitoring and Debugging
-
-### Performance Monitoring
-
-Monitor distributed training performance:
-
-```python
-class MonitoredDistributedTrainer(DistributedTrainer):
-    def __init__(self, model, config):
-        super().__init__(model, config)
-        self.metrics = {}
-    
-    def log_distributed_metrics(self):
-        """
-        Log distributed training metrics
-        """
-        # Communication metrics
-        comm_time = self.measure_communication_time()
-        self.metrics['communication_time'] = comm_time
-        
-        # Memory usage
-        memory_usage = torch.cuda.memory_allocated() / 1024**3  # GB
-        self.metrics['memory_usage_gb'] = memory_usage
-        
-        # GPU utilization
-        gpu_utilization = self.measure_gpu_utilization()
-        self.metrics['gpu_utilization'] = gpu_utilization
-        
-        # Throughput
-        throughput = self.measure_throughput()
-        self.metrics['samples_per_second'] = throughput
-        
-        # Log metrics
-        if self.rank == 0:  # Only log from main process
-            self.logger.log(self.metrics)
-    
-    def measure_communication_time(self):
-        """
-        Measure communication overhead
-        """
-        start_time = time.time()
-        
-        # Synchronize gradients
-        self.synchronize_gradients()
-        
-        end_time = time.time()
-        return end_time - start_time
-```
-
-### Debugging Distributed Training
-
-Common issues and solutions:
-
-```python
-class DebugDistributedTrainer(DistributedTrainer):
-    def __init__(self, model, config):
-        super().__init__(model, config)
-        self.debug_mode = config.get('debug_mode', False)
-    
-    def debug_distributed_training(self):
-        """
-        Debug distributed training issues
-        """
-        if not self.debug_mode:
-            return
-        
-        # Check process group
-        if not torch.distributed.is_initialized():
-            print(f"Rank {self.rank}: Process group not initialized")
-            return
-        
-        # Check model parameters consistency
-        self.check_parameter_consistency()
-        
-        # Check gradient synchronization
-        self.check_gradient_synchronization()
-        
-        # Check memory usage
-        self.check_memory_usage()
-    
-    def check_parameter_consistency(self):
-        """
-        Check if parameters are consistent across processes
-        """
-        for name, param in self.model.named_parameters():
-            # Gather parameters from all processes
-            gathered_params = [torch.zeros_like(param) for _ in range(self.world_size)]
-            torch.distributed.all_gather(gathered_params, param.data)
-            
-            # Check consistency
-            for i, gathered_param in enumerate(gathered_params):
-                if not torch.allclose(param.data, gathered_param):
-                    print(f"Rank {self.rank}: Parameter {name} inconsistent with rank {i}")
+    return results
 ```
 
 ## Best Practices
 
-### 1. Efficient Data Loading
-
-Optimize data loading for distributed training:
+### 1. Resource Management
 
 ```python
-def setup_distributed_dataloader(self, dataset, batch_size):
+def manage_distributed_resources(worker_group):
     """
-    Setup distributed data loader
+    Manage distributed resources effectively
     """
-    sampler = torch.utils.data.distributed.DistributedSampler(
-        dataset,
-        num_replicas=self.world_size,
-        rank=self.rank,
-        shuffle=True
-    )
+    # Get cluster information
+    cluster = worker_group.cluster
+    world_size = cluster.world_size()
+    node_count = cluster.node_count()
     
-    dataloader = torch.utils.data.DataLoader(
-        dataset,
-        batch_size=batch_size,
-        sampler=sampler,
-        num_workers=4,
-        pin_memory=True,
-        persistent_workers=True
-    )
+    print(f"Cluster: {node_count} nodes, {world_size} total GPUs")
     
-    return dataloader, sampler
+    # Monitor worker health
+    for i, worker in enumerate(worker_group.workers):
+        if worker.is_alive():
+            print(f"Worker {i}: Alive")
+        else:
+            print(f"Worker {i}: Dead")
+    
+    return {
+        'world_size': world_size,
+        'node_count': node_count,
+        'active_workers': len([w for w in worker_group.workers if w.is_alive()])
+    }
 ```
 
-### 2. Gradient Synchronization
-
-Ensure proper gradient synchronization:
+### 2. Communication Optimization
 
 ```python
-def synchronize_gradients(self):
+def optimize_communication(worker_group):
     """
-    Synchronize gradients across all processes
+    Optimize communication between workers
     """
-    for param in self.model.parameters():
-        if param.grad is not None:
-            # All-reduce gradients
-            torch.distributed.all_reduce(
-                param.grad.data,
-                op=torch.distributed.ReduceOp.SUM
-            )
-            
-            # Average gradients
-            param.grad.data /= self.world_size
+    # Use efficient data transfer
+    futures = worker_group.run_all_workers_single_data(
+        method_name="prepare_for_training",
+        run_rank_0_only_axes=["setup"]  # Only rank 0 does setup
+    )
+    
+    # Synchronize workers
+    worker_group.get_all_worker_results(futures)
+    
+    return "Communication optimized"
 ```
 
-### 3. Checkpointing
-
-Implement distributed checkpointing:
+### 3. Load Balancing
 
 ```python
-def save_distributed_checkpoint(self, path):
+def balance_workload(worker_group, data_batches):
     """
-    Save distributed training checkpoint
+    Balance workload across workers
     """
-    if self.rank == 0:
-        # Save model state
-        torch.save(self.model.state_dict(), f"{path}/model.pt")
-        
-        # Save optimizer state
-        torch.save(self.optimizer.state_dict(), f"{path}/optimizer.pt")
-        
-        # Save training state
-        training_state = {
-            'epoch': self.current_epoch,
-            'step': self.current_step,
-            'best_loss': self.best_loss
-        }
-        torch.save(training_state, f"{path}/training_state.pt")
+    # Distribute data evenly across workers
+    num_workers = len(worker_group.workers)
+    batch_size = len(data_batches) // num_workers
     
-    # Synchronize all processes
-    torch.distributed.barrier()
+    balanced_batches = []
+    for i in range(num_workers):
+        start_idx = i * batch_size
+        end_idx = start_idx + batch_size
+        balanced_batches.append(data_batches[start_idx:end_idx])
+    
+    # Run training with balanced batches
+    futures = []
+    for i, batch in enumerate(balanced_batches):
+        future = worker_group.run_single_worker_single_data(
+            method_name="train",
+            worker_idx=i,
+            data=batch
+        )
+        futures.append(future)
+    
+    # Get results
+    results = worker_group.get_all_worker_results(
+        MultiWorkerFuture(futures=futures)
+    )
+    
+    return results
 ```
 
 ## Troubleshooting
 
-### Common Issues
+### Common Distributed Issues
 
-1. **Deadlocks**: Ensure all processes participate in collective operations
-2. **Memory Issues**: Use gradient accumulation and mixed precision
-3. **Communication Errors**: Check network connectivity and timeout settings
+1. **Worker Communication Errors**
+   ```python
+   # Solution: Check network connectivity and Ray status
+   import ray
+   print(f"Ray status: {ray.is_initialized()}")
+   print(f"Available resources: {ray.available_resources()}")
+   ```
 
-### Debugging Tips
+2. **Memory Issues Across Workers**
+   ```python
+   # Solution: Monitor memory on all workers
+   futures = worker_group.run_all_workers_single_data(
+       method_name="get_gpu_info"
+   )
+   gpu_infos = worker_group.get_all_worker_results(futures)
+   
+   for i, info in enumerate(gpu_infos):
+       print(f"Worker {i} GPU info: {info}")
+   ```
+
+3. **Load Balancing Issues**
+   ```python
+   # Solution: Check worker distribution
+   worker_metadata = worker_group.worker_metadata
+   for i, metadata in enumerate(worker_metadata):
+       print(f"Worker {i} metadata: {metadata}")
+   ```
+
+### Debugging Distributed Training
 
 ```python
-# Add debugging to distributed training
-def debug_distributed_setup(self):
+def debug_distributed_training(worker_group):
     """
-    Debug distributed training setup
+    Debug distributed training issues
     """
-    print(f"Rank {self.rank}: World size = {self.world_size}")
-    print(f"Rank {self.rank}: Local rank = {self.local_rank}")
-    print(f"Rank {self.rank}: Device = {self.device}")
+    print("=== Distributed Training Debug ===")
     
-    # Check process group
-    if torch.distributed.is_initialized():
-        print(f"Rank {self.rank}: Process group initialized")
-    else:
-        print(f"Rank {self.rank}: Process group not initialized")
+    # Check cluster status
+    cluster = worker_group.cluster
+    print(f"Cluster world size: {cluster.world_size()}")
+    print(f"Cluster node count: {cluster.node_count()}")
+    
+    # Check worker status
+    active_workers = 0
+    for i, worker in enumerate(worker_group.workers):
+        if worker.is_alive():
+            active_workers += 1
+            print(f"Worker {i}: Active")
+        else:
+            print(f"Worker {i}: Inactive")
+    
+    print(f"Active workers: {active_workers}/{len(worker_group.workers)}")
+    
+    # Check data parallel size
+    print(f"Data parallel size: {worker_group.dp_size}")
+    
+    print("================================")
+    
+    return {
+        'active_workers': active_workers,
+        'total_workers': len(worker_group.workers),
+        'dp_size': worker_group.dp_size
+    }
 ```
 
 ## Next Steps
 
-- Learn about [Memory Optimization](memory-optimization) for large model training
-- Review [Production Deployment](../production-deployment/index) for deployment strategies
-- Explore [Algorithm Customization](../algorithm-customization/index) for advanced training 
+After setting up distributed training:
+
+1. **Monitor Performance**: Track training speed and resource utilization
+2. **Optimize Communication**: Minimize communication overhead
+3. **Scale Further**: Add more nodes for larger models
+4. **Profile Performance**: Use profiling tools to identify bottlenecks
+
+For more advanced topics, see:
+- [Memory Optimization](memory-optimization.md) - Optimize memory usage
+- [Performance Profiling](profiling.md) - Profile distributed performance
+- [Monitoring](monitoring.md) - Monitor distributed training 
