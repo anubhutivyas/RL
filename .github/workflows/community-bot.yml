@@ -1,10 +1,12 @@
 name: Community Bot
 
 on:
-  issues:
-    types: [opened, edited, reopened, closed, deleted]
-  issue_comment:
-    types: [created, edited, deleted]
+  # TODO: Disable the community bot by only allowing it to run on dispatch until the time periods are fixed
+  workflow_dispatch:
+  #issues:
+  #  types: [opened, edited, reopened, closed, deleted]
+  #issue_comment:
+  #  types: [created, edited, deleted]
 
 jobs:
   community-bot:
