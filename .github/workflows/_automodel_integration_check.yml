@@ -276,14 +276,11 @@ jobs:
               '## ⚠️  File Synchronization Check' : 
               '## ℹ️  File Synchronization Check';
             
-            const commentBody = `${title}
-            
-            **Check based on commit:** ${{ inputs.head_sha }} (PR #${{ inputs.pr_number }} from \`${{ inputs.head_ref }}\`)
-            
-            ${{ needs.check.outputs.comment_body }}
-            
-            ---
-            <sub>This check ensures that related file implementations remain synchronized across the codebase. If you believe this warning is incorrect or the files should intentionally differ, please add a comment explaining the reasoning.</sub>`;
+            const commentBody = title + '\n\n' +
+              '**Check based on commit:** ${{ inputs.head_sha }} (PR #${{ inputs.pr_number }} from `${{ inputs.head_ref }}`)\n\n' +
+              '${{ needs.check.outputs.comment_body }}\n\n' +
+              '---\n' +
+              '<sub>This check ensures that related file implementations remain synchronized across the codebase. If you believe this warning is incorrect or the files should intentionally differ, please add a comment explaining the reasoning.</sub>';
             
             await github.rest.issues.createComment({
               issue_number: ${{ inputs.pr_number }},
