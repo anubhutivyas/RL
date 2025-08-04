@@ -83,7 +83,7 @@ from nemo_rl.utils.native_checkpoint import (
 
 
 @ray.remote(
-    runtime_env=get_runtime_env_for_policy_worker("dtensor_policy_worker")
+    runtime_env=get_runtime_env_for_policy_worker("dtensor_policy_worker_v2")
 )  # pragma: no cover
 class DTensorPolicyWorkerV2:
     def __repr__(self) -> str:
