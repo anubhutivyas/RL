@@ -650,8 +650,11 @@ class DTensorPolicyWorker:
                         # add vlm kwargs to model call
                         vlm_kwargs = mb.get_multimodal_dict(as_tensors=True, device=input_ids.device)
                         flash_attn_kwargs_wrap = {}
+                        # set flash_attn_kwargs if there are no multimodal kwargs
                         if len(vlm_kwargs) == 0:
                             flash_attn_kwargs_wrap['flash_attn_kwargs'] = flash_attn_kwargs
+                        else:
+                            position_ids = None
 
                     context_parallel_ctx = None
                     if self.cp_size > 1:
@@ -950,9 +953,13 @@ class DTensorPolicyWorker:
                 # wrap flash_attn_kwargs
                 flash_attn_kwargs_wrap = {
                 }
+
                 # only add flash_attn_kwargs if there are no multimodal kwargs
+                # if there are multimodal kwargs, we don't need to add position_ids (computed internally)
                 if len(vlm_kwargs) == 0:
                     flash_attn_kwargs_wrap['flash_attn_kwargs'] = flash_attn_kwargs
+                else:
+                    position_ids = None
 
                 context_parallel_ctx = None
                 if self.cp_size > 1:

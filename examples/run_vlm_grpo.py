@@ -84,16 +84,16 @@ def resolve_to_image(image_path_or_image: str | Image.Image) -> Image.Image:
         # Handle URL
         response = requests.get(image_path_or_image)
         response.raise_for_status()
-        return Image.open(BytesIO(response.content))
+        return Image.open(BytesIO(response.content)).convert("RGB")
     elif image_path_or_image.startswith("data:"):
         # Handle base64 encoded image
         # Format: data:image/jpeg;base64,/9j/4AAQSkZJRg...
         header, encoded = image_path_or_image.split(",", 1)
         image_data = base64.b64decode(encoded)
-        return Image.open(BytesIO(image_data))
+        return Image.open(BytesIO(image_data)).convert("RGB")
     else:
         # Handle local file path
-        return Image.open(image_path_or_image)
+        return Image.open(image_path_or_image).convert("RGB")
 
 def hf_data_processor(
     datum_dict: dict[str, Any],
@@ -201,12 +201,6 @@ def hf_data_processor(
                 : min(4, max_seq_length // len(message_log))
             ]
         loss_multiplier = 0.0
-
-    # print(f"Sampled output has {len(images)} images...")
-    # print("-"*100)
-    # print(f"vllm_content:")
-    # print(f"String formatted dialog: {string_formatted_dialog}")
-    # print(f"images log: {images}")
 
     output: DatumSpec = {
         "message_log": message_log,
