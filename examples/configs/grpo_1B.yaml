@@ -15,6 +15,9 @@ grpo:
   # Dynamic sampling configuration (DAPO-style)
   oversample_ratio: 1.0  # Set to > 1.0 to enable dynamic sampling (e.g., 2.0 means sample 2x more prompts initially)
   
+  # Overlong response filtering
+  overlong_filtering: false  # Whether to filter out responses that exceed max sequence length during training
+  
   # Aggregation stage configuration (disabled by default)
   enable_aggregation: false
   first_stage_generation_max_seq_len: null

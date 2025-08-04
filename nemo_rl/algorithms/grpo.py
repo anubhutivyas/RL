@@ -83,6 +83,8 @@ class GRPOConfig(TypedDict):
     aggregation_prompt_template: str  # Template for aggregation prompts
     first_stage_generation_max_seq_len: int  # Max new tokens for first stage generation (controls generation length, not total sequence length)
     aggregation_format_checking: bool  # Whether to enable format checking for aggregation stage
+    # Overlong response filtering
+    overlong_filtering: bool  # Whether to filter out responses that exceed max sequence length during training
 
 
 class GRPOSaveState(TypedDict):
@@ -366,12 +368,17 @@ def filter_prompts_by_diversity(
         print(f"    - Max diversity score: {diversity_scores_array.max():.3f}")
         print(f"    - Mean diversity score (diverse prompts): {diversity_scores_array[diversity_scores_array > 0].mean():.3f}")
     
-    # Sort prompts by diversity score (highest first)
-    prompt_indices = list(range(num_prompts))
-    prompt_indices.sort(key=lambda i: diversity_scores[i], reverse=True)
+    # Get prompts with diversity score > 0, or fallback to all prompts if none are diverse
+    diverse_prompt_indices = [i for i in range(num_prompts) if diversity_scores[i] > 0]
     
-    # Keep the top target_num_prompts with highest diversity
-    kept_prompt_indices = prompt_indices[:target_num_prompts]
+    if diverse_prompt_indices:
+        # Sample from diverse prompts (with replacement if needed)
+        kept_prompt_indices = random.choices(diverse_prompt_indices, k=target_num_prompts)
+        print(f"  ✓ Sampled {target_num_prompts} prompts from {len(diverse_prompt_indices)} diverse prompts")
+    else:
+        # No diverse prompts, fallback to random selection from all
+        kept_prompt_indices = random.sample(range(num_prompts), min(target_num_prompts, num_prompts))
+        print(f"  ⚠️ No diverse prompts found, randomly selected {len(kept_prompt_indices)} from all prompts")
     
     # Create indices for the repeated batch (accounting for multiple generations per prompt)
     kept_indices = []
@@ -1166,7 +1173,21 @@ def grpo_train(
 
             with timer.time("data_processing"):
                 # Create training data for generation (original flow)
+                enable_overlong_filtering = master_config["grpo"].get("overlong_filtering", False)
+                
+                # Use first_stage_generation_max_seq_len for generation stage filtering
+                generation_max_seq_len = master_config["grpo"].get("first_stage_generation_max_seq_len", master_config["policy"]["max_total_sequence_length"])
+                
                 for i, message_log in enumerate(repeated_batch["message_log"]):
+                    # Check if this response was truncated by calculating total sequence length
+                    if enable_overlong_filtering:
+                        total_length = sum(len(msg.get("token_ids", [])) for msg in message_log)
+                        is_truncated = total_length >= generation_max_seq_len
+                        
+                        # Mask out truncated responses at the sample level
+                        if is_truncated:
+                            repeated_batch["loss_multiplier"][i] = 0.0
+                    
                     for j, message in enumerate(message_log):
                         if message["role"] == "assistant":
                             message["token_loss_mask"] = torch.ones_like(
@@ -1206,8 +1227,20 @@ def grpo_train(
 
                 # Process aggregation data if aggregation training is enabled
                 if master_config["grpo"].get("enable_aggregation", False):
+                    # Use max_total_sequence_length for aggregation stage filtering
+                    aggregation_max_seq_len = master_config["policy"]["max_total_sequence_length"]
+                    
                     # Create training data for aggregation
                     for i, message_log in enumerate(aggregation_batch["message_log"]):
+                        # Check if this aggregation response was truncated
+                        if enable_overlong_filtering:
+                            total_length = sum(len(msg.get("token_ids", [])) for msg in message_log)
+                            is_truncated = total_length >= aggregation_max_seq_len
+                            
+                            # Mask out truncated responses at the sample level
+                            if is_truncated:
+                                aggregation_batch["loss_multiplier"][i] = 0.0
+                        
                         for j, message in enumerate(message_log):
                             if message["role"] == "assistant":
                                 message["token_loss_mask"] = torch.ones_like(
