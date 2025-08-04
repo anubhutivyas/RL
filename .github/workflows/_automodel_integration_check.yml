@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-name: "Automodel Integration Check"
+name: "Automodel Integration Synchronization Check"
 
 on:
   workflow_call:
@@ -36,7 +36,7 @@ on:
 
 jobs:
   check:
-    name: Check parallel plans synchronization
+    name: Related FilesSynchronization Check
     runs-on: ubuntu-latest
     outputs:
       needs_attention: ${{ steps.check.outputs.needs_attention }}
@@ -166,6 +166,84 @@ jobs:
             done
           fi
           
+          echo ""
+          echo "Checking if dtensor policy worker files are synchronized..."
+          
+          # Define the dtensor policy worker file paths
+          DTENSOR_POLICY_WORKER_FILE="nemo_rl/models/policy/dtensor_policy_worker.py"
+          DTENSOR_POLICY_WORKER_V2_FILE="nemo_rl/models/policy/dtensor_policy_worker_v2.py"
+          
+          # Check if dtensor_policy_worker.py was modified in this PR
+          if git diff --name-only origin/${{ inputs.base_ref }}..HEAD | grep -q "^${DTENSOR_POLICY_WORKER_FILE}$"; then
+            echo "✅ Found changes in ${DTENSOR_POLICY_WORKER_FILE}"
+            dtensor_worker_changed=1
+          else
+            echo "ℹ️  No changes found in ${DTENSOR_POLICY_WORKER_FILE}"
+            dtensor_worker_changed=0
+          fi
+          
+          # Check if dtensor_policy_worker_v2.py was modified in this PR
+          if git diff --name-only origin/${{ inputs.base_ref }}..HEAD | grep -q "^${DTENSOR_POLICY_WORKER_V2_FILE}$"; then
+            echo "✅ Found changes in ${DTENSOR_POLICY_WORKER_V2_FILE}"
+            dtensor_worker_v2_changed=1
+          else
+            echo "ℹ️  No changes found in ${DTENSOR_POLICY_WORKER_V2_FILE}"
+            dtensor_worker_v2_changed=0
+          fi
+          
+          # Check if both dtensor policy worker files exist
+          if [[ ! -f "$DTENSOR_POLICY_WORKER_FILE" ]]; then
+            echo "⚠️  Warning: ${DTENSOR_POLICY_WORKER_FILE} does not exist"
+          fi
+          
+          if [[ ! -f "$DTENSOR_POLICY_WORKER_V2_FILE" ]]; then
+            echo "⚠️  Warning: ${DTENSOR_POLICY_WORKER_V2_FILE} does not exist"
+          fi
+          
+          # Analyze the relationship between the dtensor policy worker changes
+          if [[ $dtensor_worker_changed -eq 1 && $dtensor_worker_v2_changed -eq 0 ]]; then
+            echo "❌ dtensor_policy_worker.py was modified but dtensor_policy_worker_v2.py was not updated"
+            needs_attention=1
+            comment_body+="### ⚠️  DTensor Policy Worker Synchronization Warning"$'\n\n'
+            comment_body+="The file \`${DTENSOR_POLICY_WORKER_FILE}\` was modified in this PR, but \`${DTENSOR_POLICY_WORKER_V2_FILE}\` was not updated."$'\n\n'
+            comment_body+="**Why this matters:**"$'\n'
+            comment_body+="These files contain related DTensor policy worker implementations that should be kept synchronized to ensure consistency across different versions."$'\n\n'
+            comment_body+="**Action required:**"$'\n'
+            comment_body+="- Please review if the changes in \`${DTENSOR_POLICY_WORKER_FILE}\` should also be applied to \`${DTENSOR_POLICY_WORKER_V2_FILE}\`"$'\n'
+            comment_body+="- Update \`${DTENSOR_POLICY_WORKER_V2_FILE}\` if necessary to maintain synchronization"$'\n'
+            comment_body+="- If the files are intentionally different, please add a comment in the PR explaining why"$'\n\n'
+            comment_body+="**Files to check:**"$'\n'
+            comment_body+="- Modified: \`${DTENSOR_POLICY_WORKER_FILE}\`"$'\n'
+            comment_body+="- Not modified: \`${DTENSOR_POLICY_WORKER_V2_FILE}\`"$'\n\n'
+            
+          elif [[ $dtensor_worker_changed -eq 0 && $dtensor_worker_v2_changed -eq 1 ]]; then
+            echo "❌ dtensor_policy_worker_v2.py was modified but dtensor_policy_worker.py was not updated"
+            needs_attention=1
+            comment_body+="### ⚠️  DTensor Policy Worker Synchronization Warning"$'\n\n'
+            comment_body+="The file \`${DTENSOR_POLICY_WORKER_V2_FILE}\` was modified in this PR, but \`${DTENSOR_POLICY_WORKER_FILE}\` was not updated."$'\n\n'
+            comment_body+="**Why this matters:**"$'\n'
+            comment_body+="These files contain related DTensor policy worker implementations that should be kept synchronized to ensure consistency across different versions."$'\n\n'
+            comment_body+="**Action required:**"$'\n'
+            comment_body+="- Please review if the changes in \`${DTENSOR_POLICY_WORKER_V2_FILE}\` should also be applied to \`${DTENSOR_POLICY_WORKER_FILE}\`"$'\n'
+            comment_body+="- Update \`${DTENSOR_POLICY_WORKER_FILE}\` if necessary to maintain synchronization"$'\n'
+            comment_body+="- If the files are intentionally different, please add a comment in the PR explaining why"$'\n\n'
+            comment_body+="**Files to check:**"$'\n'
+            comment_body+="- Modified: \`${DTENSOR_POLICY_WORKER_V2_FILE}\`"$'\n'
+            comment_body+="- Not modified: \`${DTENSOR_POLICY_WORKER_FILE}\`"$'\n\n'
+            
+          elif [[ $dtensor_worker_changed -eq 1 && $dtensor_worker_v2_changed -eq 1 ]]; then
+            echo "✅ Both DTensor policy worker files were modified"
+            comment_body+="### ✅ DTensor Policy Worker Synchronization Check"$'\n\n'
+            comment_body+="Both DTensor policy worker files were modified in this PR:"$'\n'
+            comment_body+="- \`${DTENSOR_POLICY_WORKER_FILE}\`"$'\n'
+            comment_body+="- \`${DTENSOR_POLICY_WORKER_V2_FILE}\`"$'\n\n'
+            comment_body+="Please ensure that the changes are consistent between both files where applicable."$'\n\n'
+            
+          else
+            echo "ℹ️  No DTensor policy worker files were modified in this PR"
+            # Don't set comment_body in this case to avoid unnecessary comments
+          fi
+          
           # Set outputs
           echo "needs_attention=$needs_attention" >> $GITHUB_OUTPUT
           if [[ -n "$comment_body" ]]; then
@@ -176,11 +254,11 @@ jobs:
           
           if [[ $needs_attention -eq 1 ]]; then
             echo ""
-            echo "⚠️  Parallel plans synchronization needs attention"
-            echo "Please review the changes and ensure both files are properly synchronized"
+            echo "⚠️  File synchronization needs attention"
+            echo "Please review the changes and ensure related files are properly synchronized"
           else
             echo ""
-            echo "✅ Parallel plans synchronization check completed"
+            echo "✅ File synchronization check completed"
           fi
 
   comment:
@@ -195,8 +273,8 @@ jobs:
           script: |
             const needsAttention = '${{ needs.check.outputs.needs_attention }}' === '1';
             const title = needsAttention ? 
-              '## ⚠️  Parallel Plans Synchronization Check' : 
-              '## ℹ️  Parallel Plans Synchronization Check';
+              '## ⚠️  File Synchronization Check' : 
+              '## ℹ️  File Synchronization Check';
             
             const commentBody = `${title}
             
@@ -205,7 +283,7 @@ jobs:
             ${{ needs.check.outputs.comment_body }}
             
             ---
-            <sub>This check ensures that parallel plan implementations remain synchronized across the codebase. If you believe this warning is incorrect or the files should intentionally differ, please add a comment explaining the reasoning.</sub>`;
+            <sub>This check ensures that related file implementations remain synchronized across the codebase. If you believe this warning is incorrect or the files should intentionally differ, please add a comment explaining the reasoning.</sub>`;
             
             await github.rest.issues.createComment({
               issue_number: ${{ inputs.pr_number }},
