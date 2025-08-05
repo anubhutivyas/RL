@@ -56,10 +56,11 @@ def main():
     tokenizer_name_or_path = f"{args.checkpoint_path}/policy/tokenizer"
 
     hf_ckpt = convert_dcp_to_hf(
-        dcp_ckpt_path=args.dcp_ckpt_path,
+        dcp_ckpt_path=f"{args.checkpoint_path}/policy/weights",
         hf_ckpt_path=args.hf_ckpt_path,
         model_name_or_path=model_name_or_path,
         tokenizer_name_or_path=tokenizer_name_or_path,
+        overwrite=True,
     )
 
     model = AutoModel.from_pretrained(args.hf_ckpt_path)
