@@ -379,6 +379,7 @@ def get_formatted_message_log(
     add_bos_token: bool = True,
     add_eos_token: bool = True,
     add_generation_prompt: bool = False,
+    tools: Optional[dict] = None,
 ) -> LLMMessageLogType:
     """Format and tokenize chat messages using the specified template.
 
@@ -415,6 +416,7 @@ def get_formatted_message_log(
             add_generation_prompt=add_generation_prompt and message["role"] == "user",
             tokenize=False,
             add_special_tokens=False,
+            tools=tools,
         )
 
         ## get the length of the previous message, excluding the eos token (if present)

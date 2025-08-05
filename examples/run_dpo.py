@@ -134,10 +134,10 @@ def dpo_preprocessor(
     )
 
     message_log_chosen = get_formatted_message_log(
-        messages_chosen, tokenizer, task_data_spec
+        messages_chosen, tokenizer, task_data_spec, tools=datum_dict.get("tools")
     )
     message_log_rejected = get_formatted_message_log(
-        messages_rejected, tokenizer, task_data_spec
+        messages_rejected, tokenizer, task_data_spec, tools=datum_dict.get("tools")
     )
 
     length_chosen = sum(len(m["token_ids"]) for m in message_log_chosen)
