@@ -18,68 +18,68 @@ This section provides comprehensive frameworks for conducting rigorous research 
 
 ## Research Methodologies
 
-::::{grid} 1 2 2 2
-:gutter: 3
+::::{grid} 1 1 1 1 1 1
+:gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`flask;1.5em;sd-mr-1` Experimental Design
+:::{grid-item-card} {octicon}`beaker;1.5em;sd-mr-1` Experimental Design
 :link: experimental-design-validation
 :link-type: doc
 
-Design controlled experiments and research studies with proper experimental methodology for NeMo RL research. Learn hypothesis formulation, systematic experiment design, and statistical analysis with real NeMo RL integration examples.
+Design controlled experiments and research studies with proper experimental methodology for NeMo RL research.
 
-++++
++++
 {bdg-info}`Research Methodology`
-::::
+:::
 
 :::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Model Evaluation
 :link: model-evaluation-validation
 :link-type: doc
 
-Build comprehensive evaluation frameworks and implement robust model assessment and comparison strategies. Learn preference alignment, response quality, safety, efficiency, and fairness evaluation with real NeMo RL patterns.
+Build comprehensive evaluation frameworks and implement robust model assessment and comparison strategies.
 
-++++
++++
 {bdg-info}`Evaluation Framework`
-::::
+:::
 
-:::{grid-item-card} {octicon}`speedometer;1.5em;sd-mr-1` Performance Analysis
+:::{grid-item-card} {octicon}`chart;1.5em;sd-mr-1` Performance Analysis
 :link: performance-analysis
 :link-type: doc
 
-Analyze model performance and interpret results with statistical rigor. Learn training performance, inference performance, memory analysis, convergence analysis, and generalization analysis with real NeMo RL integration.
+Analyze model performance and interpret results with statistical rigor and comprehensive metrics.
 
-++++
++++
 {bdg-info}`Performance Analysis`
-::::
+:::
 
 :::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Custom Algorithms
 :link: custom-algorithms
 :link-type: doc
 
-Develop custom algorithms and extend NeMo RL with new training approaches. Learn algorithm development frameworks, custom DPO variants, custom GRPO variants, and hybrid algorithms with real NeMo RL integration.
+Develop custom algorithms and extend NeMo RL with new training approaches and methodologies.
 
-++++
++++
 {bdg-info}`Algorithm Development`
-::::
+:::
 
 :::{grid-item-card} {octicon}`search;1.5em;sd-mr-1` Ablation Studies
 :link: ablation-studies
 :link-type: doc
 
-Conduct systematic ablation studies to understand model components and contributions. Learn component removal, hyperparameter ablation, architecture ablation, and statistical analysis with real NeMo RL patterns.
+Conduct systematic ablation studies to understand model components and their contributions.
 
-++++
++++
 {bdg-info}`Component Analysis`
-::::
+:::
 
 :::{grid-item-card} {octicon}`check-circle;1.5em;sd-mr-1` Reproducible Research
 :link: reproducible-research-validation
 :link-type: doc
 
-Implement deterministic training and environment management for reproducible experiments. Learn seed management, environment control, experiment tracking, data versioning, and multi-run validation with real NeMo RL integration.
+Implement deterministic training and environment management for reproducible experiments.
 
-++++
++++
 {bdg-info}`Reproducibility`
-::::
+:::
 
 ::::
 
@@ -199,3 +199,17 @@ logger:
 - Explore [Advanced Performance](../performance/index) for optimization techniques
 - Review [Algorithm Development](../algorithm-development/index) for advanced training
 - Learn about [Performance Optimization](../performance/index) for real-world applications
+
+---
+
+::::{toctree}
+:hidden:
+:caption: Research and Validation
+:maxdepth: 2
+experimental-design-validation
+model-evaluation-validation
+performance-analysis
+custom-algorithms
+ablation-studies
+reproducible-research-validation
+::::

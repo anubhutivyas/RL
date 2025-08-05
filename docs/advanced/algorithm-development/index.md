@@ -30,7 +30,7 @@ Systematic approaches to finding optimal training configurations using the actua
 
 ## Core Topics
 
-::::{grid} 4
+::::{grid} 1 1 1 2
 :gutter: 2 2 2 2
 
 :::{grid-item-card} {octicon}`code;1.5em;sd-mr-1` Mathematical Foundations

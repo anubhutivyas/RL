@@ -180,6 +180,73 @@ Architectural decisions and technical specifications for framework internals.
 
 ::::
 
+## Research Methodologies
+
+::::{grid} 1 1 1 2
+:gutter: 2 2 2 2
+
+:::{grid-item-card} {octicon}`flask;1.5em;sd-mr-1` Experimental Design
+:link: advanced/research/experimental-design-validation
+:link-type: doc
+
+Design controlled experiments and research studies with proper experimental methodology for NeMo RL research.
+
++++
+{bdg-info}`Research Methodology`
+:::
+
+:::{grid-item-card} {octicon}`chart-line;1.5em;sd-mr-1` Model Evaluation
+:link: advanced/research/model-evaluation-validation
+:link-type: doc
+
+Build comprehensive evaluation frameworks and implement robust model assessment and comparison strategies.
+
++++
+{bdg-info}`Evaluation Framework`
+:::
+
+:::{grid-item-card} {octicon}`speedometer;1.5em;sd-mr-1` Performance Analysis
+:link: advanced/research/performance-analysis
+:link-type: doc
+
+Analyze model performance and interpret results with statistical rigor and comprehensive metrics.
+
++++
+{bdg-info}`Performance Analysis`
+:::
+
+:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Custom Algorithms
+:link: advanced/research/custom-algorithms
+:link-type: doc
+
+Develop custom algorithms and extend NeMo RL with new training approaches and methodologies.
+
++++
+{bdg-info}`Algorithm Development`
+:::
+
+:::{grid-item-card} {octicon}`search;1.5em;sd-mr-1` Ablation Studies
+:link: advanced/research/ablation-studies
+:link-type: doc
+
+Conduct systematic ablation studies to understand model components and their contributions.
+
++++
+{bdg-info}`Component Analysis`
+:::
+
+:::{grid-item-card} {octicon}`check-circle;1.5em;sd-mr-1` Reproducible Research
+:link: advanced/research/reproducible-research-validation
+:link-type: doc
+
+Implement deterministic training and environment management for reproducible experiments.
+
++++
+{bdg-info}`Reproducibility`
+:::
+
+::::
+
 ## Getting Help
 
 ::::{grid} 1 1 1 2
@@ -244,7 +311,6 @@ guides/index
 guides/training-algorithms/index
 guides/model-development/index
 guides/environment-data/index
-guides/troubleshooting
 guides/training-optimization/index
 guides/troubleshooting
 :::: 

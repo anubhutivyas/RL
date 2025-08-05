@@ -19,6 +19,51 @@ NeMo RL is a training-focused framework that combines the power of reinforcement
 
 The framework is designed to handle the complexities of distributed training across multiple GPUs and nodes, making it suitable for both research and production training environments. NeMo RL supports multiple training backends, including Hugging Face Transformers and Megatron-LM, providing flexibility for different model architectures and training requirements. NeMo RL is focused on training and evaluation - it does not include production deployment or serving infrastructure.
 
+::::{grid} 1 1 1 2
+:gutter: 2 2 2 2
+
+:::{grid-item-card} {octicon}`rocket;1.5em;sd-mr-1` Quick Start
+:link: ../get-started/quickstart
+:link-type: doc
+
+Get up and running with your first RL training job in minutes.
+
++++
+{bdg-primary}`Beginner`
+:::
+
+:::{grid-item-card} {octicon}`gear;1.5em;sd-mr-1` Installation
+:link: ../get-started/installation
+:link-type: doc
+
+Complete setup instructions for all environments and platforms.
+
++++
+{bdg-success}`Essential`
+:::
+
+:::{grid-item-card} {octicon}`book;1.5em;sd-mr-1` Architecture Overview
+:link: architecture-overview
+:link-type: doc
+
+Learn about NeMo RL's core architecture and design principles.
+
++++
+{bdg-info}`Foundation`
+:::
+
+:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Key Features
+:link: key-features
+:link-type: doc
+
+Explore NeMo RL's key capabilities and technical highlights.
+
++++
+{bdg-secondary}`Overview`
+:::
+
+::::
+
 ## Key Technical Capabilities
 
 NeMo RL provides comprehensive support for modern RL workflows with large language models:

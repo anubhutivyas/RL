@@ -270,5 +270,4 @@ After implementing memory optimization:
 
 For more advanced topics, see:
 - [Distributed Training](distributed-training.md) - Scale across multiple GPUs
-- [Performance Profiling](profiling.md) - Profile memory usage
-- [Mixed Precision](mixed-precision.md) - Use lower precision training 
+- [Performance Profiling](profiling.md) - Profile memory usage 

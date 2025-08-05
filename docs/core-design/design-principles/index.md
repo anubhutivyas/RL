@@ -49,16 +49,6 @@ Explore the text generation pipeline and inference mechanisms.
 {bdg-info}`Computation`
 :::
 
-:::{grid-item-card} {octicon}`code;1.5em;sd-mr-1` Loss Functions
-:link: loss-functions
-:link-type: doc
-
-Learn about loss function implementations and mathematical foundations.
-
-+++
-{bdg-warning}`Advanced`
-:::
-
 ::::
 
 ---
@@ -70,5 +60,4 @@ Learn about loss function implementations and mathematical foundations.
 design-and-philosophy
 fsdp2-parallel-plan
 generation
-loss-functions
 :::: 

@@ -87,25 +87,7 @@ Adapt GRPO for new domains and use cases.
 ::::{grid} 3
 :gutter: 2 2 2 2
 
-:::{grid-item-card} {octicon}`graph;1.5em;sd-mr-1` Multi-Objective Training
-:link: algorithm-development/multi-objective-training
-:link-type: doc
 
-Combine multiple objectives in a single training pipeline with dynamic weight balancing.
-
-++++
-{bdg-warning}`Advanced`
-:::
-
-:::{grid-item-card} {octicon}`mortar-board;1.5em;sd-mr-1` Curriculum Learning
-:link: algorithm-development/curriculum-learning
-:link-type: doc
-
-Design curricula that progressively increase task complexity based on model performance.
-
-++++
-{bdg-info}`Strategy`
-:::
 
 :::{grid-item-card} {octicon}`search;1.5em;sd-mr-1` Hyperparameter Optimization
 :link: algorithm-development/hyperparameter-optimization
