@@ -101,10 +101,11 @@ def setup(
     StatefulDataLoader,
     StatefulDataLoader,
     DPOLossFn,
-    MasterConfig,
     Logger,
+    CheckpointManager,
     TaskDataSpec,
     DPOSaveState,
+    MasterConfig,
 ]:
     """Main entry point for running DPO algorithm.
 
@@ -135,7 +136,6 @@ def setup(
     #         Logger
     # ==========================
     logger = Logger(logger_config)
-    logger.log_hyperparams(master_config)
 
     # ==========================
     #      Checkpointing
