@@ -329,8 +329,16 @@ def main() -> None:
 
     # setup tokenizer
     processor = AutoProcessor.from_pretrained(reroute_processor_model_name_patch(config["policy"]["model_name"]), trust_remote_code=True)
-
     tokenizer = processor.tokenizer
+    # inherit tokenizer's special tokens
+    processor.pad_token = processor.tokenizer.pad_token
+    processor.eos_token = processor.tokenizer.eos_token
+    processor.bos_token = processor.tokenizer.bos_token
+    processor.pad_token_id = processor.tokenizer.pad_token_id
+    processor.eos_token_id = processor.tokenizer.eos_token_id
+    processor.bos_token_id = processor.tokenizer.bos_token_id
+
+
     assert config["policy"]["generation"] is not None, (
         "A generation config is required for GRPO"
     )
